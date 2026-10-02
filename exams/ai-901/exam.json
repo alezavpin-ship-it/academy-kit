@@ -1,0 +1,925 @@
+{
+ "meta": {
+  "id": "ai-901",
+  "code": "AI-901",
+  "title": "Microsoft Azure AI Fundamentals",
+  "provider": "Microsoft",
+  "language": "es",
+  "family": "ai-security-governance",
+  "skills": [
+   "azure-ai-security",
+   "responsible-ai-governance"
+  ],
+  "pass_score": 700,
+  "mock_questions": 25,
+  "mock_minutes": 45,
+  "outline_date": "2026-04-15",
+  "verified": "2026-10-01",
+  "version": "0.1",
+  "disclaimer": "Preguntas originales de práctica escritas para esta academia a partir de la guía de estudio pública. No son preguntas del examen real. La duración y el número de preguntas del simulacro son de esta academia, no datos oficiales.",
+  "links": [
+   {
+    "title": "Examen AI-901 (página oficial)",
+    "url": "https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-901/",
+    "kind": "exam",
+    "provider": "Microsoft Learn",
+    "verified": "2026-10-01"
+   },
+   {
+    "title": "Guía de estudio oficial",
+    "url": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-901",
+    "kind": "guide",
+    "provider": "Microsoft Learn",
+    "verified": "2026-10-01"
+   },
+   {
+    "title": "Curso AI-901T00: Introduction to AI in Azure",
+    "url": "https://learn.microsoft.com/en-us/training/courses/ai-901t00",
+    "kind": "course",
+    "provider": "Microsoft Learn",
+    "verified": "2026-10-01"
+   },
+   {
+    "title": "Evaluación de práctica oficial (requiere iniciar sesión)",
+    "url": "https://aiskillsnavigator.microsoft.com/credentials/cert-83587e0a0754cfee561ade3e27d9fa1cdaf15ae03be52d2413b2b858d1b4eda4",
+    "kind": "practice",
+    "provider": "Microsoft AI Skills Navigator",
+    "verified": "2026-10-01"
+   },
+   {
+    "title": "Sandbox del examen (conoce la interfaz)",
+    "url": "https://aka.ms/examdemo",
+    "kind": "sandbox",
+    "provider": "Microsoft",
+    "verified": "2026-10-01"
+   }
+  ]
+ },
+ "domains": [
+  {
+   "id": "concepts",
+   "title": "Identificar conceptos y capacidades de IA",
+   "weight": 42.5,
+   "official": "40–45%"
+  },
+  {
+   "id": "foundry",
+   "title": "Implementar soluciones de IA con Microsoft Foundry",
+   "weight": 57.5,
+   "official": "55–60%"
+  }
+ ],
+ "modules": [
+  {
+   "id": "rai",
+   "domain": "concepts",
+   "title": "Principios de IA responsable",
+   "summary": "Seis principios guían cualquier solución de IA en Microsoft. El examen pide reconocer cuál aplica en una situación concreta.",
+   "points": [
+    "Equidad (fairness): el sistema trata a todas las personas de forma comparable; se vigilan sesgos en datos y resultados.",
+    "Confiabilidad y seguridad: se comporta como se espera, incluso ante entradas inesperadas, y se prueba antes de liberar.",
+    "Privacidad y seguridad: protege los datos personales y resiste ataques.",
+    "Inclusión: sirve a personas con distintas capacidades, idiomas y contextos.",
+    "Transparencia: las personas saben que tratan con IA, cómo funciona y cuáles son sus límites.",
+    "Responsabilidad (accountability): hay personas que responden por el sistema y pueden supervisarlo o corregirlo."
+   ],
+   "materials": [
+    {
+     "title": "What is Responsible AI",
+     "url": "https://learn.microsoft.com/en-us/azure/machine-learning/concept-responsible-ai?view=azureml-api-2",
+     "kind": "doc",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Embrace Responsible AI Principles and Practices",
+     "url": "https://learn.microsoft.com/en-us/training/modules/embrace-responsible-ai-principles-practices/",
+     "kind": "module",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Responsible AI for agent design",
+     "url": "https://learn.microsoft.com/en-us/agents/design-guidelines/responsible-ai",
+     "kind": "doc",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    }
+   ],
+   "exercises": [
+    {
+     "id": "rai-match",
+     "type": "match",
+     "prompt": "Relaciona cada situación con el principio de IA responsable que atiende.",
+     "pairs": [
+      [
+       "Un modelo de crédito aprueba menos solicitudes de un grupo con el mismo perfil financiero",
+       "Equidad"
+      ],
+      [
+       "El asistente avisa al usuario que las respuestas las genera una IA y pueden tener errores",
+       "Transparencia"
+      ],
+      [
+       "Un comité revisa y puede detener el sistema si causa daño",
+       "Responsabilidad"
+      ],
+      [
+       "La app de voz funciona con lector de pantalla y con distintos acentos",
+       "Inclusión"
+      ],
+      [
+       "Los datos de pacientes se anonimizan antes de entrenar",
+       "Privacidad y seguridad"
+      ],
+      [
+       "El modelo se prueba con entradas extremas antes de salir a producción",
+       "Confiabilidad y seguridad"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "models",
+   "domain": "concepts",
+   "title": "Modelos de IA generativa: cómo funcionan y cómo se configuran",
+   "summary": "Un modelo generativo predice el siguiente token a partir del contexto. Elegir bien el modelo, el tipo de despliegue y los parámetros decide costo, latencia y calidad.",
+   "points": [
+    "El texto se divide en tokens; el modelo los convierte en vectores (embeddings) y usa atención para decidir qué partes del contexto pesan más.",
+    "La ventana de contexto es el máximo de tokens que el modelo considera entre instrucciones, historial y respuesta.",
+    "Temperatura y top-p controlan la variedad de la respuesta; el máximo de tokens de salida limita su longitud.",
+    "Para responder con datos propios y recientes se usa grounding (RAG); el ajuste fino cambia el comportamiento del modelo y cuesta más.",
+    "Los modelos pequeños (SLM) son más baratos y rápidos; los grandes y los multimodales cubren tareas más complejas o con imagen y audio.",
+    "El despliegue estándar se paga por tokens consumidos; el aprovisionado reserva capacidad para una latencia predecible."
+   ],
+   "materials": [
+    {
+     "title": "Introduction to generative AI and agents",
+     "url": "https://learn.microsoft.com/en-us/training/modules/fundamentals-generative-ai/",
+     "kind": "module",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Microsoft Foundry Models overview",
+     "url": "https://learn.microsoft.com/en-us/azure/foundry/concepts/foundry-models-overview",
+     "kind": "doc",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Deployment overview for Microsoft Foundry Models",
+     "url": "https://learn.microsoft.com/en-us/azure/foundry/concepts/deployments-overview",
+     "kind": "doc",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    }
+   ],
+   "exercises": [
+    {
+     "id": "models-order",
+     "type": "order",
+     "prompt": "Ordena lo que ocurre cuando un modelo generativo responde a un prompt.",
+     "steps": [
+      "El texto del prompt se divide en tokens",
+      "Cada token se convierte en un vector (embedding)",
+      "La atención pondera qué tokens del contexto importan más",
+      "El modelo calcula la probabilidad del siguiente token",
+      "Se elige un token según la temperatura y se repite hasta terminar"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "workloads",
+   "domain": "concepts",
+   "title": "Cargas de trabajo de IA: texto, voz, visión y extracción",
+   "summary": "El examen describe un escenario y pide identificar la carga de trabajo y la técnica correctas.",
+   "points": [
+    "Análisis de texto: extracción de frases clave, detección de entidades, análisis de sentimiento y resumen.",
+    "Voz: reconocimiento (voz a texto) y síntesis (texto a voz).",
+    "Visión: clasificar una imagen, detectar objetos y su ubicación, leer texto (OCR) o describir la imagen; los modelos de generación crean imágenes nuevas a partir de texto.",
+    "Extracción de información: convertir documentos, imágenes, audio y video en campos estructurados.",
+    "IA generativa crea contenido; la IA agéntica además usa herramientas y da pasos para cumplir un objetivo."
+   ],
+   "materials": [
+    {
+     "title": "AI concepts for developers and technology professionals",
+     "url": "https://learn.microsoft.com/en-us/training/paths/ai-concepts/",
+     "kind": "path",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Introduction to computer vision concepts",
+     "url": "https://learn.microsoft.com/en-us/training/modules/introduction-computer-vision/",
+     "kind": "module",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Get started with AI applications and agents on Azure",
+     "url": "https://learn.microsoft.com/en-us/training/paths/get-started-ai-apps-agents/",
+     "kind": "path",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    }
+   ],
+   "exercises": [
+    {
+     "id": "workloads-match",
+     "type": "match",
+     "prompt": "Relaciona cada necesidad con la técnica de IA adecuada.",
+     "pairs": [
+      [
+       "Saber si las reseñas de clientes son positivas o negativas",
+       "Análisis de sentimiento"
+      ],
+      [
+       "Obtener nombres de personas, empresas y fechas de un contrato",
+       "Detección de entidades"
+      ],
+      [
+       "Transcribir una reunión grabada",
+       "Reconocimiento de voz"
+      ],
+      [
+       "Contar cuántos cascos aparecen en una foto y dónde están",
+       "Detección de objetos"
+      ],
+      [
+       "Leer el texto impreso de una foto de un letrero",
+       "OCR"
+      ],
+      [
+       "Crear una ilustración a partir de una descripción",
+       "Generación de imágenes"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "genai",
+   "domain": "foundry",
+   "title": "Apps y agentes de IA generativa con Foundry",
+   "summary": "Del prompt al agente: desplegar un modelo en un proyecto de Foundry, probarlo en el playground, llamarlo desde código y darle instrucciones y herramientas.",
+   "points": [
+    "El mensaje de sistema fija rol, tono, límites y formato; el mensaje de usuario trae la petición concreta.",
+    "Un buen prompt da contexto, instrucciones claras, ejemplos y el formato de salida esperado.",
+    "En el portal de Foundry se elige un modelo del catálogo, se despliega en un proyecto y se prueba en el playground.",
+    "Una app cliente usa el endpoint del proyecto y el nombre del despliegue; mantiene el historial de mensajes para conservar el contexto.",
+    "Un agente combina un modelo, instrucciones y herramientas (por ejemplo, búsqueda en archivos o ejecución de código) y conserva la conversación en un hilo."
+   ],
+   "materials": [
+    {
+     "title": "What is Microsoft Foundry?",
+     "url": "https://learn.microsoft.com/en-us/azure/foundry/what-is-foundry",
+     "kind": "doc",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "What is Microsoft Foundry Agent Service?",
+     "url": "https://learn.microsoft.com/en-us/azure/foundry/agents/overview",
+     "kind": "doc",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Training for Microsoft Foundry",
+     "url": "https://learn.microsoft.com/en-us/training/azure/ai-foundry",
+     "kind": "hub",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    }
+   ],
+   "exercises": [
+    {
+     "id": "genai-order",
+     "type": "order",
+     "prompt": "Ordena los pasos para tener un chat funcionando con un modelo en Foundry.",
+     "steps": [
+      "Crear un proyecto en Microsoft Foundry",
+      "Elegir un modelo en el catálogo",
+      "Desplegar el modelo",
+      "Probarlo en el playground con un mensaje de sistema",
+      "Conectar la app cliente al endpoint del proyecto con el SDK"
+     ]
+    },
+    {
+     "id": "genai-lab",
+     "type": "lab",
+     "prompt": "Práctica guiada: tu primer agente en el portal de Foundry (usa una suscripción de pruebas).",
+     "url": "https://learn.microsoft.com/en-us/training/courses/ai-901t00",
+     "label": "Abrir el curso AI-901T00 en Microsoft Learn",
+     "steps": [
+      "Creé un proyecto y desplegué un modelo de chat",
+      "Escribí un mensaje de sistema y comparé respuestas con temperatura baja y alta",
+      "Creé un agente con instrucciones y al menos una herramienta",
+      "Probé el agente con 3 preguntas y anoté una respuesta mejorable"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "text-speech",
+   "domain": "foundry",
+   "title": "Soluciones de texto y voz con Foundry",
+   "summary": "Analizar texto y conversar por voz, ya sea con un modelo multimodal desplegado o con Azure Speech en Foundry Tools.",
+   "points": [
+    "Un modelo generativo puede hacer análisis de texto con un prompt: resumir, clasificar sentimiento o extraer entidades.",
+    "Los modelos multimodales aceptan audio como entrada y pueden responder a un prompt hablado.",
+    "Azure Speech en Foundry Tools ofrece voz a texto y texto a voz, con voces neuronales en muchos idiomas.",
+    "Para una app de voz: capturar el audio, transcribirlo, generar la respuesta y sintetizarla."
+   ],
+   "materials": [
+    {
+     "title": "Curso AI-901T00: Introduction to AI in Azure",
+     "url": "https://learn.microsoft.com/en-us/training/courses/ai-901t00",
+     "kind": "course",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Study guide for Exam AI-901",
+     "url": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-901",
+     "kind": "doc",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    }
+   ],
+   "exercises": [
+    {
+     "id": "speech-order",
+     "type": "order",
+     "prompt": "Ordena el flujo de un asistente de voz.",
+     "steps": [
+      "El usuario habla al micrófono",
+      "El audio se convierte en texto (reconocimiento de voz)",
+      "El modelo genera la respuesta en texto",
+      "El texto se convierte en audio (síntesis de voz)",
+      "El usuario escucha la respuesta"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "vision",
+   "domain": "foundry",
+   "title": "Visión e imágenes generadas con Foundry",
+   "summary": "Interpretar imágenes dentro de un prompt con un modelo multimodal y crear imágenes nuevas con un modelo generativo.",
+   "points": [
+    "Un modelo multimodal recibe texto e imagen en el mismo prompt y puede describir, comparar o responder preguntas sobre la imagen.",
+    "Un modelo de generación de imágenes crea una imagen a partir de una descripción en texto; el detalle del prompt define el resultado.",
+    "En una app, la imagen se envía como URL o como datos codificados junto con el texto del mensaje.",
+    "Los filtros de contenido aplican tanto a los prompts como a las imágenes generadas."
+   ],
+   "materials": [
+    {
+     "title": "Develop computer vision solutions with Microsoft Foundry",
+     "url": "https://learn.microsoft.com/en-us/training/paths/develop-computer-vision-with-foundry/",
+     "kind": "path",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Get started with computer vision in Azure",
+     "url": "https://learn.microsoft.com/en-us/training/modules/get-started-vision-azure/",
+     "kind": "module",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    }
+   ],
+   "exercises": [
+    {
+     "id": "vision-match",
+     "type": "match",
+     "prompt": "Relaciona cada tarea con el tipo de modelo que la resuelve.",
+     "pairs": [
+      [
+       "Describir qué pasa en una foto que sube el usuario",
+       "Modelo multimodal (texto + imagen)"
+      ],
+      [
+       "Crear un logotipo de ejemplo a partir de una descripción",
+       "Modelo de generación de imágenes"
+      ],
+      [
+       "Resumir un correo largo",
+       "Modelo de lenguaje (solo texto)"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "extraction",
+   "domain": "foundry",
+   "title": "Extracción de información con Content Understanding",
+   "summary": "Azure Content Understanding en Foundry Tools convierte documentos, imágenes, audio y video en datos estructurados mediante analizadores.",
+   "points": [
+    "Un analizador define qué contenido procesar y qué campos devolver; hay analizadores prediseñados y personalizados.",
+    "En un analizador personalizado se describe un esquema de campos (nombre, tipo y descripción) y el servicio los extrae.",
+    "De documentos y formularios se obtienen campos como fechas, totales o nombres; de imágenes, descripciones y atributos.",
+    "De audio y video se obtienen transcripciones, resúmenes y campos por segmento.",
+    "La app cliente envía el archivo al analizador y recibe el resultado en JSON."
+   ],
+   "materials": [
+    {
+     "title": "What is Azure Content Understanding in Foundry Tools?",
+     "url": "https://learn.microsoft.com/en-us/azure/ai-services/content-understanding/overview",
+     "kind": "doc",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Prebuilt analyzers",
+     "url": "https://learn.microsoft.com/en-us/azure/ai-services/content-understanding/concepts/prebuilt-analyzers",
+     "kind": "doc",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    },
+    {
+     "title": "Create a custom analyzer",
+     "url": "https://learn.microsoft.com/en-us/azure/ai-services/content-understanding/tutorial/create-custom-analyzer",
+     "kind": "tutorial",
+     "provider": "Microsoft Learn",
+     "verified": "2026-10-01"
+    }
+   ],
+   "exercises": [
+    {
+     "id": "extraction-order",
+     "type": "order",
+     "prompt": "Ordena los pasos para extraer datos de facturas con un analizador personalizado.",
+     "steps": [
+      "Definir el esquema de campos que se necesitan",
+      "Crear el analizador con ese esquema",
+      "Probarlo con facturas de ejemplo",
+      "Enviar las facturas desde la app cliente",
+      "Leer los campos del resultado en JSON"
+     ]
+    }
+   ]
+  }
+ ],
+ "questions": [
+  {
+   "module": "rai",
+   "q": "Un banco descubre que su modelo de préstamos rechaza con más frecuencia a solicitantes de cierto código postal con el mismo historial que otros. ¿Qué principio se está incumpliendo?",
+   "options": [
+    "Transparencia",
+    "Equidad",
+    "Inclusión",
+    "Responsabilidad"
+   ],
+   "answer": 1,
+   "why": "Tratar distinto a personas con el mismo perfil es un problema de equidad (sesgo en datos o resultados).",
+   "id": "q01"
+  },
+  {
+   "module": "rai",
+   "q": "Tu equipo publica un chatbot y agrega un aviso: «Estas respuestas las genera una IA y pueden contener errores». ¿Qué principio atiende ese aviso?",
+   "options": [
+    "Transparencia",
+    "Privacidad y seguridad",
+    "Equidad",
+    "Confiabilidad y seguridad"
+   ],
+   "answer": 0,
+   "why": "Transparencia: las personas deben saber que interactúan con IA y conocer sus límites.",
+   "id": "q02"
+  },
+  {
+   "module": "rai",
+   "q": "Antes de liberar un asistente médico, el equipo lo prueba con preguntas ambiguas y fuera de alcance para verificar que no dé indicaciones peligrosas. ¿Qué principio aplica?",
+   "options": [
+    "Inclusión",
+    "Responsabilidad",
+    "Confiabilidad y seguridad",
+    "Transparencia"
+   ],
+   "answer": 2,
+   "why": "Confiabilidad y seguridad: el sistema debe comportarse de forma segura también ante entradas inesperadas.",
+   "id": "q03"
+  },
+  {
+   "module": "rai",
+   "q": "Una empresa nombra a un responsable que revisa las decisiones del sistema de IA y puede corregirlas o suspenderlo. ¿Qué principio describe esto?",
+   "options": [
+    "Equidad",
+    "Responsabilidad (accountability)",
+    "Privacidad y seguridad",
+    "Inclusión"
+   ],
+   "answer": 1,
+   "why": "Accountability: hay personas que responden por el sistema y lo supervisan.",
+   "id": "q04"
+  },
+  {
+   "module": "rai",
+   "q": "Un asistente de voz reconoce mal a personas con acentos regionales y no ofrece alternativa por texto. ¿Qué principio se debe reforzar?",
+   "options": [
+    "Inclusión",
+    "Transparencia",
+    "Responsabilidad",
+    "Privacidad y seguridad"
+   ],
+   "answer": 0,
+   "why": "Inclusión: la solución debe servir a personas con distintas formas de hablar y capacidades.",
+   "id": "q05"
+  },
+  {
+   "module": "models",
+   "q": "Necesitas que un modelo responda con información de los manuales internos de tu empresa, que cambian cada semana. ¿Qué enfoque es el más adecuado?",
+   "options": [
+    "Subir la temperatura",
+    "Ajuste fino (fine-tuning) cada semana",
+    "Grounding con recuperación de los documentos (RAG)",
+    "Aumentar el máximo de tokens de salida"
+   ],
+   "answer": 2,
+   "why": "RAG aporta al prompt los documentos vigentes sin reentrenar el modelo; el ajuste fino semanal sería caro y lento.",
+   "id": "q06"
+  },
+  {
+   "module": "models",
+   "q": "Un modelo da respuestas distintas cada vez para una tarea de clasificación que debe ser consistente. ¿Qué parámetro ajustas primero?",
+   "options": [
+    "Bajar la temperatura",
+    "Subir top-p",
+    "Subir el máximo de tokens",
+    "Ampliar la ventana de contexto"
+   ],
+   "answer": 0,
+   "why": "Una temperatura baja reduce la aleatoriedad y hace la salida más repetible.",
+   "id": "q07"
+  },
+  {
+   "module": "models",
+   "q": "¿Qué son los tokens en un modelo de lenguaje?",
+   "options": [
+    "Las llaves de acceso al servicio",
+    "Las unidades de texto (palabras o fragmentos) que el modelo procesa",
+    "Los parámetros entrenados del modelo",
+    "Los documentos usados para grounding"
+   ],
+   "answer": 1,
+   "why": "El texto se divide en tokens; con ellos se mide también el consumo y el límite de contexto.",
+   "id": "q08"
+  },
+  {
+   "module": "models",
+   "q": "Una app procesa un volumen alto y constante de solicitudes y necesita latencia predecible. ¿Qué tipo de despliegue conviene?",
+   "options": [
+    "Estándar de pago por tokens",
+    "Aprovisionado, con capacidad reservada",
+    "Un modelo local en cada equipo",
+    "Cualquiera, el despliegue no influye en la latencia"
+   ],
+   "answer": 1,
+   "why": "El despliegue aprovisionado reserva capacidad de proceso y da un rendimiento predecible para cargas constantes.",
+   "id": "q09"
+  },
+  {
+   "module": "models",
+   "q": "Para clasificar correos cortos en tres categorías con el menor costo y latencia, ¿qué modelo eliges?",
+   "options": [
+    "El modelo más grande disponible",
+    "Un modelo de generación de imágenes",
+    "Un modelo de lenguaje pequeño (SLM)",
+    "Un modelo de voz"
+   ],
+   "answer": 2,
+   "why": "Para tareas simples y de alto volumen, un modelo pequeño cuesta menos y responde más rápido.",
+   "id": "q10"
+  },
+  {
+   "module": "workloads",
+   "q": "Una aseguradora quiere obtener automáticamente el número de póliza, la fecha y el monto de miles de formularios escaneados. ¿Qué carga de trabajo es?",
+   "options": [
+    "Análisis de sentimiento",
+    "Extracción de información",
+    "Síntesis de voz",
+    "Generación de imágenes"
+   ],
+   "answer": 1,
+   "why": "Convertir documentos en campos estructurados es extracción de información.",
+   "id": "q11"
+  },
+  {
+   "module": "workloads",
+   "q": "Marketing quiere saber qué temas se repiten más en 10,000 comentarios de clientes. ¿Qué técnica usas?",
+   "options": [
+    "Extracción de frases clave",
+    "Síntesis de voz",
+    "Detección de objetos",
+    "OCR"
+   ],
+   "answer": 0,
+   "why": "La extracción de frases clave identifica los temas principales de cada texto.",
+   "id": "q12"
+  },
+  {
+   "module": "workloads",
+   "q": "Una app debe leer en voz alta las noticias a personas con baja visión. ¿Qué capacidad necesita?",
+   "options": [
+    "Reconocimiento de voz",
+    "Detección de entidades",
+    "Síntesis de voz (texto a voz)",
+    "Clasificación de imágenes"
+   ],
+   "answer": 2,
+   "why": "Convertir texto en audio es síntesis de voz.",
+   "id": "q13"
+  },
+  {
+   "module": "workloads",
+   "q": "En un almacén se necesita saber cuántas cajas hay en cada foto y dónde está cada una. ¿Qué técnica de visión corresponde?",
+   "options": [
+    "Clasificación de imágenes",
+    "Detección de objetos",
+    "OCR",
+    "Generación de imágenes"
+   ],
+   "answer": 1,
+   "why": "La detección de objetos identifica cada objeto y su ubicación; la clasificación solo etiqueta la imagen completa.",
+   "id": "q14"
+  },
+  {
+   "module": "workloads",
+   "q": "¿Qué distingue a una solución de IA agéntica de un chat generativo simple?",
+   "options": [
+    "Usa un modelo más grande",
+    "Solo trabaja con voz",
+    "Puede usar herramientas y ejecutar pasos para cumplir un objetivo",
+    "No necesita instrucciones"
+   ],
+   "answer": 2,
+   "why": "Un agente planifica y actúa con herramientas; un chat simple solo genera una respuesta.",
+   "id": "q15"
+  },
+  {
+   "module": "genai",
+   "q": "Quieres que el asistente siempre responda en español, en máximo tres viñetas y sin dar asesoría legal. ¿Dónde pones esas reglas?",
+   "options": [
+    "En el mensaje de sistema",
+    "En cada mensaje de usuario",
+    "En el nombre del despliegue",
+    "En el parámetro de temperatura"
+   ],
+   "answer": 0,
+   "why": "El mensaje de sistema define rol, tono, límites y formato para toda la conversación.",
+   "id": "q16"
+  },
+  {
+   "module": "genai",
+   "q": "Tu app de chat olvida lo que el usuario dijo dos mensajes antes. ¿Cuál es la causa más probable?",
+   "options": [
+    "La temperatura es muy baja",
+    "La app no envía el historial de mensajes en cada llamada",
+    "El modelo no está desplegado",
+    "Falta un filtro de contenido"
+   ],
+   "answer": 1,
+   "why": "El modelo no guarda memoria entre llamadas: la app debe enviar el historial para conservar el contexto.",
+   "id": "q17"
+  },
+  {
+   "module": "genai",
+   "q": "En el portal de Foundry ya elegiste un modelo del catálogo. ¿Qué debes hacer antes de usarlo en el playground o desde código?",
+   "options": [
+    "Entrenarlo desde cero",
+    "Desplegarlo en tu proyecto",
+    "Exportarlo a un archivo",
+    "Crear un analizador"
+   ],
+   "answer": 1,
+   "why": "Un modelo del catálogo se despliega en el proyecto para obtener un despliegue al que se le envían solicitudes.",
+   "id": "q18"
+  },
+  {
+   "module": "genai",
+   "q": "¿Qué elementos definen a un agente en Foundry?",
+   "options": [
+    "Un modelo, instrucciones y herramientas",
+    "Solo un conjunto de documentos",
+    "Una base de datos y un tablero",
+    "Un analizador y un esquema de campos"
+   ],
+   "answer": 0,
+   "why": "Un agente combina un modelo desplegado, instrucciones que fijan su comportamiento y herramientas para actuar.",
+   "id": "q19"
+  },
+  {
+   "module": "genai",
+   "q": "Un modelo responde de forma genérica a «escribe un correo». ¿Qué mejora más el resultado?",
+   "options": [
+    "Repetir la misma petición",
+    "Dar contexto, destinatario, tono, un ejemplo y el formato esperado",
+    "Bajar el máximo de tokens",
+    "Cambiar el nombre del proyecto"
+   ],
+   "answer": 1,
+   "why": "Los prompts efectivos dan contexto, instrucciones concretas, ejemplos y formato de salida.",
+   "id": "q20"
+  },
+  {
+   "module": "text-speech",
+   "q": "Necesitas una app que convierta llamadas grabadas en texto para analizarlas después. ¿Qué capacidad de Azure Speech usas?",
+   "options": [
+    "Texto a voz",
+    "Voz a texto",
+    "Traducción de documentos",
+    "Generación de imágenes"
+   ],
+   "answer": 1,
+   "why": "Transcribir audio es reconocimiento de voz (voz a texto).",
+   "id": "q21"
+  },
+  {
+   "module": "text-speech",
+   "q": "Con un modelo generativo desplegado quieres clasificar reseñas como positivas, negativas o neutras. ¿Cómo lo haces de la forma más simple?",
+   "options": [
+    "Con un prompt que pida la clasificación y defina las tres etiquetas",
+    "Entrenando un modelo de visión",
+    "Creando un analizador de video",
+    "Subiendo la temperatura al máximo"
+   ],
+   "answer": 0,
+   "why": "Un modelo generativo puede hacer análisis de texto con un prompt claro que fije las categorías de salida.",
+   "id": "q22"
+  },
+  {
+   "module": "text-speech",
+   "q": "Un usuario quiere hablarle a la app y recibir respuesta sin escribir. ¿Qué tipo de modelo acepta el audio directamente como entrada?",
+   "options": [
+    "Un modelo multimodal",
+    "Un modelo de solo texto",
+    "Un modelo de generación de imágenes",
+    "Un analizador de documentos"
+   ],
+   "answer": 0,
+   "why": "Los modelos multimodales aceptan más de un tipo de entrada, incluido el audio.",
+   "id": "q23"
+  },
+  {
+   "module": "text-speech",
+   "q": "Un kiosco debe dar indicaciones habladas en varios idiomas con voz natural. ¿Qué necesitas?",
+   "options": [
+    "OCR",
+    "Síntesis de voz con voces neuronales",
+    "Detección de entidades",
+    "Detección de objetos"
+   ],
+   "answer": 1,
+   "why": "La síntesis de voz con voces neuronales produce audio natural en muchos idiomas.",
+   "id": "q24"
+  },
+  {
+   "module": "text-speech",
+   "q": "De un contrato quieres obtener las partes firmantes, las fechas y los montos. ¿Qué técnica de análisis de texto es?",
+   "options": [
+    "Análisis de sentimiento",
+    "Resumen",
+    "Detección de entidades",
+    "Síntesis de voz"
+   ],
+   "answer": 2,
+   "why": "La detección de entidades identifica personas, organizaciones, fechas y cantidades en el texto.",
+   "id": "q25"
+  },
+  {
+   "module": "vision",
+   "q": "Un usuario sube la foto de un tablero de control y pregunta «¿qué alarma está encendida?». ¿Qué necesitas?",
+   "options": [
+    "Un modelo multimodal que reciba imagen y texto en el mismo prompt",
+    "Un modelo de solo texto",
+    "Un modelo de síntesis de voz",
+    "Un despliegue aprovisionado"
+   ],
+   "answer": 0,
+   "why": "Para razonar sobre una imagen junto con una pregunta se usa un modelo multimodal.",
+   "id": "q26"
+  },
+  {
+   "module": "vision",
+   "q": "El equipo de diseño quiere bocetos nuevos a partir de descripciones escritas. ¿Qué tipo de modelo usas?",
+   "options": [
+    "De detección de objetos",
+    "De generación de imágenes",
+    "De reconocimiento de voz",
+    "De extracción de frases clave"
+   ],
+   "answer": 1,
+   "why": "Los modelos de generación de imágenes crean imágenes nuevas a partir de un prompt de texto.",
+   "id": "q27"
+  },
+  {
+   "module": "vision",
+   "q": "Una imagen generada sale distinta a lo que esperabas. ¿Qué ajuste da más control sobre el resultado?",
+   "options": [
+    "Describir con más detalle el sujeto, el estilo y la composición en el prompt",
+    "Bajar el volumen de audio",
+    "Cambiar el idioma del portal",
+    "Borrar el historial del chat"
+   ],
+   "answer": 0,
+   "why": "En generación de imágenes, el detalle del prompt es lo que más define el resultado.",
+   "id": "q28"
+  },
+  {
+   "module": "vision",
+   "q": "En una app cliente, ¿cómo se envía una imagen a un modelo multimodal?",
+   "options": [
+    "Como parte del mensaje, junto con el texto, mediante una URL o los datos de la imagen",
+    "Solo por correo",
+    "Convirtiéndola antes en audio",
+    "No se puede: solo aceptan texto"
+   ],
+   "answer": 0,
+   "why": "El mensaje incluye el texto y la imagen (por URL o codificada) en la misma solicitud.",
+   "id": "q29"
+  },
+  {
+   "module": "vision",
+   "q": "¿Qué diferencia hay entre interpretar una imagen y generar una imagen?",
+   "options": [
+    "Ninguna, son lo mismo",
+    "Interpretar recibe una imagen y devuelve texto; generar recibe texto y devuelve una imagen",
+    "Interpretar solo funciona con video",
+    "Generar requiere OCR"
+   ],
+   "answer": 1,
+   "why": "Son direcciones opuestas: visión como entrada frente a imagen como salida.",
+   "id": "q30"
+  },
+  {
+   "module": "extraction",
+   "q": "En Content Understanding, ¿qué define qué campos se extraen de un contenido?",
+   "options": [
+    "El analizador y su esquema de campos",
+    "La temperatura del modelo",
+    "El tamaño del archivo",
+    "El nombre del proyecto"
+   ],
+   "answer": 0,
+   "why": "Un analizador declara el tipo de contenido y el esquema de campos a devolver.",
+   "id": "q31"
+  },
+  {
+   "module": "extraction",
+   "q": "Quieres obtener de facturas un campo propio, «centro de costo», que no viene en los analizadores prediseñados. ¿Qué haces?",
+   "options": [
+    "Usar OCR y buscarlo a mano",
+    "Crear un analizador personalizado que incluya ese campo en su esquema",
+    "Subir la temperatura",
+    "Usar síntesis de voz"
+   ],
+   "answer": 1,
+   "why": "Un analizador personalizado permite describir campos propios para que el servicio los extraiga.",
+   "id": "q32"
+  },
+  {
+   "module": "extraction",
+   "q": "De grabaciones de llamadas de soporte necesitas la transcripción y un resumen por llamada. ¿Qué usas?",
+   "options": [
+    "Content Understanding con un analizador de audio",
+    "Un modelo de generación de imágenes",
+    "Solo síntesis de voz",
+    "Detección de objetos"
+   ],
+   "answer": 0,
+   "why": "Content Understanding procesa audio y devuelve transcripción y campos como el resumen.",
+   "id": "q33"
+  },
+  {
+   "module": "extraction",
+   "q": "¿En qué formato recibe la app cliente el resultado de un analizador?",
+   "options": [
+    "Una imagen",
+    "Datos estructurados en JSON",
+    "Un archivo de audio",
+    "Un documento de Word"
+   ],
+   "answer": 1,
+   "why": "El resultado llega como JSON con los campos extraídos, listo para usarse en la app.",
+   "id": "q34"
+  },
+  {
+   "module": "extraction",
+   "q": "¿Qué tipos de contenido puede procesar Content Understanding?",
+   "options": [
+    "Solo documentos PDF",
+    "Solo imágenes",
+    "Documentos, imágenes, audio y video",
+    "Solo texto plano"
+   ],
+   "answer": 2,
+   "why": "El servicio es multimodal: documentos y formularios, imágenes, audio y video.",
+   "id": "q35"
+  }
+ ]
+}

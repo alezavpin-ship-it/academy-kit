@@ -1,0 +1,96 @@
+[server]
+# Security: listen ONLY on this computer. Never change this to 0.0.0.0.
+address = "127.0.0.1"
+port = 8501
+headless = false
+runOnSave = false
+maxUploadSize = 50
+enableXsrfProtection = true
+
+[browser]
+gatherUsageStats = false
+serverAddress = "localhost"
+
+[client]
+# "viewer" keeps the menu (top right) with Settings → Theme: Dark / Light / System.
+toolbarMode = "viewer"
+showErrorDetails = "none"
+
+# Tema naranja estilo Avanade (oscuro y claro). Naranja de marca: #FF5800.
+# Switch: menu ⋮ (top right) → Settings → Theme: Dark / Light / Use system setting.
+# Orange = brand / active, green = correct, red = wrong, amber = caution.
+[theme]
+showWidgetBorder = true
+linkUnderline = false
+baseRadius = "8px"
+buttonRadius = "6px"
+baseFontSize = 14
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap"
+headingFontWeights = [700, 600, 600, 600, 600, 600]
+metricValueFontWeight = 700
+
+[theme.dark]
+primaryColor = "#FF5800"
+backgroundColor = "#14110F"
+secondaryBackgroundColor = "#2A2420"
+textColor = "#F7F2EE"
+linkColor = "#FF8A4C"
+borderColor = "#3A322C"
+codeBackgroundColor = "#1E1A17"
+dataframeBorderColor = "#3A322C"
+dataframeHeaderBackgroundColor = "#1E1A17"
+greenColor = "#00E676"
+greenBackgroundColor = "#0F291E"
+greenTextColor = "#00E676"
+redColor = "#FF5252"
+redBackgroundColor = "#2B171A"
+redTextColor = "#FF5252"
+orangeColor = "#FF5800"
+orangeTextColor = "#FF8A4C"
+yellowColor = "#FFB414"
+yellowTextColor = "#FFB414"
+blueColor = "#FF8A4C"
+blueTextColor = "#FF8A4C"
+grayColor = "#6B5F56"
+grayTextColor = "#A89C93"
+chartCategoricalColors = ["#FF5800", "#FFB414", "#00E676", "#CE0569", "#4DD0E1", "#B388FF", "#FF8A4C", "#A89C93"]
+
+[theme.dark.sidebar]
+backgroundColor = "#1E1A17"
+secondaryBackgroundColor = "#2A2420"
+borderColor = "#3A322C"
+
+[theme.light]
+primaryColor = "#FF5800"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#FBF1EA"
+textColor = "#1A1512"
+linkColor = "#C74400"
+borderColor = "#E8DCD3"
+codeBackgroundColor = "#FBF1EA"
+dataframeBorderColor = "#E8DCD3"
+dataframeHeaderBackgroundColor = "#FBF1EA"
+greenColor = "#007A50"
+greenBackgroundColor = "#E5F4EE"
+greenTextColor = "#007A50"
+redColor = "#D32F3A"
+redBackgroundColor = "#FBEAEC"
+redTextColor = "#D32F3A"
+orangeColor = "#C74400"
+orangeTextColor = "#C74400"
+yellowColor = "#A65F00"
+yellowTextColor = "#A65F00"
+blueColor = "#C74400"
+blueTextColor = "#C74400"
+grayColor = "#8C7F76"
+grayTextColor = "#665A52"
+chartCategoricalColors = ["#FF5800", "#B26A00", "#007A50", "#CE0569", "#00838F", "#6A3FC1", "#C74400", "#665A52"]
+
+[theme.light.sidebar]
+backgroundColor = "#FBF6F2"
+secondaryBackgroundColor = "#F5E9E0"
+borderColor = "#E8DCD3"
+
+[runner]
+fastReruns = true

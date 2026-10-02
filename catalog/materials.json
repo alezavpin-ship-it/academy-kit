@@ -1,0 +1,424 @@
+{
+ "microsoft-sentinel": [
+  {
+   "title": "Configure your Microsoft Sentinel environment (SC-200)",
+   "url": "https://learn.microsoft.com/en-us/training/paths/sc-200-configure-azure-sentinel-environment/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Microsoft Sentinel skill-up training",
+   "url": "https://learn.microsoft.com/en-us/azure/sentinel/skill-up-resources",
+   "kind": "doc",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "microsoft-defender-xdr": [
+  {
+   "title": "Mitigate threats using Microsoft Defender XDR (SC-200)",
+   "url": "https://learn.microsoft.com/en-us/training/paths/sc-200-mitigate-threats-using-microsoft-365-defender/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Defend against Cyberthreats with Microsoft Defender XDR lab exercises",
+   "url": "https://learn.microsoft.com/en-us/training/modules/defend-against-cyberthreats-microsoft-defender-xdr-labs/",
+   "kind": "lab",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "defender-for-endpoint": [
+  {
+   "title": "Mitigate threats using Microsoft Defender for Endpoint (SC-200)",
+   "url": "https://learn.microsoft.com/en-us/training/paths/sc-200-mitigate-threats-using-microsoft-defender-for-endpoint/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "defender-for-office-365": [
+  {
+   "title": "Defend against threats with Microsoft 365",
+   "url": "https://learn.microsoft.com/en-us/training/paths/m365-security-threat-protection/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "microsoft-365-security": [
+  {
+   "title": "Govern and secure Microsoft 365 tenants and workloads",
+   "url": "https://learn.microsoft.com/en-us/training/paths/govern-secure-microsoft-365-tenants-workloads/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Explore security solutions in Microsoft Defender XDR",
+   "url": "https://learn.microsoft.com/en-us/training/modules/explore-security-solutions-microsoft-365-defender/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "microsoft-entra-id": [
+  {
+   "title": "Implement an identity management solution using Microsoft Entra ID (SC-300)",
+   "url": "https://learn.microsoft.com/en-us/training/paths/implement-identity-management-solution/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Study guide for Exam SC-300",
+   "url": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-300",
+   "kind": "guide",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "conditional-access": [
+  {
+   "title": "Implement an authentication and access management solution (SC-300)",
+   "url": "https://learn.microsoft.com/en-us/training/paths/implement-authentication-access-management-solution/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "identity-governance": [
+  {
+   "title": "Describe the Identity Protection and Governance Capabilities of Microsoft Entra",
+   "url": "https://learn.microsoft.com/en-us/training/modules/describe-identity-protection-governance-capabilities/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "pim-pam": [
+  {
+   "title": "Secure Access to Resources by Using Microsoft Entra",
+   "url": "https://learn.microsoft.com/en-us/training/paths/secure-access-resources-entra/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "dlp-information-protection": [
+  {
+   "title": "Implement and manage Microsoft Purview Data Loss Prevention (SC-401)",
+   "url": "https://learn.microsoft.com/en-us/training/paths/purview-implement-manage-dlp/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Implement Microsoft Purview Information Protection (SC-401)",
+   "url": "https://learn.microsoft.com/en-us/training/paths/purview-implement-information-protection/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "microsoft-purview": [
+  {
+   "title": "Describe the Data Security Solutions of Microsoft Purview",
+   "url": "https://learn.microsoft.com/en-us/training/modules/describe-purview-data-solutions/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Study guide for Exam SC-401",
+   "url": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-401",
+   "kind": "guide",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "defender-for-cloud": [
+  {
+   "title": "Secure Azure services and workloads with Microsoft Defender for Cloud (SC-5002)",
+   "url": "https://learn.microsoft.com/en-us/training/paths/secure-azure-services-workloads-defender-cloud/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "microsoft-azure-security": [
+  {
+   "title": "Introduction to security, compliance, and identity concepts",
+   "url": "https://learn.microsoft.com/en-us/training/paths/describe-concepts-of-security-compliance-identity/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Study guide for Exam AZ-500: Microsoft Azure Security Technologies",
+   "url": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-500",
+   "kind": "guide",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "azure-network-controls": [
+  {
+   "title": "Introduction to Secure Network Infrastructure with Azure network security",
+   "url": "https://learn.microsoft.com/en-us/training/paths/secure-networking-infrastructure/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Configure secure access to your workloads using Azure virtual networking AZ-1002",
+   "url": "https://learn.microsoft.com/en-us/training/paths/configure-secure-workloads-using-azure-virtual-networking/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Preparing for AZ-500: Secure Networking (Part 2 of 4)",
+   "url": "https://learn.microsoft.com/en-us/shows/exam-readiness-zone/preparing-for-az-500-02-fy25",
+   "kind": "video",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "zero-trust": [
+  {
+   "title": "Introduction to Zero Trust",
+   "url": "https://learn.microsoft.com/en-us/training/modules/zero-trust-introduction/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Introduction to Zero Trust and Best Practice Frameworks",
+   "url": "https://learn.microsoft.com/en-us/training/modules/introduction-zero-trust-best-practice-frameworks/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Zero Trust Guidance Center",
+   "url": "https://learn.microsoft.com/en-us/security/zero-trust/",
+   "kind": "doc",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "security-architecture": [
+  {
+   "title": "Get Started with Security Architecture Design",
+   "url": "https://learn.microsoft.com/en-us/azure/architecture/security/security-get-started",
+   "kind": "doc",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "azure-devops-github-actions": [
+  {
+   "title": "AZ-400: Implement CI with Azure Pipelines and GitHub Actions",
+   "url": "https://learn.microsoft.com/en-us/training/paths/az-400-implement-ci-azure-pipelines-github-actions/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Secure the DevOps platform environment for Zero Trust",
+   "url": "https://learn.microsoft.com/en-us/security/zero-trust/develop/secure-devops-platform-environment-zero-trust",
+   "kind": "doc",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "secure-development-lifecycle": [
+  {
+   "title": "AZ-400: Implement security and validate code bases for compliance",
+   "url": "https://learn.microsoft.com/en-us/training/paths/az-400-implement-security-validate-code-bases-compliance/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "azure-ai-security": [
+  {
+   "title": "Examen AI-901: Microsoft Azure AI Fundamentals",
+   "url": "https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-901/",
+   "kind": "exam",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Secure AI Interactions and Environments with Microsoft Purview (SC-401)",
+   "url": "https://learn.microsoft.com/en-us/training/paths/purview-protect-ai/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "responsible-ai-governance": [
+  {
+   "title": "Embrace Responsible AI Principles and Practices",
+   "url": "https://learn.microsoft.com/en-us/training/modules/embrace-responsible-ai-principles-practices/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "What is Responsible AI",
+   "url": "https://learn.microsoft.com/en-us/azure/machine-learning/concept-responsible-ai?view=azureml-api-2",
+   "kind": "doc",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Responsible AI for agent design",
+   "url": "https://learn.microsoft.com/en-us/agents/design-guidelines/responsible-ai",
+   "kind": "doc",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "encryption-key-vault-hsm": [
+  {
+   "title": "Configure and manage secrets in Azure Key Vault",
+   "url": "https://learn.microsoft.com/en-us/training/modules/configure-and-manage-azure-key-vault/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Secure Azure Key Vault with defense in depth for the Cloud and AI Workloads",
+   "url": "https://learn.microsoft.com/en-us/training/paths/configure-key-vault-security/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Manage Certificates and Monitor Azure Key Vault",
+   "url": "https://learn.microsoft.com/en-us/training/modules/manage-certificates-monitor-key-vault/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "container-security": [
+  {
+   "title": "Secure Azure Application Platform Services for the Cloud and AI Security Engineer",
+   "url": "https://learn.microsoft.com/en-us/training/paths/secure-application-platform-services/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Concepts - Security in Azure Kubernetes Services (AKS)",
+   "url": "https://learn.microsoft.com/en-us/azure/aks/concepts-security",
+   "kind": "doc",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "sast-dast": [
+  {
+   "title": "Introduction to GitHub Advanced Security",
+   "url": "https://learn.microsoft.com/en-us/training/modules/introduction-github-advanced-security/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "GitHub Advanced Security Part 1 of 2",
+   "url": "https://learn.microsoft.com/en-us/training/paths/github-advanced-security/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "GitHub Advanced Security Part 2 of 2",
+   "url": "https://learn.microsoft.com/en-us/training/paths/github-advanced-security-2",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "infrastructure-as-code-security": [
+  {
+   "title": "AZ-400: Manage infrastructure as code using Azure and DSC",
+   "url": "https://learn.microsoft.com/en-us/training/paths/az-400-manage-infrastructure-as-code-using-azure/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "DevSecOps for Infrastructure as Code (IaC)",
+   "url": "https://learn.microsoft.com/en-us/azure/architecture/solution-ideas/articles/devsecops-infrastructure-as-code",
+   "kind": "doc",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "windows-unix-administration": [
+  {
+   "title": "Manage Windows Servers and Workloads in a Hybrid Environment",
+   "url": "https://learn.microsoft.com/en-us/training/paths/manage-windows-servers-workloads-hybrid-environment/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Deploy and administer Linux virtual machines on Azure AZ-1007",
+   "url": "https://learn.microsoft.com/en-us/training/paths/deploy-administer-linux-virtual-machines-azure/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "cloud-hybrid-infrastructure": [
+  {
+   "title": "Bring Azure innovation to your hybrid environments with Azure Arc",
+   "url": "https://learn.microsoft.com/en-us/training/paths/manage-hybrid-infrastructure-with-azure-arc/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  },
+  {
+   "title": "Implement a Windows Server hybrid cloud infrastructure",
+   "url": "https://learn.microsoft.com/en-us/training/paths/implement-windows-server-hybrid-cloud-infrastructure/",
+   "kind": "path",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "automation-optimization": [
+  {
+   "title": "Explore Azure Automation with DevOps",
+   "url": "https://learn.microsoft.com/en-us/training/modules/explore-azure-automation-devops/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "strategy-roadmap": [
+  {
+   "title": "Introduction to the Microsoft Cloud Adoption Framework",
+   "url": "https://learn.microsoft.com/en-us/training/modules/microsoft-cloud-adoption-framework-for-azure/",
+   "kind": "module",
+   "provider": "Microsoft Learn",
+   "verified": "2026-10-01"
+  }
+ ],
+ "claude-code-security": [
+  {
+   "title": "Claude Code 101",
+   "url": "https://anthropic.skilljar.com/claude-code-101",
+   "kind": "course",
+   "provider": "Anthropic Academy",
+   "verified": "2026-10-01"
+  }
+ ]
+}

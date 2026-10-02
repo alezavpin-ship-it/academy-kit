@@ -1,0 +1,4 @@
+Pon aquí el logo oficial de la empresa:
+  logo.svg o logo.png        -> se muestra arriba de la barra lateral
+  logo_icon.svg o .png (opcional) -> versión chica cuando la barra está colapsada
+Usa los archivos del portal de marca; no se incluye ningún logo en el repositorio.
