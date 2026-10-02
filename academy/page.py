@@ -729,3 +729,4 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
     if pack.disclaimer:
         st.caption(pack.disclaimer)
     st.caption(f"{pack.title} · v{pack.version} · {VBD_POINTS} pts/VBD")
+    ui.legal_footer(lang)

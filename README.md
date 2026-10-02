@@ -149,3 +149,6 @@ La app abre en inglés; el selector «Language / Idioma» de la barra lateral ca
   se comparte entre idiomas. Si no existe la traducción, se muestra el archivo original.
 - Al cambiar una lección o pregunta, cámbiala en los dos archivos; las pruebas (`pytest`) avisan si dejan de coincidir.
 - En inglés solo se muestran los videos en inglés (si una lección no tuviera ninguno, se muestran todos).
+
+## Derechos de autor
+© 2026 Alejandro Zavala. Todos los derechos reservados (ver `LICENSE`). El aviso aparece al pie de cada página y en la barra lateral; está fijo en `academy/legal.py`, no hay pantalla ni ajuste que lo cambie, y la app no abre si se altera.

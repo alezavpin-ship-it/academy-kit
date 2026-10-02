@@ -627,3 +627,21 @@ def test_app_opens_in_english_and_can_switch_to_spanish(tmp_path, monkeypatch):
     assert "Your next step" in text and "The shared responsibility model" in text and "Tu siguiente paso" not in text
     es = _run(tmp_path, monkeypatch)
     assert "Tu siguiente paso" in " ".join(m.value for m in es.markdown)
+
+
+# ---------------------------------------------------------------------------------------------- copyright
+def test_copyright_notice_is_fixed_and_sealed(tmp_path, monkeypatch):
+    from academy import legal
+
+    assert legal.verify()
+    assert legal.notice("es") == "© 2026 Alejandro Zavala. Todos los derechos reservados."
+    assert legal.notice("en") == "© 2026 Alejandro Zavala. All rights reserved."
+    at = _run(tmp_path, monkeypatch)
+    assert not at.exception
+    assert any("© 2026 Alejandro Zavala" in m.value for m in at.markdown)  # page footer
+    assert any("© 2026 Alejandro Zavala" in c.value for c in at.sidebar.caption)
+    monkeypatch.setattr(legal, "OWNER", "Otra Persona")  # an edited notice: the app refuses to open
+    assert not legal.verify()
+    bad = _run(tmp_path, monkeypatch)
+    assert any("derechos de autor" in e.value or "copyright notice" in e.value for e in bad.error)
+    assert not any("Otra Persona" in m.value for m in bad.markdown)

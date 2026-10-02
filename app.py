@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
 import streamlit as st  # noqa: E402
 
 from academy import page  # noqa: E402
+from academy import legal  # noqa: E402
 from academy import notify  # noqa: E402
 from academy.access import load_access, save_access  # noqa: E402
 from academy.catalog import load_catalog  # noqa: E402
@@ -46,6 +47,8 @@ def _pack(name: str, lang: str = "en"):
 def _exam(name: str, lang: str = "en"):
     return load_exam(name, lang)
 
+
+legal.guard()  # the copyright notice is fixed; the app does not open if it was altered
 
 packs = available_packs()
 if not packs:
@@ -98,6 +101,10 @@ with st.sidebar:
             if pin and not on:
                 st.caption(T("pin_bad", lang))
         owner, families = on and is_owner, (mine if on and not is_owner else set())
+
+with st.sidebar:
+    st.divider()
+    st.caption(legal.notice(lang))
 
 page.render(pack, conn, learner, lang, role, catalog=catalog, packs=[_pack(n, lang) for n in packs],
             exams=[_exam(n, lang) for n in available_exams()], owner=owner, families=families)

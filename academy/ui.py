@@ -10,6 +10,7 @@ import html
 
 import streamlit as st
 
+from academy import legal
 from academy.i18n import L
 from academy.pack import Lesson, Pack
 from academy.progress import Tracker
@@ -41,12 +42,19 @@ div[data-testid="stVerticalBlockBorderWrapper"]{border-radius:14px}
 .ak-segs{display:flex;gap:4px}
 .ak-segs i{flex:1;height:10px;border-radius:3px;background:rgba(128,128,128,.25)}
 .ak-segs i.on{background:#FF5800}
+.ak-legal{margin:28px 0 4px;padding-top:14px;border-top:1px solid rgba(128,128,128,.25);font-size:13px;opacity:.8;text-align:center}
 @media (prefers-reduced-motion: reduce){.ak-prog-bar i{transition:none}}
 </style>"""
 
 
 def inject_css() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
+
+
+def legal_footer(lang: str) -> None:
+    """The fixed copyright notice that closes every page (see academy/legal.py)."""
+    legal.guard(lang)
+    st.markdown(legal.footer_html(lang), unsafe_allow_html=True)
 
 
 def next_lesson(pack: Pack, tr: Tracker, role: str | None = None) -> Lesson | None:
