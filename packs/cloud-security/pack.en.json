@@ -1,0 +1,1830 @@
+{
+ "meta": {
+  "id": "cloud-security",
+  "title": "Cloud Security Academy",
+  "subtitle": "From the fundamentals to incident response: 12 lessons, 36 questions, 12 value deliverables.",
+  "language": "en",
+  "version": "1.0",
+  "updated": "2026-10-01",
+  "disclaimer": "Educational material. Practice in test accounts; do not make changes in production without authorization.",
+  "ranks": [
+   {
+    "name": "Recruit",
+    "points": 0,
+    "emoji": "🔰",
+    "color": "#8A99AD"
+   },
+   {
+    "name": "Practitioner",
+    "points": 100,
+    "emoji": "🛡️",
+    "color": "#FFB414"
+   },
+   {
+    "name": "Engineer",
+    "points": 300,
+    "emoji": "🔐",
+    "color": "#FF8A4C"
+   },
+   {
+    "name": "Architect",
+    "points": 600,
+    "emoji": "🏰",
+    "color": "#FF5800"
+   },
+   {
+    "name": "Guardian",
+    "points": 1000,
+    "emoji": "🦉",
+    "color": "#CE0569"
+   }
+  ]
+ },
+ "levels": [
+  "Fundamentals",
+  "Identity and access",
+  "Data and network",
+  "Detection and response"
+ ],
+ "roles": {
+  "Cloud Engineer": [
+   "fundamentos",
+   "configuracion",
+   "iam",
+   "identidad",
+   "secretos",
+   "cifrado",
+   "red",
+   "logging"
+  ],
+  "DevOps / SRE": [
+   "fundamentos",
+   "configuracion",
+   "secretos",
+   "contenedores",
+   "red",
+   "logging",
+   "respuesta"
+  ],
+  "Security analyst (SOC)": [
+   "fundamentos",
+   "riesgo",
+   "identidad",
+   "logging",
+   "deteccion",
+   "respuesta"
+  ],
+  "Cloud architect": [
+   "fundamentos",
+   "riesgo",
+   "configuracion",
+   "iam",
+   "cifrado",
+   "red",
+   "contenedores",
+   "deteccion"
+  ]
+ },
+ "topics": {
+  "fundamentos": "Fundamentals and risk",
+  "identidad": "Identity, access and secrets",
+  "datos_red": "Data, network and containers",
+  "deteccion": "Detection and response",
+  "referencias": "Official references"
+ },
+ "lessons": [
+  {
+   "id": "f1",
+   "level": "Fundamentals",
+   "title": "The shared responsibility model",
+   "summary": "The provider secures the infrastructure of the cloud; you secure what you put and configure in it. Most incidents happen on your side of the line.",
+   "points": [
+    "The provider (AWS, Azure, GCP) protects the security \"OF the cloud\": data centers, hardware, physical network, hypervisor.",
+    "You protect the security \"IN the cloud\": identities and permissions, data, service configuration, virtual network, and the operating systems you manage.",
+    "The line moves with the service: in IaaS (a VM) you patch the operating system; in PaaS or SaaS the provider does more, but identities, data and configuration are always yours.",
+    "Rule of thumb: if you can change it from your console, securing it is your responsibility."
+   ],
+   "skills": [
+    "fundamentos"
+   ],
+   "catalog_skills": [
+    "microsoft-azure-security"
+   ],
+   "practice": {
+    "label": "Free labs on AWS Skill Builder",
+    "url": "https://skillbuilder.aws/"
+   },
+   "quiz": [
+    {
+     "q": "A company uploads customer data to an S3 bucket and leaves it public by mistake. Whose responsibility is it?",
+     "options": [
+      "AWS, because the bucket lives on its infrastructure",
+      "The company: configuration and data are its part of the model",
+      "Shared 50/50 by contract",
+      "The internet service provider"
+     ],
+     "answer": 1,
+     "why": "Service configuration and data are \"security in the cloud\": always the customer's, in any type of service."
+    },
+    {
+     "q": "In which of these services do you have to patch the operating system?",
+     "options": [
+      "A managed database (RDS / Azure SQL)",
+      "An EC2 / Azure VM virtual machine",
+      "A SaaS service such as Microsoft 365",
+      "None: the provider always patches"
+     ],
+     "answer": 1,
+     "why": "In IaaS you manage the VM's operating system, including its patches. In PaaS/SaaS the provider does it."
+    },
+    {
+     "q": "Which responsibility do you keep even in a SaaS service?",
+     "options": [
+      "The server hardware",
+      "The physical security of the data center",
+      "The identities, permissions and the data you store",
+      "The hypervisor"
+     ],
+     "answer": 2,
+     "why": "Identities, access and data are never transferred to the provider: that is why MFA and permissions are your first line of defense."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A one-page responsibility matrix (RACI) for 3 cloud services your team uses.",
+    "done_when": [
+     "3 real services listed with their type (IaaS, PaaS or SaaS)",
+     "For each one: what the provider secures and what your team secures",
+     "A named owner for every control that is on your side",
+     "Reviewed with your lead or with the service owner"
+    ],
+    "value": "Nobody assumes \"the cloud already protects it\": every control on your side has an owner.",
+    "where": {
+     "label": "Use the official model as a reference",
+     "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/welcome.html"
+    }
+   },
+   "resources": [
+    "shared_es_aws",
+    "shared_es_azure",
+    "shared_en",
+    "shared_sc900"
+   ],
+   "resource_notes": {
+    "shared_es_azure": "The same model in Azure: useful if your company uses more than one cloud."
+   }
+  },
+  {
+   "id": "f2",
+   "level": "Fundamentals",
+   "title": "Risk and threat modeling",
+   "summary": "Before choosing controls, ask what can go wrong. STRIDE gives you six threat categories to review any design.",
+   "points": [
+    "Risk = likelihood × impact. Not everything is protected the same way: prioritize what would do the most damage.",
+    "The CIA triad sums up what we protect: Confidentiality, Integrity and Availability.",
+    "STRIDE: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service and Elevation of privilege.",
+    "Threat modeling is a team exercise over a diagram: what are we building? what can go wrong? what will we do about it? did we do a good job?"
+   ],
+   "skills": [
+    "riesgo"
+   ],
+   "catalog_skills": [
+    "security-architecture"
+   ],
+   "practice": {
+    "label": "Draw the diagram of one of your team's apps and review it with STRIDE"
+   },
+   "quiz": [
+    {
+     "q": "An attacker uses stolen credentials to log in as another user. Which STRIDE category is it?",
+     "options": [
+      "Tampering",
+      "Spoofing",
+      "Denial of service",
+      "Repudiation"
+     ],
+     "answer": 1,
+     "why": "Spoofing is pretending to be another identity. It is mitigated with strong authentication (MFA)."
+    },
+    {
+     "q": "Which property of the CIA triad is lost if someone modifies database records without permission?",
+     "options": [
+      "Confidentiality",
+      "Integrity",
+      "Availability",
+      "None"
+     ],
+     "answer": 1,
+     "why": "Integrity = data is not altered without authorization."
+    },
+    {
+     "q": "What is the best way to prioritize threats?",
+     "options": [
+      "Handle the newest ones in the news first",
+      "By likelihood × impact on what matters most to the business",
+      "In the alphabetical order of STRIDE",
+      "Handle them all at once"
+     ],
+     "answer": 1,
+     "why": "Risk = likelihood × impact: focus the effort where the potential damage is greatest."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A STRIDE threat model of a real application or flow of your team.",
+    "done_when": [
+     "Diagram with components, data flows and trust boundaries",
+     "At least one threat reviewed for each letter of STRIDE",
+     "The 3 highest-risk threats with their proposed control and owner",
+     "Stored where the team can find it (wiki, repo)"
+    ],
+    "value": "Controls are chosen by the real risk of the system, not out of habit.",
+    "where": {}
+   },
+   "resources": [
+    "stride_es",
+    "stride_shostack",
+    "stride_cmp"
+   ]
+  },
+  {
+   "id": "f3",
+   "level": "Fundamentals",
+   "title": "Misconfigurations: the number one cause",
+   "summary": "Most cloud leaks do not come from sophisticated attacks but from something misconfigured: public data, excessive permissions, open ports.",
+   "points": [
+    "Typical mistakes: public buckets or blobs, security groups open to 0.0.0.0/0, roles with excessive permissions, logging turned off.",
+    "Capital One (2019): an SSRF vulnerability allowed a role with excessive permissions to be used to read data from S3 — more than 100 million records.",
+    "Preventing is cheaper than detecting: S3 Block Public Access at the account level, organization policies (SCP/Azure Policy) and reviewed templates (IaC).",
+    "The CIS Benchmarks list the recommended secure configuration per service and are the basis of audit tools (CSPM)."
+   ],
+   "skills": [
+    "configuracion"
+   ],
+   "catalog_skills": [
+    "microsoft-azure-security",
+    "defender-for-cloud"
+   ],
+   "practice": {
+    "label": "Look up the CIS Benchmark for your provider",
+    "url": "https://www.cisecurity.org/cis-benchmarks"
+   },
+   "quiz": [
+    {
+     "q": "In the Capital One case, what turned a web vulnerability into a massive leak?",
+     "options": [
+      "Weak encryption",
+      "A role with more permissions than it needed to read S3",
+      "A brute-force attack on passwords",
+      "A physical failure in the data center"
+     ],
+     "answer": 1,
+     "why": "The SSRF gave access to a role's credentials; the damage was huge because the role could read far more than it needed."
+    },
+    {
+     "q": "Which control prevents, at the account level, any S3 bucket from becoming public?",
+     "options": [
+      "SSE-S3 encryption",
+      "S3 Block Public Access",
+      "Object versioning",
+      "CloudFront"
+     ],
+     "answer": 1,
+     "why": "Block Public Access overrides public ACLs and policies even if someone sets them by mistake."
+    },
+    {
+     "q": "A security group allows SSH (port 22) from 0.0.0.0/0. What does that mean?",
+     "options": [
+      "That only the internal network can get in",
+      "That any internet address can try to connect over SSH",
+      "That SSH is disabled",
+      "That only AWS can connect"
+     ],
+     "answer": 1,
+     "why": "0.0.0.0/0 is \"the whole internet\". Restrict it to known IPs or use access without open ports (SSM Session Manager, Bastion)."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A report of 5 risky configurations found in a test account/subscription or in your team's.",
+    "done_when": [
+     "Review of public storage, ports open to the internet, MFA and logs",
+     "Each finding with its severity (high/medium/low) and the related CIS control",
+     "At least 1 finding fixed or with an open ticket",
+     "Shared with the account owner"
+    ],
+    "value": "You close the doors that cause the most leaks before someone finds them.",
+    "where": {
+     "label": "CIS Benchmarks",
+     "url": "https://www.cisecurity.org/cis-benchmarks"
+    }
+   },
+   "resources": [
+    "s3_es",
+    "capone_lufsec",
+    "s3_block",
+    "capone_cbc"
+   ],
+   "resource_notes": {
+    "capone_cbc": "The same case from the business point of view: why leadership must understand this risk."
+   }
+  },
+  {
+   "id": "i1",
+   "level": "Identity and access",
+   "title": "IAM and least privilege",
+   "summary": "Identity is the new perimeter: every person and every service should have only the permissions it needs, and not one more.",
+   "points": [
+    "Least privilege: grant only the actions and resources needed for the task, and remove them when they are no longer used.",
+    "Prefer roles with temporary credentials over users with long-lived access keys.",
+    "Group permissions by function (groups/roles), not person by person.",
+    "Measure what is actually used (IAM Access Analyzer, \"last accessed\") and trim what is left over."
+   ],
+   "skills": [
+    "iam"
+   ],
+   "catalog_skills": [
+    "identity-governance",
+    "pim-pam"
+   ],
+   "practice": {
+    "label": "Free labs on AWS Skill Builder",
+    "url": "https://skillbuilder.aws/"
+   },
+   "quiz": [
+    {
+     "q": "An application on EC2 needs to read a single bucket. What is the right approach?",
+     "options": [
+      "Store an administrator user's keys on the server",
+      "An instance role with s3:GetObject on that bucket only",
+      "A role with AmazonS3FullAccess to avoid problems",
+      "Make the bucket public"
+     ],
+     "answer": 1,
+     "why": "Role (temporary credentials) + minimum action + specific resource = least privilege."
+    },
+    {
+     "q": "Why are temporary credentials preferred?",
+     "options": [
+      "They are faster",
+      "They expire on their own: if they leak, they are useful only briefly",
+      "They do not require policies",
+      "They are free"
+     ],
+     "answer": 1,
+     "why": "A leaked long-lived key works until someone revokes it; a temporary one expires in minutes or hours."
+    },
+    {
+     "q": "Which tool helps trim permissions nobody uses?",
+     "options": [
+      "IAM Access Analyzer / last accessed information",
+      "CloudFront",
+      "S3 Glacier",
+      "Route 53"
+     ],
+     "answer": 0,
+     "why": "Access Analyzer and \"last accessed\" show which permissions are really used, so you can generate narrower policies."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A permissions review of 5 identities (people or services) with a plan to trim them.",
+    "done_when": [
+     "5 identities reviewed with their current policies",
+     "Permissions unused in 90 days identified",
+     "Proposed policies with specific actions and resources (no unnecessary '*')",
+     "At least 1 change applied or approved"
+    ],
+    "value": "If a credential leaks, the possible damage is bounded.",
+    "where": {
+     "label": "AWS Skill Builder",
+     "url": "https://skillbuilder.aws/"
+    }
+   },
+   "resources": [
+    "iam_es_rjg",
+    "iam_es_dfb",
+    "iam_best",
+    "iam_least"
+   ]
+  },
+  {
+   "id": "i2",
+   "level": "Identity and access",
+   "title": "MFA, SSO and the root account",
+   "summary": "A stolen password should not be enough to get in. Phishing-resistant MFA, single sign-on and a root account kept under lock and key.",
+   "points": [
+    "MFA blocks the vast majority of password-theft attacks; turn it on for everyone, starting with administrators.",
+    "Not all MFA is equal: SMS < authenticator app codes < number-matching notification < FIDO2 keys/passkeys (phishing-resistant).",
+    "SSO (IAM Identity Center, Entra ID) centralizes joiners, leavers and MFA: when someone leaves the company, they are disabled in one place.",
+    "The root/Global Admin account: hardware MFA, no access keys, only for exceptional tasks, and with alerts when it is used."
+   ],
+   "skills": [
+    "identidad"
+   ],
+   "catalog_skills": [
+    "microsoft-entra-id",
+    "conditional-access"
+   ],
+   "practice": {
+    "label": "Free modules on Microsoft Learn",
+    "url": "https://learn.microsoft.com/es-es/training/"
+   },
+   "quiz": [
+    {
+     "q": "Which type of MFA resists phishing best?",
+     "options": [
+      "SMS",
+      "Code sent by e-mail",
+      "FIDO2 security key / passkey",
+      "Security questions"
+     ],
+     "answer": 2,
+     "why": "FIDO2 verifies the site's real domain: a fake site cannot reuse the response."
+    },
+    {
+     "q": "What is the correct use of the root account?",
+     "options": [
+      "For the administrator's daily work",
+      "Exceptional tasks only, with MFA and no access keys",
+      "For production applications",
+      "Shared by the IT team"
+     ],
+     "answer": 1,
+     "why": "Root can do everything and is not limited by normal policies: it is protected and almost never used."
+    },
+    {
+     "q": "What advantage does SSO give when offboarding a person?",
+     "options": [
+      "None",
+      "They are disabled in one place and lose access to all connected accounts and apps",
+      "It deletes their files",
+      "It changes every password in the company"
+     ],
+     "answer": 1,
+     "why": "Without SSO you have to delete users in each system, and one gets forgotten."
+    }
+   ],
+   "vbd": {
+    "deliverable": "An MFA inventory of your team with a plan to close the gaps.",
+    "done_when": [
+     "List of privileged accounts and their type of MFA",
+     "Root/Global Admin account verified to have MFA and no access keys",
+     "Accounts without MFA or with SMS identified, with a date for the change",
+     "Alert configured (or requested) for when the root account is used"
+    ],
+    "value": "A leaked password is no longer enough to take over your cloud.",
+    "where": {
+     "label": "Microsoft Learn",
+     "url": "https://learn.microsoft.com/es-es/training/"
+    }
+   },
+   "resources": [
+    "mfa_es_red",
+    "mfa_es_bimind",
+    "mfa_types",
+    "root_marco",
+    "idc_elevated"
+   ]
+  },
+  {
+   "id": "i3",
+   "level": "Identity and access",
+   "title": "Secrets: keys, passwords and tokens",
+   "summary": "A secret in the code or in a chat ends up leaking. Store it in a manager, give it minimum access and rotate it.",
+   "points": [
+    "Never in code, repositories, tickets or chats: repositories get cloned and git history does not forget.",
+    "Use a secrets manager (AWS Secrets Manager, Azure Key Vault, HashiCorp Vault): encryption, access control and auditing.",
+    "Rotation: change secrets periodically and immediately if a leak is suspected; better if it is automatic.",
+    "Scan repositories (git-secrets, Gitleaks, GitHub secret scanning) to catch keys before they reach production."
+   ],
+   "skills": [
+    "secretos"
+   ],
+   "catalog_skills": [
+    "encryption-key-vault-hsm"
+   ],
+   "practice": {
+    "label": "Run a secrets scanner (e.g. Gitleaks) on one of your team's repositories"
+   },
+   "quiz": [
+    {
+     "q": "You pushed an access key to a public repository by mistake and deleted it in the next commit. What do you do?",
+     "options": [
+      "Nothing, it is already deleted",
+      "Revoke/rotate the key immediately and review its use in the logs",
+      "Make the repository private and that is it",
+      "Rename the file"
+     ],
+     "answer": 1,
+     "why": "The key is still in the history and bots scan GitHub within minutes: revoke it and review what was done with it."
+    },
+    {
+     "q": "What does a secrets manager add over a .env file on the server?",
+     "options": [
+      "Nothing",
+      "Encryption, per-identity permissions, an audit trail of who read it, and rotation",
+      "It makes the secret shorter",
+      "It makes it never expire"
+     ],
+     "answer": 1,
+     "why": "The manager centralizes and records access; a loose file does not tell you who read it."
+    },
+    {
+     "q": "What is the best rotation practice?",
+     "options": [
+      "Never rotate so nothing breaks",
+      "Rotate periodically and immediately on suspicion, ideally automated",
+      "Rotate only when someone resigns",
+      "Rotate once a year by hand"
+     ],
+     "answer": 1,
+     "why": "Automatic rotation shortens the window in which a leaked secret can be used, without relying on someone's memory."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A secrets inventory of an application with its migration to a manager.",
+    "done_when": [
+     "Secrets scan run on the repository, with results",
+     "Each secret listed with where it lives today and who uses it",
+     "At least 1 secret migrated to the manager and read from the app",
+     "Rotation policy defined (frequency and owner)"
+    ],
+    "value": "Keys stop living in places where anyone can copy them.",
+    "where": {}
+   },
+   "resources": [
+    "sec_es",
+    "sec_dheeraj",
+    "sec_uplatz"
+   ]
+  },
+  {
+   "id": "d1",
+   "level": "Data and network",
+   "title": "Encryption at rest and in transit",
+   "summary": "Encrypt the data you store and the data that travels. The hard part is not encrypting: it is managing the keys well.",
+   "points": [
+    "In transit: TLS (HTTPS) on every connection, internal ones too; disable old protocols (TLS 1.0/1.1).",
+    "At rest: disks, databases and object storage encrypted; in the cloud it is usually a checkbox, so turn it on by default.",
+    "KMS / Key Vault hold the master keys; envelope encryption uses one data key per object, protected by the master key.",
+    "Whoever controls the key controls the data: limit who can use each key and log its use."
+   ],
+   "skills": [
+    "cifrado"
+   ],
+   "catalog_skills": [
+    "encryption-key-vault-hsm"
+   ],
+   "practice": {
+    "label": "Free labs on AWS Skill Builder",
+    "url": "https://skillbuilder.aws/"
+   },
+   "quiz": [
+    {
+     "q": "What does encryption in transit protect?",
+     "options": [
+      "Data stored on disk",
+      "Data while it travels over the network",
+      "Only user passwords",
+      "The logs"
+     ],
+     "answer": 1,
+     "why": "TLS protects the communication from being read or altered along the way."
+    },
+    {
+     "q": "In envelope encryption, what does the KMS master key encrypt?",
+     "options": [
+      "All the files directly",
+      "The data key that in turn encrypted the file",
+      "IAM passwords",
+      "Nothing"
+     ],
+     "answer": 1,
+     "why": "The master key never leaves KMS; it encrypts small data keys, which are the ones that encrypt the data."
+    },
+    {
+     "q": "Why does it matter who can use a KMS key?",
+     "options": [
+      "It does not matter if the data is encrypted",
+      "Whoever can use the key can decrypt the data",
+      "It only affects cost",
+      "To comply with the language requirement"
+     ],
+     "answer": 1,
+     "why": "Encryption moves access control to the key: its policy is as important as the data's."
+    }
+   ],
+   "vbd": {
+    "deliverable": "An encryption map of a system's sensitive data.",
+    "done_when": [
+     "Stores with sensitive data listed (databases, buckets, disks, backups)",
+     "Encryption status at rest and in transit for each one",
+     "Who can use each key, reviewed",
+     "Gaps with a plan and an owner"
+    ],
+    "value": "You know which data would be readable if a disk, backup or connection were exposed.",
+    "where": {}
+   },
+   "resources": [
+    "crypto_es_root",
+    "crypto_es_andr",
+    "kms_envelope"
+   ]
+  },
+  {
+   "id": "d2",
+   "level": "Data and network",
+   "title": "Network security and Zero Trust",
+   "summary": "Segment the network to limit the attacker's movement, and stop trusting something just because it is \"inside\".",
+   "points": [
+    "Segment: public subnets only for what must receive internet traffic; databases and internal services in private subnets.",
+    "Security groups (stateful, per resource) and NACLs (stateless, per subnet) are two filtering layers; use minimal rules.",
+    "Avoid opening administration ports: use managed access (SSM Session Manager, Azure Bastion) or a VPN with MFA.",
+    "Zero Trust: always verify identity, device and context on every access; never trust based on network location alone."
+   ],
+   "skills": [
+    "red"
+   ],
+   "catalog_skills": [
+    "zero-trust",
+    "azure-network-controls"
+   ],
+   "practice": {
+    "label": "Read NIST's Zero Trust architecture (SP 800-207)",
+    "url": "https://csrc.nist.gov/pubs/sp/800/207/final"
+   },
+   "quiz": [
+    {
+     "q": "Where should a production database live?",
+     "options": [
+      "In a public subnet with a public IP",
+      "In a private subnet, reachable only from the app",
+      "In any subnet as long as it has a password",
+      "Outside the VPC"
+     ],
+     "answer": 1,
+     "why": "A database does not need to receive internet traffic: isolating it drastically reduces its exposure."
+    },
+    {
+     "q": "What is the key difference between a security group and a NACL in AWS?",
+     "options": [
+      "None",
+      "The security group is stateful and applies to the resource; the NACL is stateless and applies to the subnet",
+      "The NACL encrypts traffic",
+      "The security group only works with IPv6"
+     ],
+     "answer": 1,
+     "why": "Stateful = the reply to an allowed connection goes out automatically; stateless = you must allow both directions."
+    },
+    {
+     "q": "What does the Zero Trust principle state?",
+     "options": [
+      "Everything inside the corporate network is trusted",
+      "Never trust by default: verify every access with identity and context",
+      "Do not use firewalls",
+      "Distrust the cloud provider and do not use it"
+     ],
+     "answer": 1,
+     "why": "Zero Trust moves trust from \"being on the network\" to \"proving who you are and under what conditions\" on every access."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A network diagram of a system with its exposure rules reviewed.",
+    "done_when": [
+     "Diagram with public/private subnets and allowed flows",
+     "Rules open to 0.0.0.0/0 justified or removed",
+     "Administrative access with no ports open to the internet (or a plan to get there)",
+     "Reviewed with whoever operates the network"
+    ],
+    "value": "A compromised server can no longer reach everything else.",
+    "where": {
+     "label": "NIST SP 800-207",
+     "url": "https://csrc.nist.gov/pubs/sp/800/207/final"
+    }
+   },
+   "resources": [
+    "zt_es_hoy",
+    "zt_es_m3",
+    "zt_ibm",
+    "vpc_sg_nacl"
+   ]
+  },
+  {
+   "id": "d3",
+   "level": "Data and network",
+   "title": "Containers and Kubernetes",
+   "summary": "A container is as secure as its image, its permissions and the cluster it runs on.",
+   "points": [
+    "Images: minimal official base, vulnerability scanning in the pipeline and in the registry, no secrets inside.",
+    "Runtime: do not run as root, read-only file system where possible, no privileged containers.",
+    "Kubernetes: least-privilege RBAC, namespaces, network policies and secrets kept out of the image.",
+    "The control plane (API server) never exposed to the internet without strong authentication."
+   ],
+   "skills": [
+    "contenedores"
+   ],
+   "catalog_skills": [
+    "container-security"
+   ],
+   "practice": {
+    "label": "Scan one of your team's images with a vulnerability scanner (e.g. Trivy or the registry's own)"
+   },
+   "quiz": [
+    {
+     "q": "Why is it risky to run a container as privileged?",
+     "options": [
+      "It uses more memory",
+      "It can take control of the host node if the container is compromised",
+      "It takes longer to start",
+      "There is no risk"
+     ],
+     "answer": 1,
+     "why": "A privileged container has almost the same powers as the host: an escape compromises the whole node."
+    },
+    {
+     "q": "Where should the passwords used by an application in Kubernetes go?",
+     "options": [
+      "Inside the image",
+      "In variables written in the Dockerfile",
+      "In a secrets manager or Kubernetes Secrets with restricted access",
+      "In the README"
+     ],
+     "answer": 2,
+     "why": "The image is copied to registries and machines; secrets must be injected at runtime with controlled access."
+    },
+    {
+     "q": "What does RBAC control in Kubernetes?",
+     "options": [
+      "Network traffic between pods",
+      "Which users and service accounts can perform which actions on which resources",
+      "The size of the images",
+      "Disk encryption"
+     ],
+     "answer": 1,
+     "why": "RBAC is the IAM of Kubernetes: it applies least privilege inside the cluster too."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A security checklist applied to one of your team's containerized services.",
+    "done_when": [
+     "Image scanned, with critical and high vulnerabilities listed",
+     "Verified: it does not run as root or privileged",
+     "Secrets kept out of the image",
+     "The service's RBAC permissions reviewed"
+    ],
+    "value": "A vulnerability in the app does not turn into control of the cluster.",
+    "where": {}
+   },
+   "resources": [
+    "cont_aws_es",
+    "k8s_es_terror",
+    "cont_e2e",
+    "k8s_datadog"
+   ]
+  },
+  {
+   "id": "r1",
+   "level": "Detection and response",
+   "title": "Logs and monitoring",
+   "summary": "Without logs no investigation is possible. Record who did what, protect it from deletion and centralize it.",
+   "points": [
+    "Turn on API audit logging in every account and region (AWS CloudTrail, Azure Activity Log).",
+    "Protect the logs: a separate account or immutable storage; an attacker usually tries to delete them first.",
+    "Centralize in a SIEM or analytics service to correlate events from several sources and alert.",
+    "Define how long to keep them (retention) according to legal and investigation requirements."
+   ],
+   "skills": [
+    "logging"
+   ],
+   "catalog_skills": [
+    "microsoft-sentinel"
+   ],
+   "practice": {
+    "label": "Free labs on AWS Skill Builder",
+    "url": "https://skillbuilder.aws/"
+   },
+   "quiz": [
+    {
+     "q": "What does an API audit log such as CloudTrail answer?",
+     "options": [
+      "How much each service costs",
+      "Who did what action, when and from where",
+      "The contents of the files",
+      "The network speed"
+     ],
+     "answer": 1,
+     "why": "It is the basic forensic record of the cloud."
+    },
+    {
+     "q": "Why store logs in a separate or immutable account?",
+     "options": [
+      "It is cheaper",
+      "So that an attacker with access to the affected account cannot delete them",
+      "So they load faster",
+      "There is no need"
+     ],
+     "answer": 1,
+     "why": "Erasing traces is a typical attacker step; separating the logs or making them immutable prevents it."
+    },
+    {
+     "q": "What does a SIEM provide?",
+     "options": [
+      "It encrypts disks",
+      "It centralizes, correlates events from several sources and generates alerts",
+      "It makes backups",
+      "It replaces the firewall"
+     ],
+     "answer": 1,
+     "why": "Correlating sources reveals attacks that cannot be seen in a single log."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A log coverage map of your cloud environment.",
+    "done_when": [
+     "Audit logs verified in every account/subscription and region",
+     "Log destination protected from deletion (separate account, object lock)",
+     "Retention defined and documented",
+     "One useful alert created (e.g. root usage or an IAM change)"
+    ],
+    "value": "When an incident happens you can answer what happened instead of guessing.",
+    "where": {}
+   },
+   "resources": [
+    "ct_es",
+    "siem_es",
+    "ct_cloudonaut",
+    "ct_doit"
+   ]
+  },
+  {
+   "id": "r2",
+   "level": "Detection and response",
+   "title": "Threat detection and posture (CSPM)",
+   "summary": "Let managed services watch for you: detection of anomalous behavior and continuous review of configuration against standards.",
+   "points": [
+    "Threat detection (GuardDuty, Defender for Cloud): analyzes logs, DNS and network flows to find malicious behavior, with no agents.",
+    "Posture (CSPM: Security Hub, Defender CSPM): continuously compares your configuration against CIS and best practices.",
+    "A finding without an owner is useless: define who receives each severity and how fast it is handled.",
+    "Start with a few high-quality alerts; too much noise causes the important ones to be ignored."
+   ],
+   "skills": [
+    "deteccion"
+   ],
+   "catalog_skills": [
+    "defender-for-cloud"
+   ],
+   "practice": {
+    "label": "Free labs on AWS Skill Builder",
+    "url": "https://skillbuilder.aws/"
+   },
+   "quiz": [
+    {
+     "q": "What is the difference between threat detection and CSPM?",
+     "options": [
+      "They are the same thing",
+      "Detection looks for malicious activity; CSPM checks whether the configuration meets standards",
+      "CSPM only encrypts data",
+      "Detection only checks passwords"
+     ],
+     "answer": 1,
+     "why": "One watches what is happening; the other, how the environment is built."
+    },
+    {
+     "q": "GuardDuty reports API calls from a Tor exit node IP using a user's credentials. What do you do first?",
+     "options": [
+      "Ignore it",
+      "Validate with the owner and, if they do not recognize it, disable/rotate those credentials and review what they did",
+      "Turn off GuardDuty to clear the alert",
+      "Wait to see whether it happens again"
+     ],
+     "answer": 1,
+     "why": "Contain first (credentials) and then investigate the scope in CloudTrail."
+    },
+    {
+     "q": "Why is it better to start with a few high-quality alerts?",
+     "options": [
+      "Because the tools charge per alert",
+      "Because too much noise makes the team ignore the important ones too",
+      "Because there are no other types of alert",
+      "It is not better"
+     ],
+     "answer": 1,
+     "why": "Alert fatigue is a frequent cause of incidents that were detected but nobody handled."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A posture dashboard with the top 10 gaps and their plan.",
+    "done_when": [
+     "Threat detection and CSPM enabled in an environment (test or real)",
+     "Top 10 findings prioritized by severity and exposure",
+     "An owner and a date for each one",
+     "Routing rule: who receives each severity"
+    ],
+    "value": "Gaps are found and closed continuously, not only at the annual audit.",
+    "where": {
+     "label": "AWS Skill Builder",
+     "url": "https://skillbuilder.aws/"
+    }
+   },
+   "resources": [
+    "gd_es",
+    "gd_intro",
+    "gd_sh",
+    "gd_workshop"
+   ]
+  },
+  {
+   "id": "r3",
+   "level": "Detection and response",
+   "title": "Incident response in the cloud",
+   "summary": "When something happens, a rehearsed plan is worth more than the best tool: prepare, detect, contain, eradicate, recover and learn.",
+   "points": [
+    "NIST 800-61 cycle: preparation → detection and analysis → containment, eradication and recovery → post-incident activity (lessons learned).",
+    "Revision 3 (2025) integrates response with NIST CSF 2.0: governance, identification and protection are also part of responding well.",
+    "In the cloud, containing usually means: revoking credentials, isolating resources (a quarantine security group) and taking snapshots for the investigation.",
+    "Rehearse with tabletop exercises and write runbooks for the most likely scenarios."
+   ],
+   "skills": [
+    "respuesta"
+   ],
+   "catalog_skills": [
+    "microsoft-defender-xdr",
+    "microsoft-sentinel"
+   ],
+   "practice": {
+    "label": "Read NIST SP 800-61 Rev. 3",
+    "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+   },
+   "quiz": [
+    {
+     "q": "An instance is confirmed to be compromised. What is best for the investigation?",
+     "options": [
+      "Delete it immediately",
+      "Isolate it (network quarantine) and take a snapshot before making any change",
+      "Restart it",
+      "Ignore it if nobody complains"
+     ],
+     "answer": 1,
+     "why": "Deleting or restarting destroys evidence; isolating contains the damage and the snapshot preserves the state."
+    },
+    {
+     "q": "In which phase of the NIST cycle are runbooks written and drills carried out?",
+     "options": [
+      "Preparation",
+      "Eradication",
+      "Recovery",
+      "None"
+     ],
+     "answer": 0,
+     "why": "Everything you do before the incident (plans, access, tools, rehearsals) is preparation."
+    },
+    {
+     "q": "What is the lessons-learned phase for?",
+     "options": [
+      "To find someone to blame",
+      "To improve the controls and the plan so the same incident does not happen again",
+      "To close the ticket quickly",
+      "It is optional"
+     ],
+     "answer": 1,
+     "why": "A blameless review turns the incident into concrete improvements."
+    }
+   ],
+   "vbd": {
+    "deliverable": "A response runbook for a likely cloud scenario, tested in a tabletop exercise.",
+    "done_when": [
+     "Scenario chosen (e.g. a leaked access key) with detection criteria",
+     "Containment, eradication and recovery steps with owners",
+     "Contacts and escalation defined",
+     "A 30-minute tabletop exercise done with the team, with improvements noted"
+    ],
+    "value": "On the day of the incident the team runs a plan instead of improvising.",
+    "where": {
+     "label": "NIST SP 800-61 Rev. 3",
+     "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+    }
+   },
+   "resources": [
+    "ir_es",
+    "ir_kamil",
+    "ir_r3"
+   ]
+  }
+ ],
+ "glossary": [
+  {
+   "term": "Shared responsibility model",
+   "category": "Fundamentals",
+   "definition": "The split of security between the cloud provider (the cloud) and the customer (what they put and configure in it)."
+  },
+  {
+   "term": "IaaS",
+   "category": "Fundamentals",
+   "definition": "Infrastructure as a service: you rent virtual machines, network and disks; you manage the operating system."
+  },
+  {
+   "term": "PaaS",
+   "category": "Fundamentals",
+   "definition": "Platform as a service: the provider manages the operating system and you manage the application and the data."
+  },
+  {
+   "term": "SaaS",
+   "category": "Fundamentals",
+   "definition": "Software as a service: you use a finished application; you remain responsible for identities and data."
+  },
+  {
+   "term": "CIA triad",
+   "category": "Fundamentals",
+   "definition": "Confidentiality, integrity and availability: the three properties that security protects."
+  },
+  {
+   "term": "STRIDE",
+   "category": "Fundamentals",
+   "definition": "Threat categories: spoofing, tampering, repudiation, information disclosure, denial of service and elevation of privilege."
+  },
+  {
+   "term": "Threat modeling",
+   "category": "Fundamentals",
+   "definition": "The exercise of identifying what can go wrong in a design and which controls mitigate it."
+  },
+  {
+   "term": "CSPM",
+   "category": "Detection",
+   "definition": "Cloud Security Posture Management: continuous review of cloud configuration against standards."
+  },
+  {
+   "term": "CIS Benchmark",
+   "category": "Fundamentals",
+   "definition": "Secure configuration guide recommended by the Center for Internet Security for a product or cloud."
+  },
+  {
+   "term": "SSRF",
+   "category": "Fundamentals",
+   "definition": "Server-Side Request Forgery: the attacker makes the server send requests on their behalf, e.g. to the metadata service."
+  },
+  {
+   "term": "IAM",
+   "category": "Identity",
+   "definition": "Identity and access management: who can do what on which resources."
+  },
+  {
+   "term": "Least privilege",
+   "category": "Identity",
+   "definition": "Giving only the permissions needed for a task and removing them when they are no longer used."
+  },
+  {
+   "term": "Role",
+   "category": "Identity",
+   "definition": "An identity that is assumed temporarily and hands out credentials that expire."
+  },
+  {
+   "term": "Policy",
+   "category": "Identity",
+   "definition": "A document that allows or denies actions on resources."
+  },
+  {
+   "term": "MFA",
+   "category": "Identity",
+   "definition": "Multi-factor authentication: something you know plus something you have or are."
+  },
+  {
+   "term": "FIDO2 / passkey",
+   "category": "Identity",
+   "definition": "Authentication with a cryptographic key bound to the domain, resistant to phishing."
+  },
+  {
+   "term": "SSO",
+   "category": "Identity",
+   "definition": "Single sign-on: one central identity to get into many applications."
+  },
+  {
+   "term": "Root account",
+   "category": "Identity",
+   "definition": "The identity with full control of a cloud account; it is protected with MFA and almost never used."
+  },
+  {
+   "term": "Secrets manager",
+   "category": "Identity",
+   "definition": "A service that stores, encrypts, audits and rotates passwords, keys and tokens."
+  },
+  {
+   "term": "Rotation",
+   "category": "Identity",
+   "definition": "Changing a secret periodically or when a leak is suspected."
+  },
+  {
+   "term": "Encryption in transit",
+   "category": "Data and network",
+   "definition": "Protection of data while it travels over the network, usually with TLS."
+  },
+  {
+   "term": "Encryption at rest",
+   "category": "Data and network",
+   "definition": "Protection of data stored on disks, databases or storage."
+  },
+  {
+   "term": "KMS",
+   "category": "Data and network",
+   "definition": "The cloud provider's cryptographic key management service."
+  },
+  {
+   "term": "Envelope encryption",
+   "category": "Data and network",
+   "definition": "Data is encrypted with a data key, which in turn is encrypted with a master key."
+  },
+  {
+   "term": "TLS",
+   "category": "Data and network",
+   "definition": "The protocol that encrypts and authenticates connections (the HTTPS padlock)."
+  },
+  {
+   "term": "VPC / VNet",
+   "category": "Data and network",
+   "definition": "A private virtual network inside the cloud where your resources live."
+  },
+  {
+   "term": "Private subnet",
+   "category": "Data and network",
+   "definition": "A subnet with no direct route from the internet, for internal services and databases."
+  },
+  {
+   "term": "Security group",
+   "category": "Data and network",
+   "definition": "A stateful firewall applied to a resource (instance, interface)."
+  },
+  {
+   "term": "NACL",
+   "category": "Data and network",
+   "definition": "A stateless access control list applied to a subnet."
+  },
+  {
+   "term": "Zero Trust",
+   "category": "Data and network",
+   "definition": "A model that does not trust based on network location: it verifies identity and context on every access."
+  },
+  {
+   "term": "Segmentation",
+   "category": "Data and network",
+   "definition": "Dividing the network into zones to limit an attacker's lateral movement."
+  },
+  {
+   "term": "Privileged container",
+   "category": "Data and network",
+   "definition": "A container with permissions almost equal to the host's; compromising it reaches the node."
+  },
+  {
+   "term": "RBAC",
+   "category": "Data and network",
+   "definition": "Role-based access control; in Kubernetes it defines what each user or service account can do."
+  },
+  {
+   "term": "Image scanning",
+   "category": "Data and network",
+   "definition": "Automatic review of known vulnerabilities in container images."
+  },
+  {
+   "term": "CloudTrail",
+   "category": "Detection",
+   "definition": "The AWS audit log: who made which API call, when and from where."
+  },
+  {
+   "term": "SIEM",
+   "category": "Detection",
+   "definition": "A system that centralizes and correlates security events from many sources and generates alerts."
+  },
+  {
+   "term": "Retention",
+   "category": "Detection",
+   "definition": "The length of time logs are kept."
+  },
+  {
+   "term": "GuardDuty",
+   "category": "Detection",
+   "definition": "The AWS threat detection service based on logs, DNS and network flows."
+  },
+  {
+   "term": "Finding",
+   "category": "Detection",
+   "definition": "The output of a security tool that points to a possible problem."
+  },
+  {
+   "term": "Alert fatigue",
+   "category": "Detection",
+   "definition": "Loss of attention caused by too many alerts, which leads to ignoring the important ones."
+  },
+  {
+   "term": "Incident response",
+   "category": "Response",
+   "definition": "The process to prepare for, detect, contain, eradicate, recover from and learn from an incident."
+  },
+  {
+   "term": "Containment",
+   "category": "Response",
+   "definition": "Actions to stop the damage of an incident, such as revoking credentials or isolating resources."
+  },
+  {
+   "term": "Eradication",
+   "category": "Response",
+   "definition": "Removing the cause of the incident (malware, access, configurations)."
+  },
+  {
+   "term": "Forensic snapshot",
+   "category": "Response",
+   "definition": "A copy of a compromised resource's disk, to investigate it without altering it."
+  },
+  {
+   "term": "Runbook",
+   "category": "Response",
+   "definition": "A step-by-step procedure to respond to a specific scenario."
+  },
+  {
+   "term": "Tabletop exercise",
+   "category": "Response",
+   "definition": "A talked-through simulation of an incident to test the plan and the roles."
+  },
+  {
+   "term": "Lessons learned",
+   "category": "Response",
+   "definition": "A blameless post-incident review that turns the incident into improvements."
+  }
+ ],
+ "resources": {
+  "shared_es_aws": {
+   "title": "¿Qué es el Modelo de Responsabilidad Compartida en AWS?",
+   "url": "https://www.youtube.com/watch?v=BQNhIj6fIb8",
+   "channel": "Grupo Siayec",
+   "lang": "es",
+   "topic": "fundamentos",
+   "why": "What AWS protects (\"of the cloud\") and what is yours (\"in the cloud\"), with examples.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "shared_es_azure": {
+   "title": "03.- Fundamentos de Seguridad de Azure - Modelo de Responsabilidad Compartida",
+   "url": "https://www.youtube.com/watch?v=wa1_rL2QWDg",
+   "channel": "Corporación EIGO",
+   "lang": "es",
+   "topic": "fundamentos",
+   "why": "The same model in Azure: how your part changes across IaaS, PaaS and SaaS.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "shared_en": {
+   "title": "AWS Shared Responsibility Model - Who Secures What in the Cloud?",
+   "url": "https://www.youtube.com/watch?v=o7Sd6-bGaog",
+   "channel": "DheerajTechInsight",
+   "lang": "en",
+   "topic": "fundamentos",
+   "why": "A service-by-service walkthrough of who secures what (EC2 vs RDS vs S3).",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "shared_sc900": {
+   "title": "SC-900 ¿Cómo funciona el modelo de responsabilidad compartida de Microsoft? #microsoft #SaaS #PaaS",
+   "url": "https://www.youtube.com/watch?v=GF9l5JkcxOY",
+   "channel": "SolTecTra | Soluciones Microsoft y Ciberseguridad",
+   "lang": "es",
+   "topic": "fundamentos",
+   "why": "Short version aimed at Microsoft's SC-900 certification.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "stride_shostack": {
+   "title": "Introducing STRIDE for threat modeling",
+   "url": "https://www.youtube.com/watch?v=iGkX06sVFFM",
+   "channel": "Adam Shostack",
+   "lang": "en",
+   "topic": "fundamentos",
+   "why": "STRIDE explained by the author of the reference book on threat modeling.",
+   "kind": "video",
+   "level": "básico",
+   "who": "Adam Shostack",
+   "verified": "2026-10-01"
+  },
+  "stride_es": {
+   "title": "Los 3 enfoques más importantes para identificar amenazas cibernéticas y cómo usar el método STRIDE",
+   "url": "https://www.youtube.com/watch?v=zwvzZoot_E0",
+   "channel": "Cyberthreatsdefenders",
+   "lang": "es",
+   "topic": "fundamentos",
+   "why": "Approaches to identifying threats and how to apply STRIDE, in Spanish.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "stride_cmp": {
+   "title": "Threat Modeling Explained: STRIDE vs PASTA vs DREAD | CISSP Guide",
+   "url": "https://www.youtube.com/watch?v=AlprS-TfVac",
+   "channel": "Cert Empire",
+   "lang": "en",
+   "topic": "fundamentos",
+   "why": "Compares STRIDE with PASTA and DREAD: when to use each one.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "capone_lufsec": {
+   "title": "How Capital One Was Hacked: Cloud Misconfigurations Explained | AWS Security Breach",
+   "url": "https://www.youtube.com/watch?v=VlXebXMhV3g",
+   "channel": "LufSec Cyber Security",
+   "lang": "en",
+   "topic": "fundamentos",
+   "why": "The Capital One case step by step: SSRF + an over-permissioned role + data in S3.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "capone_cbc": {
+   "title": "Everything you need to know about the Capital One data breach",
+   "url": "https://www.youtube.com/watch?v=_jTeQD0UFPw",
+   "channel": "CBC News: The National",
+   "lang": "en",
+   "topic": "fundamentos",
+   "why": "The business impact of a misconfiguration: 100 million records exposed.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "s3_es": {
+   "title": "Cómo aprovechar los errores de configuración de Buckets S3 en AWS",
+   "url": "https://www.youtube.com/watch?v=Y2IW60jgybs",
+   "channel": "Smartekh",
+   "lang": "es",
+   "topic": "fundamentos",
+   "why": "How an attacker finds and exploits misconfigured S3 buckets, in Spanish.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "s3_block": {
+   "title": "How to Restrict Public Access to S3 Buckets",
+   "url": "https://www.youtube.com/watch?v=NjWBDPObuuc",
+   "channel": "KirkpatrickPrice",
+   "lang": "en",
+   "topic": "fundamentos",
+   "why": "The control that prevents it: S3 Block Public Access, explained by an audit firm.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "iam_best": {
+   "title": "AWS re:Inforce 2022 - Security best practices with AWS IAM (IAM201)",
+   "url": "https://www.youtube.com/watch?v=SMjvtxXOXdU",
+   "channel": "AWS Events",
+   "lang": "en",
+   "topic": "identidad",
+   "why": "The official IAM best practices presented by AWS: roles, temporary credentials, guardrails.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "iam_least": {
+   "title": "AWS re:Inforce 2022 - Strategies for achieving least privilege (IAM303)",
+   "url": "https://www.youtube.com/watch?v=j57tBC6U4kk",
+   "channel": "AWS Events",
+   "lang": "en",
+   "topic": "identidad",
+   "why": "How to reach least privilege in practice: start broad, measure with Access Analyzer and trim.",
+   "kind": "video",
+   "level": "avanzado",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "iam_es_dfb": {
+   "title": "09. Curso de AWS - IAM (Usuarios, Grupos de usuario y Politicas)",
+   "url": "https://www.youtube.com/watch?v=QnmZb7bgH6Q",
+   "channel": "dfbastidas",
+   "lang": "es",
+   "topic": "identidad",
+   "why": "IAM users, groups and policies in the console, step by step in Spanish.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "iam_es_rjg": {
+   "title": "🚀 [CURSO AWS] - Usuarios, grupos, roles y policies 👥",
+   "url": "https://www.youtube.com/watch?v=bIkttFzUJrQ",
+   "channel": "Ruben J GarcIA",
+   "lang": "es",
+   "topic": "identidad",
+   "why": "The difference between user, group, role and policy, with a demo.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "mfa_es_red": {
+   "title": "Aprende a utilizar la Autentificación Multifactor MFA",
+   "url": "https://www.youtube.com/watch?v=pPy0P_gw-eU",
+   "channel": "Red por la Ciberseguridad",
+   "lang": "es",
+   "topic": "identidad",
+   "why": "What MFA is, why it stops most account takeovers and how to turn it on.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "mfa_es_bimind": {
+   "title": "MFA - Autenticación multifactor. Añade seguridad a tus accesos.",
+   "url": "https://www.youtube.com/watch?v=4EUWRhlLGb0",
+   "channel": "BiMind | Primero procesos, luego tecnología",
+   "lang": "es",
+   "topic": "identidad",
+   "why": "MFA from the point of view of company processes.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "mfa_types": {
+   "title": "Not All MFA is Created Equal! Which Type Will Protect You Best?!",
+   "url": "https://www.youtube.com/watch?v=1cTFMViTV8M",
+   "channel": "Stan's Garage",
+   "lang": "en",
+   "topic": "identidad",
+   "why": "SMS vs app vs hardware key: why not every factor protects equally against phishing.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "root_marco": {
+   "title": "Setup and Secure AWS root account | AWS Free Tier account security | #aws series #1",
+   "url": "https://www.youtube.com/watch?v=j1Hz9q1JDgI",
+   "channel": "Tech with Marco",
+   "lang": "en",
+   "topic": "identidad",
+   "why": "Securing the root account: MFA, no access keys and only for exceptional tasks.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "idc_elevated": {
+   "title": "AWS re:Inforce 2023 - Manage temporary elevated access with AWS IAM Identity Center (IAM323)",
+   "url": "https://www.youtube.com/watch?v=a1Na2G7TTQ0",
+   "channel": "AWS Events",
+   "lang": "en",
+   "topic": "identidad",
+   "why": "SSO and temporary elevated access: privileges only when needed, and logged.",
+   "kind": "video",
+   "level": "avanzado",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "sec_es": {
+   "title": "AWS - 52 - Como guardar secretos en AWS.",
+   "url": "https://www.youtube.com/watch?v=vtx6j8chsP8",
+   "channel": "Fernandoing",
+   "lang": "es",
+   "topic": "identidad",
+   "why": "Where to store passwords and keys in AWS instead of leaving them in the code, in Spanish.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "sec_dheeraj": {
+   "title": "AWS Secrets Manager Deep Dive | Secure Passwords, API Keys & Rotation Explained",
+   "url": "https://www.youtube.com/watch?v=aFEbqpuvHOw",
+   "channel": "DheerajTechInsight",
+   "lang": "en",
+   "topic": "identidad",
+   "why": "Secrets Manager in depth: storing, reading from the app and rotating automatically.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "sec_uplatz": {
+   "title": "Secrets Management: HashiCorp Vault & AWS Secrets Manager | Uplatz",
+   "url": "https://www.youtube.com/watch?v=X6V5svnf1L8",
+   "channel": "Uplatz",
+   "lang": "en",
+   "topic": "identidad",
+   "why": "Compares Vault and Secrets Manager: when each one is the better fit.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "crypto_es_root": {
+   "title": "Cifrado Simétrico vs. Asimétrico: Entendido con Dibujos y Ejemplos",
+   "url": "https://www.youtube.com/watch?v=xLw5u5OZfDI",
+   "channel": "Root4Everyone",
+   "lang": "es",
+   "topic": "datos_red",
+   "why": "The basics: symmetric vs asymmetric encryption, with drawings.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "crypto_es_andr": {
+   "title": "¿Qué es la criptografía? Simétrica, asimétrica, clave pública, HTTPS, RSA, SSL...",
+   "url": "https://www.youtube.com/watch?v=IFZS36m8Miw",
+   "channel": "Androide Sabiondo",
+   "lang": "es",
+   "topic": "datos_red",
+   "why": "How the two types of encryption combine in HTTPS/TLS (encryption in transit).",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "kms_envelope": {
+   "title": "AWS #KMS - Key Management Service - Customer Master Key, Data Key, Envelope Encryption (Part 1)",
+   "url": "https://www.youtube.com/watch?v=fmqzUCtC6Aw",
+   "channel": "knowledgeindia - LearnCloud",
+   "lang": "en",
+   "topic": "datos_red",
+   "why": "KMS and envelope encryption: master key vs data key.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "zt_ibm": {
+   "title": "Zero Trust Explained in 4 mins",
+   "url": "https://www.youtube.com/watch?v=yn6CPQ9RioA",
+   "channel": "IBM Technology",
+   "lang": "en",
+   "topic": "datos_red",
+   "why": "Zero Trust in 4 minutes: never trust because something is \"inside the network\", always verify.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "zt_es_hoy": {
+   "title": "¿Qué es ZERO TRUST?",
+   "url": "https://www.youtube.com/watch?v=2OxzvIwwFPo",
+   "channel": "Computer Hoy",
+   "lang": "es",
+   "topic": "datos_red",
+   "why": "Zero Trust explained in Spanish for any profile.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "zt_es_m3": {
+   "title": "Zero Trust - ¿Qué es?",
+   "url": "https://www.youtube.com/watch?v=JqMKlEe7tD4",
+   "channel": "M3 Security",
+   "lang": "es",
+   "topic": "datos_red",
+   "why": "Zero Trust principles and how they are applied in a company.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "vpc_sg_nacl": {
+   "title": "Amazon VPC Security Groups & NACLs",
+   "url": "https://www.youtube.com/watch?v=Ost1DxQEk3Y",
+   "channel": "Jayendra's Vlog",
+   "lang": "en",
+   "topic": "datos_red",
+   "why": "Security groups (stateful, per instance) vs NACLs (stateless, per subnet).",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "cont_e2e": {
+   "title": "Container Security Explained End to End | Dockerfile to Kubernetes Production",
+   "url": "https://www.youtube.com/watch?v=mBiUKUycvts",
+   "channel": "Cloud Advocate",
+   "lang": "en",
+   "topic": "datos_red",
+   "why": "The full chain: base image, scanning, registry, deployment and runtime.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "k8s_es_terror": {
+   "title": "Seguridad en Kubernetes: Historias de terror para poder asegurar tu cluster - Pablo Fredrikson,Split",
+   "url": "https://www.youtube.com/watch?v=-Qd_b0DW6Xw",
+   "channel": "Cloud Native Guatemala",
+   "lang": "es",
+   "topic": "datos_red",
+   "why": "Real incidents in Kubernetes clusters and which control would have prevented them.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "Pablo Fredrikson",
+   "verified": "2026-10-01"
+  },
+  "cont_aws_es": {
+   "title": "9 - Seguridad en Contenedores - AWS Security Immersion Day (2024-02)",
+   "url": "https://www.youtube.com/watch?v=sshqA8Pthio",
+   "channel": "AWS Security Users Group LatAm",
+   "lang": "es",
+   "topic": "datos_red",
+   "why": "Container security on AWS (ECR, ECS/EKS) in Spanish, from the AWS LatAm community.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "k8s_datadog": {
+   "title": "Kubernetes Security Fundamentals - Introduction",
+   "url": "https://www.youtube.com/watch?v=0MhHkTtiBCc",
+   "channel": "Datadog",
+   "lang": "en",
+   "topic": "datos_red",
+   "why": "Fundamentals: RBAC, namespaces, network policies and secrets in Kubernetes.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "ct_es": {
+   "title": "Realice un seguimiento de la actividad de los usuarios y el uso de las API con AWS CloudTrail - ES",
+   "url": "https://www.youtube.com/watch?v=8cnaDaeg6QU",
+   "channel": "AWS Developers LATAM",
+   "lang": "es",
+   "topic": "deteccion",
+   "why": "CloudTrail in Spanish, from the official AWS channel for LatAm: who did what, when and from where.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "ct_cloudonaut": {
+   "title": "A Deep Dive into AWS CloudTrail",
+   "url": "https://www.youtube.com/watch?v=-a3EX758Mq8",
+   "channel": "cloudonaut",
+   "lang": "en",
+   "topic": "deteccion",
+   "why": "CloudTrail in depth: multi-region trails, integrity validation and where to store the logs.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "ct_doit": {
+   "title": "AWS CloudTrail security: From log protection to threat detection in AWS",
+   "url": "https://www.youtube.com/watch?v=aZeuLOIgnck",
+   "channel": "DoiT",
+   "lang": "en",
+   "topic": "deteccion",
+   "why": "Protecting the logs (so the attacker cannot delete them) and using them to detect threats.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "siem_es": {
+   "title": "📋 ¿Qué es un SIEM? ► Software para la Gestión de Información y Eventos de Seguridad | Alberto López",
+   "url": "https://www.youtube.com/watch?v=xgxJUUaD3lg",
+   "channel": "AlbertoLopez TECH TIPS",
+   "lang": "es",
+   "topic": "deteccion",
+   "why": "What a SIEM does with logs: centralize, correlate and alert.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "gd_es": {
+   "title": "Introdución a Amazon GuardDuty - Español",
+   "url": "https://www.youtube.com/watch?v=_1BKh6CuWvs",
+   "channel": "AWS Developers LATAM",
+   "lang": "es",
+   "topic": "deteccion",
+   "why": "GuardDuty in Spanish: threat detection without installing agents.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "gd_intro": {
+   "title": "AWS re:Inforce 2019: Threat Detection on AWS: An Introduction to Amazon GuardDuty (FND216)",
+   "url": "https://www.youtube.com/watch?v=czsuZXQvD8E",
+   "channel": "Amazon Web Services",
+   "lang": "en",
+   "topic": "deteccion",
+   "why": "Which sources GuardDuty analyzes and what kind of findings it produces.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "gd_sh": {
+   "title": "AWS re:Invent 2019: Threat management in the cloud: Amazon GuardDuty & AWS Security Hub (SEC206-R1)",
+   "url": "https://www.youtube.com/watch?v=vhYsm5gq9jE",
+   "channel": "AWS Events",
+   "lang": "en",
+   "topic": "deteccion",
+   "why": "GuardDuty (detects) + Security Hub (centralizes findings and measures against standards such as CIS).",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "gd_workshop": {
+   "title": "Getting Hands on with Amazon GuardDuty - AWS Virtual Workshop",
+   "url": "https://www.youtube.com/watch?v=eq3_H-aiHhk",
+   "channel": "AWS Developers",
+   "lang": "en",
+   "topic": "deteccion",
+   "why": "Hands-on workshop: generating test findings and responding to them.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "ir_es": {
+   "title": "MasterClass: Gestión Moderna de incidentes en un SOC: aplicando NIST SP 800-61 y SANS",
+   "url": "https://www.youtube.com/watch?v=LkEjH7AFzis",
+   "channel": "Academia de Ciberseguridad by LD GRUPO",
+   "lang": "es",
+   "topic": "deteccion",
+   "why": "Incident management in a SOC with NIST 800-61 and SANS, in Spanish.",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "ir_kamil": {
+   "title": "IT and Computer Incident Response Process Overview (NIST SP 800-61 Rev 2)",
+   "url": "https://www.youtube.com/watch?v=vWhkVKDk5_4",
+   "channel": "KamilSec",
+   "lang": "en",
+   "topic": "deteccion",
+   "why": "The classic phases: preparation, detection and analysis, containment/eradication/recovery, lessons learned.",
+   "kind": "video",
+   "level": "básico",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "ir_r3": {
+   "title": "NIST SP 800-61r3 UPDATED (2025) 🚨 Incident Response Framework",
+   "url": "https://www.youtube.com/watch?v=BAKHlv7WVa0",
+   "channel": "ProfessorBlackOps - CyberSecurity for the people",
+   "lang": "en",
+   "topic": "deteccion",
+   "why": "What changed in revision 3 (2025): response is integrated with CSF 2.0 (Govern, Identify, Protect…).",
+   "kind": "video",
+   "level": "intermedio",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "ref_wa_security": {
+   "title": "Security Pillar - AWS Well-Architected Framework",
+   "url": "https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/welcome.html",
+   "channel": "AWS",
+   "lang": "en",
+   "topic": "referencias",
+   "why": "The AWS standard for designing secure workloads: identity, detection, data protection, response.",
+   "kind": "link",
+   "level": "básico"
+  },
+  "ref_cis": {
+   "title": "CIS Benchmarks",
+   "url": "https://www.cisecurity.org/cis-benchmarks",
+   "channel": "Center for Internet Security",
+   "lang": "en",
+   "topic": "referencias",
+   "why": "Recommended configurations per provider (AWS, Azure, GCP, Kubernetes…), the basis of almost every CSPM.",
+   "kind": "link",
+   "level": "básico"
+  },
+  "ref_nist_ir": {
+   "title": "NIST SP 800-61 Rev. 3 - Incident Response Recommendations",
+   "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+   "channel": "NIST",
+   "lang": "en",
+   "topic": "referencias",
+   "why": "The current incident response guide (April 2025).",
+   "kind": "link",
+   "level": "básico"
+  },
+  "ref_nist_zt": {
+   "title": "NIST SP 800-207 - Zero Trust Architecture",
+   "url": "https://csrc.nist.gov/pubs/sp/800/207/final",
+   "channel": "NIST",
+   "lang": "en",
+   "topic": "referencias",
+   "why": "The formal definition of Zero Trust architecture.",
+   "kind": "link",
+   "level": "básico"
+  }
+ }
+}

@@ -86,8 +86,12 @@ def _first_name(learner: str) -> str:
     return base.split()[0].capitalize() if base else learner
 
 
-def _foot(champions: list[str]) -> str:
-    who = f"Con copia a {', '.join(champions)}, champion de la familia de skills, que puede apoyarte.\n\n" if champions else ""
+def _foot(champions: list[str], lang: str = "es") -> str:
+    if not champions:
+        return SIGN
+    names = ", ".join(champions)
+    who = (f"Copied to {names}, champion of the skill family, who can support you.\n\n" if lang == "en"
+           else f"Con copia a {names}, champion de la familia de skills, que puede apoyarte.\n\n")
     return f"{who}{SIGN}"
 
 
@@ -98,8 +102,10 @@ def _parse(t: str) -> datetime:
 
 
 def pending(conn: sqlite3.Connection, packs: list, exams: list, catalog, now: datetime | None = None,
-            learner: str | None = None, include_sent: bool = False) -> list[Notice]:
-    """Notices that apply right now (for everyone, or for one learner)."""
+            learner: str | None = None, include_sent: bool = False, lang: str = "es") -> list[Notice]:
+    """Notices that apply right now (for everyone, or for one learner), written in ``lang``."""
+    en = lang == "en"
+    hi = "Hi" if en else "Hola"
     now = now or datetime.now(timezone.utc)
     known = emails(conn)
     sent = set() if include_sent else {(r["learner"], r["kind"], r["ref"]) for r in conn.execute("SELECT learner, kind, ref FROM notices")}
@@ -120,13 +126,18 @@ def pending(conn: sqlite3.Connection, packs: list, exams: list, catalog, now: da
             fams = owner_families(pack, catalog)
             if len(done) == len(pack.lessons):
                 names, mails = _champions(fams[:1])
-                out.append(Notice(who, "course_done", pack.id, f"¡Felicidades! Terminaste «{pack.title}»",
-                                  f"Hola {name}:\n\n¡Felicidades! Completaste las {len(pack.lessons)} lecciones de «{pack.title}». "
-                                  "Lo que aprendiste ya cuenta para cubrir los roles que recibe el equipo.\n\n"
-                                  "Siguiente paso: entrega los VBD que te falten o empieza el siguiente curso.\n\n" + _foot(names), to, mails, names))
+                subject = f"Congratulations! You finished \"{pack.title}\"" if en else f"¡Felicidades! Terminaste «{pack.title}»"
+                body = ((f"Congratulations! You completed the {len(pack.lessons)} lessons of \"{pack.title}\". "
+                         "What you learned already counts toward covering the roles the team receives.\n\n"
+                         "Next step: deliver the VBDs you still have pending or start the next course.\n\n") if en else
+                        (f"¡Felicidades! Completaste las {len(pack.lessons)} lecciones de «{pack.title}». "
+                         "Lo que aprendiste ya cuenta para cubrir los roles que recibe el equipo.\n\n"
+                         "Siguiente paso: entrega los VBD que te falten o empieza el siguiente curso.\n\n"))
+                out.append(Notice(who, "course_done", pack.id, subject, f"{hi} {name}:\n\n{body}" + _foot(names, lang), to, mails, names))
             else:
                 open_fams += [f for f in fams[:1] if f not in open_fams]
-                next_step = next_step or next(f"«{les.title}» ({pack.title})" for les in pack.lessons if les.id not in done)
+                next_step = next_step or next((f"\"{les.title}\" ({pack.title})" if en else f"«{les.title}» ({pack.title})")
+                                              for les in pack.lessons if les.id not in done)
         for exam in exams:
             if exam.pack_id not in started:
                 continue
@@ -135,27 +146,38 @@ def pending(conn: sqlite3.Connection, packs: list, exams: list, catalog, now: da
             if tr.passed():
                 names, mails = _champions(fams)
                 best = max(a.get("score", 0) for a in tr.attempts())
-                out.append(Notice(who, "exam_passed", exam.id, f"¡Felicidades! Aprobaste el simulacro de {exam.code}",
-                                  f"Hola {name}:\n\n¡Felicidades! Aprobaste el simulacro de {exam.name} con {best} de 1000 "
-                                  f"(se aprueba con {exam.pass_score}).\n\nSiguiente paso: agenda el examen oficial mientras lo tienes fresco.\n\n"
-                                  + _foot(names), to, mails, names))
+                subject = (f"Congratulations! You passed the {exam.code} mock exam" if en
+                           else f"¡Felicidades! Aprobaste el simulacro de {exam.code}")
+                body = ((f"Congratulations! You passed the mock exam of {exam.name} with {best} out of 1000 "
+                         f"(the pass mark is {exam.pass_score}).\n\nNext step: book the official exam while it is fresh.\n\n") if en else
+                        (f"¡Felicidades! Aprobaste el simulacro de {exam.name} con {best} de 1000 "
+                         f"(se aprueba con {exam.pass_score}).\n\nSiguiente paso: agenda el examen oficial mientras lo tienes fresco.\n\n"))
+                out.append(Notice(who, "exam_passed", exam.id, subject, f"{hi} {name}:\n\n{body}" + _foot(names, lang), to, mails, names))
             else:
                 open_fams += [f for f in fams if f not in open_fams]
-                next_step = next_step or f"practicar para {exam.code}"
+                next_step = next_step or (f"practice for {exam.code}" if en else f"practicar para {exam.code}")
         last = _parse(rows[-1]["time"])
         idle = (now - last).days
         gains = [_parse(r["time"]) for r in rows if r["points"] > 0]
         names, mails = _champions(open_fams)
-        tip = f"Tu siguiente paso: {next_step}. " if next_step else ""
+        tip = (f"Your next step: {next_step}. " if en else f"Tu siguiente paso: {next_step}. ") if next_step else ""
         if idle >= INACTIVE_DAYS:
-            out.append(Notice(who, "inactive", last.date().isoformat(), f"No has tomado cursos en {idle} días",
-                              f"Hola {name}:\n\nHan pasado {idle} días desde tu última actividad en Academia - Cloud. {tip}"
-                              "Con 20 minutos retomas el ritmo.\n\n" + _foot(names), to, mails, names))
+            subject = f"You have not taken any course in {idle} days" if en else f"No has tomado cursos en {idle} días"
+            body = (f"It has been {idle} days since your last activity in Academia - Cloud. {tip}"
+                    "Twenty minutes is enough to get back into the rhythm.\n\n") if en else (
+                    f"Han pasado {idle} días desde tu última actividad en Academia - Cloud. {tip}"
+                    "Con 20 minutos retomas el ritmo.\n\n")
+            out.append(Notice(who, "inactive", last.date().isoformat(), subject, f"{hi} {name}:\n\n{body}" + _foot(names, lang),
+                              to, mails, names))
         elif next_step and (now - (gains[-1] if gains else _parse(rows[0]["time"]))).days >= STALLED_DAYS:
             since = gains[-1] if gains else _parse(rows[0]["time"])
-            out.append(Notice(who, "stalled", since.date().isoformat(), "No has avanzado en tu ruta",
-                              f"Hola {name}:\n\nHas entrado a Academia - Cloud, pero llevas {(now - since).days} días sin avanzar. {tip}"
-                              "Si algo te está frenando, respóndele a tu champion: está para ayudarte.\n\n" + _foot(names), to, mails, names))
+            subject = "You have not made progress on your route" if en else "No has avanzado en tu ruta"
+            body = (f"You have opened Academia - Cloud, but it has been {(now - since).days} days without progress. {tip}"
+                    "If something is holding you back, reply to your champion: they are there to help.\n\n") if en else (
+                    f"Has entrado a Academia - Cloud, pero llevas {(now - since).days} días sin avanzar. {tip}"
+                    "Si algo te está frenando, respóndele a tu champion: está para ayudarte.\n\n")
+            out.append(Notice(who, "stalled", since.date().isoformat(), subject, f"{hi} {name}:\n\n{body}" + _foot(names, lang),
+                              to, mails, names))
     return [n for n in out if n.key not in sent]
 
 

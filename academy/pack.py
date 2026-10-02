@@ -142,13 +142,18 @@ def _parse(data: dict, folder: Path | None = None) -> Pack:
                 list(data.get("glossary", [])), dict(data.get("topics", {})), resources, dict(data.get("roles", {})), folder)
 
 
-def load_pack(path: str | Path) -> Pack:
-    """Load packs/<name>/pack.json (pass the folder, the json file or just the pack name)."""
+def load_pack(path: str | Path, lang: str | None = None) -> Pack:
+    """Load packs/<name>/pack.json (pass the folder, the json file or just the pack name).
+
+    With ``lang``, the translation packs/<name>/pack.<lang>.json is used when it exists (same ids, levels in the same order,
+    same answers: progress is shared between languages); otherwise the pack's own language is shown."""
     p = Path(path)
     if not p.exists():
         p = PACKS_DIR / str(path)
     if p.is_dir():
         p = p / "pack.json"
+    if lang and (p.parent / f"pack.{lang}.json").exists():
+        p = p.parent / f"pack.{lang}.json"
     return _parse(json.loads(p.read_text(encoding="utf-8")), p.parent)
 
 

@@ -123,8 +123,10 @@ def _run(tmp_path, monkeypatch, owners=("yo",), **state):
     if not (tmp_path / "skills.json").exists():
         (tmp_path / "skills.json").write_text(catmod.CATALOG_PATH.read_text(encoding="utf-8"), encoding="utf-8")
     at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=60)
+    state.setdefault("ak_lang", "es")  # the app opens in English; these tests read the Spanish texts
     for k, v in state.items():
-        at.session_state[k] = v
+        if v is not None:  # None = leave the app's own default
+            at.session_state[k] = v
     return at.run()
 
 
@@ -589,3 +591,39 @@ def test_assistant_shows_in_the_app(tmp_path, monkeypatch):
     at2 = _run(tmp_path / "u", monkeypatch, owners=("jefa",))
     labels2 = [e.label for e in at2.expander]
     assert any("tutor de IA" in x for x in labels2) and not any("borrador de preguntas" in x or "Asistente de IA" in x for x in labels2)
+
+
+# ---------------------------------------------------------------------------------------------- languages
+def test_english_pack_mirrors_the_spanish_one():
+    """Same ids, levels in the same order and same answers, so progress is shared between languages."""
+    es, en = load_pack("cloud-security"), load_pack("cloud-security", "en")
+    assert en.language == "en" and es.language == "es" and en.id == es.id
+    assert validate(en, load_catalog()) == []
+    assert len(en.levels) == len(es.levels) and len(en.glossary) == len(es.glossary) and set(en.resources) == set(es.resources)
+    level = dict(zip(es.levels, en.levels))
+    for a, b in zip(es.lessons, en.lessons):
+        assert (a.id, level[a.level], a.resources, a.skills) == (b.id, b.level, b.resources, b.skills)
+        assert [(q.answer, len(q.options)) for q in a.quiz] == [(q.answer, len(q.options)) for q in b.quiz]
+        assert len(a.vbd.done_when) == len(b.vbd.done_when)
+    assert [sorted(v) for v in es.roles.values()] == [sorted(v) for v in en.roles.values()]
+    assert load_pack("cloud-security", "fr").language == "es"  # no translation: the pack's own language
+
+
+def test_english_exam_mirrors_the_spanish_one():
+    from academy.exam import load_exam, validate_exam
+
+    es, en = load_exam("ai-901"), load_exam("ai-901", "en")
+    assert validate_exam(en, load_catalog()) == []
+    assert [(q.id, q.module, q.answer, len(q.options)) for q in es.questions] == [(q.id, q.module, q.answer, len(q.options)) for q in en.questions]
+    assert [(m.id, [(e.id, e.type, len(e.steps), len(e.pairs)) for e in m.exercises]) for m in es.modules] == \
+           [(m.id, [(e.id, e.type, len(e.steps), len(e.pairs)) for e in m.exercises]) for m in en.modules]
+
+
+def test_app_opens_in_english_and_can_switch_to_spanish(tmp_path, monkeypatch):
+    at = _run(tmp_path, monkeypatch, ak_lang=None)
+    assert not at.exception
+    assert at.session_state["ak_lang"] == "en"
+    text = " ".join(m.value for m in at.markdown)
+    assert "Your next step" in text and "The shared responsibility model" in text and "Tu siguiente paso" not in text
+    es = _run(tmp_path, monkeypatch)
+    assert "Tu siguiente paso" in " ".join(m.value for m in es.markdown)

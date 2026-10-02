@@ -145,3 +145,41 @@ def T(key: str, lang: str = "es", **kw) -> str:
 def L(lang: str, es: str, en: str) -> str:
     """Inline pair for texts used in a single place."""
     return en if lang == "en" else es
+
+
+# Table columns are built in Spanish (they are also the CSV headers the team already uses); shown in English when asked.
+COLUMNS_EN = {"Persona": "Person", "Puntos": "Points", "Rango": "Rank", "Lecciones": "Lessons", "VBDs": "VBDs",
+              "Última actividad": "Last activity", "Ruta (pasos del proveedor)": "Route (provider steps)",
+              "Lecciones de la familia": "Family lessons", "Mejor simulacro": "Best mock exam"}
+
+
+def columns(df, lang: str):
+    """The same table with its headers in ``lang``."""
+    return df.rename(columns=COLUMNS_EN) if lang == "en" else df
+
+
+# Catalog checks are written in Spanish (academy/catalog.py); these patterns show them in English.
+_MESSAGES_EN = [
+    (r"^El catálogo necesita al menos una familia y una skill\.$", "The catalog needs at least one family and one skill."),
+    (r"^Hay familias repetidas\.$", "There are repeated families."),
+    (r"^Hay skills repetidas: (.*)\.$", r"There are repeated skills: \1."),
+    (r"^\[skill (.*)\] la familia '(.*)' no existe\.$", r"[skill \1] the family '\2' does not exist."),
+    (r"^\[familia (.*)\] no tiene skills\.$", r"[family \1] has no skills."),
+    (r"^No encontré una tabla con las columnas «Skill Family» y «Unaligned / Missing Skill»\.$",
+     'I could not find a table with the columns "Skill Family" and "Unaligned / Missing Skill".'),
+    (r"^Encontré los encabezados, pero ninguna fila con skills debajo\.$", "I found the headers, but no rows with skills below them."),
+    (r"^\[material\] la skill '(.*)' no existe en el catálogo\.$", r"[material] the skill '\1' does not exist in the catalog."),
+    (r"^\[material de (.*)\] falta el título o la URL no es https\.$", r"[material of \1] the title is missing or the URL is not https."),
+]
+
+
+def message(text: str, lang: str) -> str:
+    """A catalog check message in ``lang`` (unknown messages pass through unchanged)."""
+    if lang != "en":
+        return text
+    import re
+
+    for pattern, en in _MESSAGES_EN:
+        if re.match(pattern, text):
+            return re.sub(pattern, en, text)
+    return text

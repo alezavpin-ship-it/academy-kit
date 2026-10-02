@@ -38,32 +38,35 @@ def _conn(path: str):
 
 
 @st.cache_data
-def _pack(name: str):
-    return load_pack(name)
+def _pack(name: str, lang: str = "en"):
+    return load_pack(name, lang)
 
 
 @st.cache_data
-def _exam(name: str):
-    return load_exam(name)
+def _exam(name: str, lang: str = "en"):
+    return load_exam(name, lang)
 
 
 packs = available_packs()
 if not packs:
-    st.error("No hay paquetes en packs/. Copia packs/_plantilla a packs/<tu-tema> y llena pack.json.")
+    st.error("No packs in packs/. Copy packs/_plantilla to packs/<your-topic> and fill in pack.json. · "
+             "No hay paquetes en packs/. Copia packs/_plantilla a packs/<tu-tema> y llena pack.json.")
     st.stop()
 default = os.environ.get("ACADEMY_PACK", packs[0])
 with st.sidebar:
-    lang = st.radio("Idioma / Language", ["es", "en"], horizontal=True, key="ak_lang", format_func=lambda x: "Español" if x == "es" else "English")
+    lang = st.radio("Language / Idioma", ["en", "es"], horizontal=True, key="ak_lang", format_func=lambda x: "Español" if x == "es" else "English")  # English first = default
     name = st.selectbox(T("pack", lang), packs, index=packs.index(default) if default in packs else 0, key="ak_pack",
-                        format_func=lambda n: _pack(n).title)
-    pack = _pack(name)
+                        format_func=lambda n: _pack(n, lang).title)
+    pack = _pack(name, lang)
     learner = st.text_input(T("who", lang), value=st.query_params.get("u", "yo"), key="ak_learner", help=T("who_help", lang))
     role = None
     if pack.roles:
         opts = [""] + list(pack.roles)
+        if st.session_state.get("ak_role") not in opts:  # role names are translated with the pack
+            st.session_state.pop("ak_role", None)
         role = st.selectbox(T("role", lang), opts, key="ak_role", format_func=lambda r: r or T("any_role", lang)) or None
 
-    email = st.text_input(T("email", lang), key="ak_email", help=T("email_help", lang), placeholder="nombre@empresa.com")
+    email = st.text_input(T("email", lang), key="ak_email", help=T("email_help", lang), placeholder="nombre@empresa.com" if lang == "es" else "name@company.com")
 
 conn = _conn(os.environ.get("ACADEMY_DB", str(ROOT / "data" / "academy.db")))
 who = learner.strip() or "yo"
@@ -96,5 +99,5 @@ with st.sidebar:
                 st.caption(T("pin_bad", lang))
         owner, families = on and is_owner, (mine if on and not is_owner else set())
 
-page.render(pack, conn, learner, lang, role, catalog=catalog, packs=[_pack(n) for n in packs],
-            exams=[_exam(n) for n in available_exams()], owner=owner, families=families)
+page.render(pack, conn, learner, lang, role, catalog=catalog, packs=[_pack(n, lang) for n in packs],
+            exams=[_exam(n, lang) for n in available_exams()], owner=owner, families=families)

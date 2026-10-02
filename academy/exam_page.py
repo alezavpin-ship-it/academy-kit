@@ -35,7 +35,7 @@ def assistant_box(prompt: str, lang: str, key: str, label: str = "") -> None:
         if cfg.mode == "api":
             if st.button(L(lang, f"Preguntar a {cfg.name}", f"Ask {cfg.name}"), key=f"ai_ask_{key}", type="primary"):
                 with st.spinner(L(lang, "Consultando…", "Asking…")):
-                    st.session_state[f"ai_ans_{key}"] = ai.ask(cfg, prompt)
+                    st.session_state[f"ai_ans_{key}"] = ai.ask(cfg, prompt, lang=lang)
             ans = st.session_state.get(f"ai_ans_{key}")
             if ans:
                 (st.markdown if ans[0] else st.error)(ans[1])
@@ -113,7 +113,7 @@ def _study(exam: Exam, tr: ExamTracker, lang: str, leader: bool = False) -> None
                 for ex in m.exercises:
                     _exercise(ex, tr, lang)
             if leader:  # content owners: a draft of new questions to review, never added automatically
-                assistant_box(ai.prompt_draft_questions(exam.name, f"{m.title} (id: {m.id})", m.points), lang, f"draft_{m.id}",
+                assistant_box(ai.prompt_draft_questions(exam.name, f"{m.title} (id: {m.id})", m.points, lang=lang), lang, f"draft_{m.id}",
                               L(lang, "Para líderes: borrador de preguntas nuevas con IA", "For leaders: draft new questions with AI"))
 
 
@@ -154,7 +154,7 @@ def _practice(exam: Exam, tr: ExamTracker, lang: str) -> None:
                 st.error(L(lang, "**Todavía no.**", "**Not yet.**") + f" {L(lang, 'Respuesta correcta', 'Right answer')}: **{q.options[q.answer]}**. {q.why}")
                 material_links(exam.module(q.module).materials[:2])
                 assistant_box(ai.prompt_explain(q.q, q.options, q.options[q.answer], q.why, options[choice] if choice is not None else "",
-                                                exam.name), lang, f"p_{q.id}", L(lang, "Que me lo explique el tutor de IA", "Have the AI tutor explain it"))
+                                                exam.name, lang=lang), lang, f"p_{q.id}", L(lang, "Que me lo explique el tutor de IA", "Have the AI tutor explain it"))
 
 
 # ---------------------------------------------------------------------------------------------- mock exam
@@ -201,7 +201,7 @@ def _result(exam: Exam, res: dict, lang: str) -> None:
         mods = [exam.module(m) for m in sorted(weak, key=weak.get, reverse=True)[:3]]
         mats = [(x["title"], x["url"]) for m in mods for x in m.materials[:2]]
         doms = [(dom_title.get(d, d), v["correct"], v["total"]) for d, v in res["domains"].items()]
-        assistant_box(ai.prompt_study_plan(exam.name, res["score"], exam.pass_score, doms, [m.title for m in mods], mats), lang,
+        assistant_box(ai.prompt_study_plan(exam.name, res["score"], exam.pass_score, doms, [m.title for m in mods], mats, lang=lang), lang,
                       f"plan_{exam.id}", L(lang, "Plan de estudio de 7 días con IA", "7-day study plan with AI"))
 
 

@@ -126,24 +126,28 @@ class Tracker:
         nxt = self.pack.ranks[cur + 1].points - pts if cur + 1 < len(self.pack.ranks) else None
         return cur, nxt
 
-    def badges(self) -> list[tuple[str, str, bool]]:
+    def badges(self, lang: str = "es") -> list[tuple[str, str, bool]]:
         """(badge, how to earn it, earned?)."""
+        en = lang == "en"
         ev = self.events()
         done, vbds = self.completed_lessons(), self.vbds_done()
         quiz = ev[ev["kind"] == "quiz"]
         first_try = int((quiz["points"] == 10).sum()) if len(quiz) else 0
         gloss = int(((ev["kind"] == "glossary") & (ev["correct"] == 1)).sum()) if len(ev) else 0
-        out = [
-            ("Primeros pasos", "Completa tu primera lección", len(done) >= 1),
-            ("A la primera", "10 respuestas correctas al primer intento", first_try >= 10),
-            ("Glosario al día", "20 respuestas correctas en el quiz del glosario", gloss >= 20),
-            ("Generador de valor", "Entrega tu primer VBD", len(vbds) >= 1),
-            ("Máquina de valor", "Entrega 5 VBDs", len(vbds) >= 5),
-        ]
+        names = [("First steps", "Complete your first lesson"), ("First try", "10 correct answers on the first attempt"),
+                 ("Glossary up to date", "20 correct answers in the glossary quiz"), ("Value generator", "Deliver your first VBD"),
+                 ("Value machine", "Deliver 5 VBDs")] if en else [
+                 ("Primeros pasos", "Completa tu primera lección"), ("A la primera", "10 respuestas correctas al primer intento"),
+                 ("Glosario al día", "20 respuestas correctas en el quiz del glosario"), ("Generador de valor", "Entrega tu primer VBD"),
+                 ("Máquina de valor", "Entrega 5 VBDs")]
+        earned = [len(done) >= 1, first_try >= 10, gloss >= 20, len(vbds) >= 1, len(vbds) >= 5]
+        out = [(n, how, ok) for (n, how), ok in zip(names, earned)]
         for level in self.pack.levels:
             ids = {les.id for les in self.pack.lessons if les.level == level}
-            out.append((f"Graduado: {level}", f"Completa todas las lecciones de «{level}»", bool(ids) and ids <= done))
-        out.append(("Ruta completa", "Completa todas las lecciones y sus VBDs",
+            out.append((f"Graduate: {level}", f"Complete every lesson of \"{level}\"", bool(ids) and ids <= done) if en else
+                       (f"Graduado: {level}", f"Completa todas las lecciones de «{level}»", bool(ids) and ids <= done))
+        out.append(("Full route" if en else "Ruta completa",
+                    "Complete every lesson and its VBD" if en else "Completa todas las lecciones y sus VBDs",
                     done >= {les.id for les in self.pack.lessons} and vbds >= {les.id for les in self.pack.lessons if les.vbd}))
         return out
 

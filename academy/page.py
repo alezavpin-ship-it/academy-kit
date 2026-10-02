@@ -15,7 +15,7 @@ from academy.catalog import (DEFAULT_SHEET, SEVERITIES, Catalog, catalog_from_ta
                              save_catalog, save_materials, sheet_names, slug, validate_catalog, validate_materials)
 from academy import assistant as ai
 from academy.exam_page import assistant_box, exams_tab, material_links
-from academy.i18n import L, T
+from academy.i18n import L, T, columns, message
 from academy.pack import Pack, Resource
 from academy.route import ITEM_POINTS, RouteTracker, build_routes, is_learn
 from academy.progress import VBD_POINTS, Tracker, team
@@ -87,6 +87,8 @@ def header(pack: Pack, tr: Tracker, lang: str) -> None:
 
 def lesson_panel(pack: Pack, lesson_id: str, lang: str) -> None:
     items = pack.for_lesson(lesson_id)
+    if lang == "en":  # English view: only the English resources, unless the lesson has none
+        items = [it for it in items if it[0].lang == "en"] or items
     if not items:
         return
     st.markdown(T("videos_for", lang, n=sum(r.kind != "link" for r, _ in items)))
@@ -190,7 +192,7 @@ def glossary(pack: Pack, tr: Tracker, lang: str) -> None:
     if "ak_gq_n" not in st.session_state:
         st.session_state["ak_gq_n"] = random.randint(0, 10_000)
     n = st.session_state["ak_gq_n"]
-    gq = quiz.glossary_question(pack.glossary, random.Random(n))
+    gq = quiz.glossary_question(pack.glossary, random.Random(n), lang)
     with st.container(border=True):
         st.caption(f"{T('category', lang)}: {gq['category']}")
         pick = st.radio(gq["prompt"], list(range(4)), format_func=lambda j: gq["options"][j], index=None, key=f"ak_gq_pick_{n}")
@@ -215,13 +217,16 @@ def glossary(pack: Pack, tr: Tracker, lang: str) -> None:
 
 def library(pack: Pack, lang: str) -> None:
     st.markdown(T("library_intro", lang))
-    topics = [k for k in pack.topics if pack.by_topic(k)]
+    def by_topic(k: str) -> list[Resource]:  # English view: only the English resources
+        return [r for r in pack.by_topic(k) if lang != "en" or r.lang == "en"]
+
+    topics = [k for k in pack.topics if by_topic(k)]
     if not topics:
         return
     c = st.columns([2, 1])
-    topic = c[0].selectbox(T("topic", lang), topics, key="ak_lib_topic", format_func=lambda k: f"{pack.topics[k]} ({len(pack.by_topic(k))})")
-    only_es = c[1].toggle(T("only_es", lang), key="ak_lib_es")
-    items = [r for r in pack.by_topic(topic) if not only_es or r.lang == "es"]
+    topic = c[0].selectbox(T("topic", lang), topics, key="ak_lib_topic", format_func=lambda k: f"{pack.topics[k]} ({len(by_topic(k))})")
+    only_es = lang != "en" and c[1].toggle(T("only_es", lang), key="ak_lib_es")
+    items = [r for r in by_topic(topic) if not only_es or r.lang == "es"]
     if not items:
         st.info(T("no_es", lang))
         return
@@ -242,7 +247,7 @@ def library(pack: Pack, lang: str) -> None:
 def progress_tab(pack: Pack, tr: Tracker, lang: str, role: str | None) -> None:
     header(pack, tr, lang)
     st.markdown(T("badges", lang))
-    bdg = tr.badges()
+    bdg = tr.badges(lang)
     st.dataframe(pd.DataFrame([{"": "🏅" if ok else "", T("badges", lang).strip("# "): n, T("how", lang): how}
                                for n, how, ok in bdg]), hide_index=True, width="stretch")
     st.markdown(T("ranks", lang))
@@ -262,12 +267,12 @@ def progress_tab(pack: Pack, tr: Tracker, lang: str, role: str | None) -> None:
 
 def team_tab(conn, pack: Pack, lang: str) -> None:
     st.markdown(T("team_intro", lang))
-    df = team(conn, pack)
+    df = columns(team(conn, pack), lang)
     if df.empty:
         st.info(T("no_team", lang))
         return
     st.dataframe(df, hide_index=True, width="stretch")
-    st.download_button(T("download", lang), df.to_csv(index=False).encode("utf-8-sig"), file_name=f"progreso_{pack.id}.csv",
+    st.download_button(T("download", lang), df.to_csv(index=False).encode("utf-8-sig"), file_name=L(lang, f"progreso_{pack.id}.csv", f"progress_{pack.id}.csv"),
                        mime="text/csv")
 
 
@@ -282,9 +287,10 @@ def champion_team(conn, packs: list[Pack], exams: list, catalog, families: set[s
     if not rows:
         st.info(L(lang, "Todavía nadie ha empezado contenido de tu familia.", "Nobody has started your family's content yet."))
         return set()
-    df = pd.DataFrame(rows)
+    df = columns(pd.DataFrame(rows), lang)
     st.dataframe(df, hide_index=True, width="stretch")
-    st.download_button(T("download", lang), df.to_csv(index=False).encode("utf-8-sig"), file_name="progreso_mi_familia.csv", mime="text/csv",
+    st.download_button(T("download", lang), df.to_csv(index=False).encode("utf-8-sig"),
+                       file_name=L(lang, "progreso_mi_familia.csv", "my_family_progress.csv"), mime="text/csv",
                        key="ak_fam_csv")
     return {r["Persona"] for r in rows}
 
@@ -324,7 +330,7 @@ def family_courses_editor(catalog, families: set[str], lang: str) -> None:
             errs = validate_materials(new, catalog)
             if errs:
                 for e in errs:
-                    st.error(e)
+                    st.error(message(e, lang))
             else:
                 merged = {k: v for k, v in mats.items() if k not in by_name.values()}  # other families' material is untouched
                 merged.update(new)
@@ -339,12 +345,12 @@ def notices_section(conn, packs: list[Pack], exams: list, catalog, lang: str, on
                        "Cada aviso va con copia al champion de la familia de skills.",
                  f"Rules: course finished · mock passed · {notify.INACTIVE_DAYS} days inactive · {notify.STALLED_DAYS} days without progress. "
                  "Each notice is copied to the skill family champion."))
-    todo = [n for n in notify.pending(conn, packs, exams, catalog) if only is None or n.learner in only]
+    todo = [n for n in notify.pending(conn, packs, exams, catalog, lang=lang) if only is None or n.learner in only]
     if not todo:
         st.info(L(lang, "No hay avisos pendientes.", "No pending notices."))
         return
     st.download_button(L(lang, f"Descargar la cola ({len(todo)}) en CSV", f"Download the queue ({len(todo)}) as CSV"),
-                       pd.DataFrame(notify.queue_rows(todo)).to_csv(index=False).encode("utf-8-sig"), file_name="avisos_pendientes.csv",
+                       pd.DataFrame(notify.queue_rows(todo)).to_csv(index=False).encode("utf-8-sig"), file_name=L(lang, "avisos_pendientes.csv", "pending_notices.csv"),
                        mime="text/csv", key="ak_nt_csv")
     icon = {"course_done": "🎉", "exam_passed": "🏅", "inactive": "⏰", "stalled": "🐢"}
     for i, n in enumerate(todo):
@@ -362,7 +368,7 @@ def notices_section(conn, packs: list[Pack], exams: list, catalog, lang: str, on
 
 def my_notices(conn, packs: list[Pack], exams: list, catalog, learner: str, lang: str) -> None:
     """What the learner sees at the top: the same messages that would reach their inbox."""
-    for n in notify.pending(conn, packs, exams, catalog, learner=learner.strip() or "yo", include_sent=True):
+    for n in notify.pending(conn, packs, exams, catalog, learner=learner.strip() or "yo", include_sent=True, lang=lang):
         first = n.body.split("\n\n")[1] if n.body.count("\n\n") >= 2 else n.subject
         (st.success if n.kind in ("course_done", "exam_passed") else st.warning)(f"**{n.subject}.** {first}")
 
@@ -425,7 +431,7 @@ def _save(cat: Catalog, source: str) -> None:
 def _preview(rows: list[list], catalog: Catalog | None, packs: list[Pack], lang: str, keep_roles: bool, source: str, key: str) -> None:
     new, rep = parse_grid(rows, keep_roles=keep_roles, previous=catalog)
     if new is None:
-        st.error(rep["error"])
+        st.error(message(rep["error"], lang))
         return
     st.success(T("sk_found", lang, f=rep["families"], s=rep["skills"], r=rep["header_row"]))
     if not rep["summary"]:
@@ -445,7 +451,7 @@ def _preview(rows: list[list], catalog: Catalog | None, packs: list[Pack], lang:
                  hide_index=True, width="stretch")
     errs = validate_catalog(new)
     for e in errs:
-        st.error(e)
+        st.error(message(e, lang))
     if st.button(T("sk_save", lang), key=f"ak_sk_save_{key}", type="primary", disabled=bool(errs)):
         _save(new, source)
 
@@ -463,7 +469,7 @@ def _skills_import(catalog: Catalog | None, packs: list[Pack], lang: str) -> Non
     sheet = st.selectbox(T("sk_sheet", lang), names, index=names.index(DEFAULT_SHEET) if DEFAULT_SHEET in names else 0, key="ak_sk_sheet")
     keep = st.checkbox(T("sk_keep_roles", lang), value=False, key="ak_sk_keep")
     up.seek(0)
-    _preview(read_xlsx(up, sheet), catalog, packs, lang, keep, f"Excel: pestaña «{sheet}»", "xlsx")
+    _preview(read_xlsx(up, sheet), catalog, packs, lang, keep, L(lang, f"Excel: pestaña «{sheet}»", f"Excel: sheet \"{sheet}\""), "xlsx")
 
 
 def _skills_paste(catalog: Catalog | None, packs: list[Pack], lang: str) -> None:
@@ -524,10 +530,10 @@ def _skills_edit(catalog: Catalog | None, packs: list[Pack], lang: str) -> None:
     if st.button(T("sk_save_edit", lang), key="ak_sk_save_edit", type="primary"):
         if errs:
             for e in errs:
-                st.error(e)
+                st.error(message(e, lang))
         else:
             save_materials(new_mats)
-            _save(new, "Edición manual")
+            _save(new, L(lang, "Edición manual", "Manual edit"))
 
 
 def access_section(lang: str) -> None:
@@ -585,7 +591,7 @@ def route_tab(catalog: Catalog | None, conn, learner: str, lang: str) -> None:
         st.toast(L(lang, "¡Paso completado!", "Step completed!") + (f" +{fb} pts" if fb else ""))
     if not route.steps:
         st.info(L(lang, "Esta familia todavía no tiene pasos de formación oficial. El champion puede agregarlos en «Mapa de skills → Editar a mano».",
-                  "This family has no official training steps yet. The champion can add them in «Skills map → Edit by hand»."))
+                  "This family has no official training steps yet. The champion can add them in Skills map → Edit by hand."))
     kind_name = {"path": L(lang, "Ruta", "Path"), "module": L(lang, "Módulo", "Module"), "course": L(lang, "Curso", "Course"),
                  "lab": L(lang, "Laboratorio", "Lab"), "tutorial": "Tutorial"}
     for n, stp in enumerate(route.steps, start=1):
@@ -605,7 +611,7 @@ def route_tab(catalog: Catalog | None, conn, learner: str, lang: str) -> None:
                     st.rerun()
     if nxt:
         target = next((s.target for s in catalog.skills if s.id == nxt.skill_id), "")
-        assistant_box(ai.prompt_step_coach(route.family, nxt.skill, nxt.title, nxt.provider, target), lang, f"coach_{nxt.key}",
+        assistant_box(ai.prompt_step_coach(route.family, nxt.skill, nxt.title, nxt.provider, target, lang=lang), lang, f"coach_{nxt.key}",
                       L(lang, "Prepárate para tu siguiente paso con el tutor de IA", "Get ready for your next step with the AI tutor"))
     if route.uncovered:
         st.caption(L(lang, "Skills de esta familia sin formación oficial todavía: ", "Skills of this family without official training yet: ")

@@ -137,3 +137,15 @@ O deja que Claude lo haga: usa los prompts de `PROMPT_PROYECTO.md`.
   interno con una ruta de base de datos compartida o cambia `progress.py` a una base de datos de red.
 - «Tu nombre» no es un inicio de sesión: sirve para separar progreso, no para controlar acceso.
 - Los videos son de terceros y pueden desaparecer: corre `audit_videos.py` cada pocos meses.
+
+
+## Idiomas / Languages
+
+La app abre en inglés; el selector «Language / Idioma» de la barra lateral cambia a español.
+
+- Textos de la interfaz: `academy/i18n.py` (par español / inglés por texto).
+- Contenido: cada paquete y examen tiene su versión en inglés junto al original, `packs/<tema>/pack.en.json` y
+  `exams/<id>/exam.en.json`. Llevan los mismos ids, el mismo orden de niveles y las mismas respuestas, así que el avance
+  se comparte entre idiomas. Si no existe la traducción, se muestra el archivo original.
+- Al cambiar una lección o pregunta, cámbiala en los dos archivos; las pruebas (`pytest`) avisan si dejan de coincidir.
+- En inglés solo se muestran los videos en inglés (si una lección no tuviera ninguno, se muestran todos).

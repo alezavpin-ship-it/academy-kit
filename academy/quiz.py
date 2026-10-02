@@ -17,7 +17,7 @@ def shuffled(key: str, options: list[str], correct: int) -> tuple[list[str], int
     return [options[i] for i in order], order.index(correct)
 
 
-def glossary_question(glossary: list[dict], rng: random.Random) -> dict:
+def glossary_question(glossary: list[dict], rng: random.Random, lang: str = "es") -> dict:
     """Term → definition or definition → term, with 3 distractors (same category first)."""
     g = rng.choice(glossary)
     same = [x for x in glossary if x["category"] == g["category"] and x["term"] != g["term"]]
@@ -26,10 +26,10 @@ def glossary_question(glossary: list[dict], rng: random.Random) -> dict:
     pool += rng.sample(others, 3 - len(pool))
     to_def = rng.random() < 0.5
     if to_def:
-        prompt = f"¿Qué significa **{g['term']}**?"
+        prompt = f"What does **{g['term']}** mean?" if lang == "en" else f"¿Qué significa **{g['term']}**?"
         opts = [g["definition"]] + [x["definition"] for x in pool]
     else:
-        prompt = f"¿Qué término corresponde a: _{g['definition']}_?"
+        prompt = (f"Which term matches: _{g['definition']}_?" if lang == "en" else f"¿Qué término corresponde a: _{g['definition']}_?")
         opts = [g["term"]] + [x["term"] for x in pool]
     order = list(range(4))
     rng.shuffle(order)

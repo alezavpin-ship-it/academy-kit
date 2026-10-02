@@ -109,12 +109,15 @@ def _parse(data: dict) -> Exam:
                 meta.get("version", "1.0"), meta.get("outline_date", ""))
 
 
-def load_exam(path: str | Path) -> Exam:
+def load_exam(path: str | Path, lang: str | None = None) -> Exam:
+    """``lang``: use the translation exams/<id>/exam.<lang>.json when it exists (same ids and answers)."""
     p = Path(path)
     if not p.exists():
         p = EXAMS_DIR / str(path)
     if p.is_dir():
         p = p / "exam.json"
+    if lang and (p.parent / f"exam.{lang}.json").exists():
+        p = p.parent / f"exam.{lang}.json"
     return _parse(json.loads(p.read_text(encoding="utf-8")))
 
 
