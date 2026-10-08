@@ -5,7 +5,7 @@ workbook (tab People) or in the app's edit mode:
 
     Person, Email, Role, Families, Active
 
-* Role = owner (sees and runs everything) | champion (runs the skill families listed in Families) | sme (answers in the
+* Role = owner (sees and runs everything; at most 3 active owners, ACADEMY_MAX_OWNERS changes it) | champion (runs the skill families listed in Families) | sme (answers in the
   forum as the expert of the families listed) | learner.
 * Families = family ids separated by ";" (for champions and SMEs).
 * Active = no keeps the person in the file without showing them in the list of names.
@@ -29,6 +29,14 @@ PEOPLE_FILE = ROOT / "catalog" / "people.csv"
 COLUMNS = ["Person", "Email", "Role", "Families", "Active"]
 OWNER, CHAMPION, SME, LEARNER = "owner", "champion", "sme", "learner"
 ROLES = [OWNER, CHAMPION, SME, LEARNER]
+MAX_OWNERS = 3
+
+
+def max_owners() -> int:
+    try:
+        return max(1, int(os.environ.get("ACADEMY_MAX_OWNERS", MAX_OWNERS)))
+    except ValueError:
+        return MAX_OWNERS
 
 
 @dataclass(frozen=True)
@@ -87,6 +95,9 @@ def parse(raw: bytes, family_ids: set[str] | None = None) -> tuple[list[Person],
             continue
         seen.add(name.lower())
         out.append(Person(name, email, role, fams, (r.get("Active") or "yes").strip().lower() not in ("no", "n", "false", "0")))
+    active = [p.name for p in out if p.role == OWNER and p.active]
+    if len(active) > max_owners():
+        problems.append(f"[people] at most {max_owners()} active owners: {', '.join(active)}. Make the others champions or learners.")
     return out, problems
 
 
@@ -116,6 +127,44 @@ def find(people: list[Person], learner: str, email: str = "") -> Person | None:
 
 def is_owner(people: list[Person], learner: str, email: str = "") -> bool:
     return any(p.role == OWNER and p.matches(learner, email) for p in people)
+
+
+def owners(people: list[Person]) -> list[Person]:
+    return [p for p in people if p.role == OWNER and p.active]
+
+
+def set_owners(people: list[Person], new: list[tuple[str, str]]) -> tuple[list[Person], list[str]]:
+    """The directory with exactly these owners ((name, e-mail) pairs). A person already in the directory keeps their row and
+    becomes owner; an owner left out becomes a learner (a champion's families stay with them as champion). Returns the new
+    directory and the problems (nothing is changed when there are any)."""
+    from dataclasses import replace
+
+    new = [(n.strip(), e.strip()) for n, e in new if n.strip() or e.strip()]
+    problems = []
+    if not new:
+        problems.append("At least one owner must remain.")
+    if len(new) > max_owners():
+        problems.append(f"At most {max_owners()} owners.")
+    for n, e in new:
+        if not n or not e or "@" not in e:
+            problems.append(f"«{n or e}»: each owner needs a name and a work e-mail (the one they sign in with).")
+    if len({e.lower() for _, e in new}) < len(new):
+        problems.append("The same e-mail is repeated.")
+    if problems:
+        return people, problems
+    out, used = [], set()
+    for p in people:
+        hit = next((i for i, (n, e) in enumerate(new) if i not in used and (_norm(e) == _norm(p.email) or _norm(n) == _norm(p.name))), None)
+        if hit is not None:
+            used.add(hit)
+            n, e = new[hit]
+            out.append(replace(p, name=n, email=e, role=OWNER, active=True))
+        elif p.role == OWNER:
+            out.append(replace(p, role=CHAMPION if p.families else LEARNER))
+        else:
+            out.append(p)
+    out += [Person(n, e, OWNER) for i, (n, e) in enumerate(new) if i not in used]
+    return out, []
 
 
 def families_of(people: list[Person], learner: str, email: str = "", role: str = CHAMPION) -> set[str]:

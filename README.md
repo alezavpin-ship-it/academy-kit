@@ -132,6 +132,13 @@ inventory) and the courses, the recommended actions with the champion who owns e
 upload and the roles by start month. It works on a file read for the session too (compared with the saved uploads) and
 says so on the cover. The *Detailed report (PDF)* keeps every chart and table.
 
+## Azure App Service
+`deploy/azure/startup.py` (startup command: `python deploy/azure/startup.py`), `deploy/azure/package.py` (the zip to deploy: no data, config or roles
+files) and `.github/workflows/main_academia-cloud-test.yml` (Deployment Center's workflow: tests, package and deploy on every push to main). With `ACADEMY_AUTH=entra` the
+app takes the person signed in by Microsoft Entra ID (App Service Authentication) and gives roles by the e-mail in People.
+Everything the app writes lives in `/home/academy-data`. Step-by-step guide: the doc «Academia - Cloud: deploy on Azure
+App Service».
+
 ## English only
 Earlier versions kept Spanish and English side by side. On the first start, `academy/english.py` converts once: the
 English course and exam become the only files, Spanish videos are dropped, and the content and demand files get their
@@ -157,6 +164,8 @@ and questions have the same ids).
 ## People and roles (catalog/people.csv)
 `Person, Email, Role, Families, Active` — Role = owner | champion | sme | learner; Families = family ids separated by `;`.
 The sidebar offers these names in **Who are you?**: your role comes with your name (owners get the **Owner view** switch).
+Up to **3 owners** (ACADEMY_MAX_OWNERS changes it): an owner names them in **Team → 👑 App owners**, with the work
+e-mail each one signs in with; they are saved in People with role `owner`.
 A champion listed here becomes the champion of those families in the catalog (reports and notices copy them). Also the
 People tab of the content workbook and ✏️ Edit mode (Team, Reports). Owners in `config/access.json` (with the optional PIN)
 keep working.

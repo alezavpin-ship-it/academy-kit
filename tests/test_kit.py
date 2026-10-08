@@ -1490,3 +1490,87 @@ def test_demand_reads_the_organization_report_format(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch, dm_session={"name": "roles.csv", "rows": rows, "date": "2026-09-15"})
     assert not at.exception and any("not saved" in w.value for w in at.warning)
     assert not (tmp_path / "demand_roles.csv").exists() and not (tmp_path / "demand_history").exists()
+
+
+# ---------------------------------------------------------------------------------------------- Azure App Service
+def test_entra_sign_in_is_trusted_only_on_azure(tmp_path, monkeypatch):
+    import base64
+
+    from academy import identity, people
+
+    claims = {"claims": [{"typ": "name", "val": "Ana Lopez"}, {"typ": "preferred_username", "val": "ana.lopez@contoso.com"}]}
+    headers = {"X-Ms-Client-Principal-Name": "ana.lopez@contoso.com",
+               "X-Ms-Client-Principal": base64.b64encode(json.dumps(claims).encode()).decode().rstrip("=")}
+    assert identity.signed_in(headers, {}) is None  # on a laptop the headers mean nothing
+    me = identity.signed_in(headers, {"ACADEMY_AUTH": "entra"})
+    assert me == identity.SignedIn("ana.lopez@contoso.com", "Ana Lopez")
+    assert identity.signed_in({"x-ms-client-principal-name": "bo@contoso.com"}, {"ACADEMY_AUTH": "Entra"}).name == "Bo"
+    assert identity.signed_in({}, {"ACADEMY_AUTH": "entra"}) is None
+    # in the app: the signed-in account replaces «Who are you?» and the owner role goes by its e-mail
+    people.save([people.Person("Ana Lopez", "ana.lopez@contoso.com", "owner")], tmp_path / "people.csv")
+    monkeypatch.setenv("ACADEMY_AUTH", "entra")
+    monkeypatch.setattr(identity, "signed_in", lambda h, env=None: identity.SignedIn("ana.lopez@contoso.com", "Ana L."))
+    at = _run(tmp_path, monkeypatch, owners=None)
+    assert not at.exception and any("Signed in as **Ana Lopez**" in c.value for c in at.caption)
+    assert not any(s.label == "Who are you?" for s in at.selectbox) and any(t.label.startswith("View") or "owner" in t.label.lower() for t in at.toggle)
+
+
+def test_azure_package_leaves_data_out(tmp_path):
+    import importlib.util
+    import zipfile
+
+    spec = importlib.util.spec_from_file_location("package", ROOT / "deploy" / "azure" / "package.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    names = mod.build(tmp_path / "a.zip")
+    assert "app.py" in names and "deploy/azure/startup.py" in names and "requirements.txt" in names
+    assert not [n for n in names if n.startswith(("data/", "config/", "tests/", ".venv/", "export/"))]
+    assert "content/demand_roles.csv" not in names and not any("demand_history" in n for n in names)
+    assert set(zipfile.ZipFile(tmp_path / "a.zip").namelist()) == set(names)
+
+
+def test_up_to_three_owners_kept_in_people(tmp_path, monkeypatch):
+    from academy import people
+
+    d = [people.Person("Alejandro Zavala", "alejandro@contoso.com", "owner"),
+         people.Person("Ana Lopez", "ana@contoso.com", "champion", ("identity-access-management",))]
+    new, problems = people.set_owners(d, [("Alejandro Zavala", "alejandro@contoso.com"), ("Ana Lopez", "ana@contoso.com"),
+                                          ("Bo Chen", "bo@contoso.com")])
+    assert problems == [] and [p.name for p in people.owners(new)] == ["Alejandro Zavala", "Ana Lopez", "Bo Chen"]
+    assert next(p for p in new if p.name == "Ana Lopez").families == ("identity-access-management",)  # keeps her families
+    four = [("A", "a@x.com"), ("B", "b@x.com"), ("C", "c@x.com"), ("D", "d@x.com")]
+    assert people.set_owners(d, four)[1] == ["At most 3 owners."] and people.set_owners(d, [])[1]
+    assert people.set_owners(d, [("Bo", "not-an-email")])[1]
+    back, _ = people.set_owners(new, [("Alejandro Zavala", "alejandro@contoso.com")])  # the others step down, nobody is deleted
+    assert len(back) == 3 and next(p for p in back if p.name == "Ana Lopez").role == "champion" and next(p for p in back if p.name == "Bo Chen").role == "learner"
+    raw = people.to_csv([people.Person(n, e, "owner") for n, e in four])
+    assert any("at most 3 active owners" in m for m in people.parse(raw)[1])
+    monkeypatch.setenv("ACADEMY_MAX_OWNERS", "4")
+    assert not people.parse(raw)[1]
+    monkeypatch.delenv("ACADEMY_MAX_OWNERS")
+    # in the app: each of the three owners gets the owner view; the Team tab shows «App owners (3 of 3)»
+    people.save(new, tmp_path / "people.csv")
+    for who in ("Ana Lopez", "Bo Chen"):
+        at = _run(tmp_path, monkeypatch, owners=None, ak_person=who)
+        assert not at.exception and any(e.label == "👑 App owners (3 of 3)" for e in at.expander), who
+
+
+def test_azure_startup_keeps_team_data_between_deploys(tmp_path):
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("startup", ROOT / "deploy" / "azure" / "startup.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    app, home = tmp_path / "app", tmp_path / "home"
+    (app / "catalog").mkdir(parents=True)
+    (app / "catalog" / "people.csv").write_text("shipped", encoding="utf-8")
+    added = mod.link_folders(app, home)
+    assert "catalog/people.csv" in [a.replace("\\", "/") for a in added] and (app / "catalog").is_symlink()
+    (home / "catalog" / "people.csv").write_text("edited in the app", encoding="utf-8")
+    new = tmp_path / "app2"  # the next deploy: a fresh copy of the code, with one new file
+    (new / "catalog").mkdir(parents=True)
+    (new / "catalog" / "people.csv").write_text("shipped again", encoding="utf-8")
+    (new / "catalog" / "new.csv").write_text("new", encoding="utf-8")
+    mod.link_folders(new, home)
+    assert (new / "catalog" / "people.csv").read_text(encoding="utf-8") == "edited in the app" and (home / "catalog" / "new.csv").exists()
+    assert mod.link_folders(new, home) == []  # a restart changes nothing

@@ -15,7 +15,7 @@ if str(ROOT) not in sys.path:
 import streamlit as st  # noqa: E402
 
 from academy import page  # noqa: E402
-from academy import content_sync, english, family_path, notify, people  # noqa: E402
+from academy import content_sync, english, family_path, identity, notify, people  # noqa: E402
 from academy import legal  # noqa: E402
 from academy.access import load_access, save_access  # noqa: E402
 from academy.catalog import load_catalog  # noqa: E402
@@ -79,7 +79,12 @@ with st.sidebar:
                         format_func=lambda n: _pack(n).title)
     pack = _pack(name)
     directory = [x for x in people.load() if x.active]  # the people directory (catalog/people.csv): pick your name
-    if directory:
+    me = identity.signed_in(getattr(st.context, "headers", None))  # on Azure: the person Microsoft Entra ID signed in
+    if me:
+        person = people.find(directory, "", me.email)
+        learner = person.name if person else me.name
+        st.caption(f"Signed in as **{learner}** ({me.email})")
+    elif directory:
         names = [x.name for x in directory] + ["Someone else…"]
         asked = st.query_params.get("u", "")
         pick = st.selectbox("Who are you?", names, index=names.index(asked) if asked in names else 0, key="ak_person",
@@ -88,7 +93,8 @@ with st.sidebar:
         learner = st.text_input(T("who"), value=asked or "me", key="ak_learner", help=T("who_help")) if pick == names[-1] else pick
     else:
         learner = st.text_input(T("who"), value=st.query_params.get("u", "me"), key="ak_learner", help=T("who_help"))
-    person = people.find(directory, learner)
+    if not me:
+        person = people.find(directory, learner)
     role = None
     if pack.roles:
         opts = [""] + list(pack.roles)
@@ -98,7 +104,10 @@ with st.sidebar:
 
     st.toggle("Sounds", value=True, key="ak_sound",
               help="A short sound when you answer, finish a step or complete a lesson.")
-    email = st.text_input(T("email"), key="ak_email", help=T("email_help"), placeholder="name@company.com") or (person.email if person else "")
+    if me:  # the e-mail is the signed-in account: nobody can type someone else's
+        email = me.email
+    else:
+        email = st.text_input(T("email"), key="ak_email", help=T("email_help"), placeholder="name@company.com") or (person.email if person else "")
 
 conn = _conn(os.environ.get("ACADEMY_DB", str(ROOT / "data" / "academy.db")))
 who = learner.strip() or "me"
@@ -110,8 +119,9 @@ catalog = load_catalog()
 # Views: end user by default; owners, leaders and champions can switch on the owner view (see academy/access.py).
 acc = load_access()
 owner, families = False, set()
-is_owner = acc.is_owner(who, email) or people.is_owner(directory, who, email)
-mine = acc.champion_families(who, email, catalog) | people.families_of(directory, who, email)
+by_name = "" if me else who  # signed in with Entra ID: roles go by the account's e-mail only, never by a typed name
+is_owner = acc.is_owner(by_name, email) or people.is_owner(directory, by_name, email)
+mine = acc.champion_families(by_name, email, catalog) | people.families_of(directory, by_name, email)
 with st.sidebar:
     if not acc.configured and not any(x.role == people.OWNER for x in directory):
         st.divider()
@@ -122,7 +132,8 @@ with st.sidebar:
             st.rerun()
     elif not (is_owner or mine):
         st.divider()
-        st.caption("Owner or champion? Pick your name in «Who are you?» (or type the e-mail registered as owner) to get the owner view.")
+        st.caption("Owner or champion? An owner adds your work e-mail to People (✏️ Edit mode) with your role." if me else
+                   "Owner or champion? Pick your name in «Who are you?» (or type the e-mail registered as owner) to get the owner view.")
     if is_owner or mine:
         st.divider()
         on = st.toggle(T("view_owner" if is_owner else "view_champion"), value=True, key="ak_owner_view",

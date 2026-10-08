@@ -595,30 +595,57 @@ def content_section(lang: str) -> None:
     st.divider()
 
 
-def access_section(lang: str) -> None:
-    """Owners manage who else is an owner, the optional PIN and the security group that will replace this list."""
+def access_section(lang: str, me: str = "", email: str = "") -> None:
+    """Owners name the app's owners (up to people.max_owners(), kept in People), the optional PIN and the security group."""
+    from academy import content_sync
+    from academy import people as directory_mod
+
     acc = load_access()
-    with st.expander("Access: who gets the owner view"):
-        st.caption(("Offline this separates views; it is not a security control. In Microsoft 365 it is replaced by membership of the "
-                     "security group. Champions are not listed here: they only see people taking their family."))
-        owners = st.text_area("Owners and leaders (one name or e-mail per line)",
-                              value="\n".join(acc.owners), key="ak_acc_owners", height=120)
+    directory = directory_mod.load()
+    cap = directory_mod.max_owners()
+    current = [(p.name, p.email) for p in directory_mod.owners(directory)]
+    for o in acc.owners:  # owners of the earlier list (config/access.json) move into People when this is saved
+        if not any(o.strip().lower() in (n.lower(), e.lower()) for n, e in current):
+            current.append((o.split("@")[0].replace(".", " ").title() if "@" in o else o, o if "@" in o else ""))
+    with st.expander(f"👑 App owners ({len(current)} of {cap})"):
+        st.caption(f"Owners see and run everything: reports, demand, edit mode and the team. Up to {cap} owners; each one with the "
+                   "work e-mail they sign in with. They are kept in People (role owner), so the content workbook shows them too.")
+        df = st.data_editor(pd.DataFrame(current, columns=["Person", "Email"]), num_rows="dynamic", hide_index=True, width="stretch",
+                            key="ak_owners_ed", column_config={"Person": st.column_config.TextColumn("Person", required=True),
+                                                               "Email": st.column_config.TextColumn("Work e-mail", required=True)})
+        rows = [(str(r.Person or ""), str(r.Email or "")) for r in df.itertuples() if str(r.Person or "").strip() or str(r.Email or "").strip()]
+        if len(rows) > cap:
+            st.warning(f"At most {cap} owners: remove {len(rows) - cap}.")
+        if st.button("Save owners", key="ak_owners_save", type="primary", disabled=len(rows) > cap):
+            mine = {me.strip().lower(), email.strip().lower()} - {"", "me"}
+            new, problems = directory_mod.set_owners(directory, rows)
+            if not problems and mine and not any({n.lower(), e.lower()} & mine for n, e in rows):
+                problems = ["Keep yourself in the list (another owner can remove you later), so the app is never left without you mid-change."]
+            if problems:
+                st.error("\n\n".join(problems))
+            else:
+                directory_mod.save(new)
+                acc.owners = []  # one list of owners: People
+                save_access(acc)
+                content_sync.refresh()
+                st.cache_data.clear()
+                st.toast("Owners saved.")
+                st.rerun()
+    with st.expander("Access: PIN and security group"):
+        st.caption(("Offline the owner view is not a security control. On Azure, Microsoft Entra ID signs everyone in and the owners "
+                     "above are matched by their work e-mail."))
         group = st.text_input("Entra ID security group (for the integration)",
                               value=acc.security_group, key="ak_acc_group", placeholder="SG-Academia-Cloud-Owners")
         pin = st.text_input("New owner PIN (empty = keep)", type="password", key="ak_acc_pin")
         drop = st.checkbox("Remove the PIN", key="ak_acc_nopin") if acc.has_pin() else False
         if st.button("Save access", key="ak_acc_save"):
-            new = [o.strip() for o in owners.splitlines() if o.strip()]
-            if not new:
-                st.error("At least one owner must remain.")
-            else:
-                acc.owners, acc.security_group = new, group.strip()
-                if drop:
-                    acc.set_pin("")
-                elif pin:
-                    acc.set_pin(pin)
-                save_access(acc)
-                st.toast("Access saved.")
+            acc.security_group = group.strip()
+            if drop:
+                acc.set_pin("")
+            elif pin:
+                acc.set_pin(pin)
+            save_access(acc)
+            st.toast("Access saved.")
 
 
 def route_tab(catalog: Catalog | None, conn, learner: str, lang: str, manage: set[str] | None = None) -> None:
@@ -814,7 +841,7 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
             team_tab(conn, pack, lang)
             notices_section(conn, packs, exams, catalog, lang)
             content_section(lang)
-            access_section(lang)
+            access_section(lang, learner, email)
             assistant_section(lang)
 
         sections.append(("tab_team", team_view))

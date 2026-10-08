@@ -5,3 +5,4 @@ config/access.json
 config/assistant.json
 __pycache__/
 .pytest_cache/
+dist/
