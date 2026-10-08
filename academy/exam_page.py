@@ -10,7 +10,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from academy import assistant as ai
-from academy import quiz
+from academy import quiz, ui
 from academy.exam import EXERCISE_POINTS, PASS_POINTS, PRACTICE_POINTS, Exam, ExamTracker, Exercise, build_mock, check_match, check_order, grade
 from academy.i18n import L
 
@@ -66,6 +66,7 @@ def _exercise(ex: Exercise, tr: ExamTracker, lang: str) -> None:
                 ok = check_order(ex, chosen)
                 right = sum(a == b for a, b in zip(chosen, ex.steps))
                 st.session_state[fb_key] = (ok, tr.complete_exercise(ex.id) if ok else 0, f"{right}/{len(opts)}")
+                ui.fx("step" if ok else "bad")
         elif ex.type == "match":
             rights = [p[1] for p in ex.pairs]
             random.Random(quiz._seed(ex.id)).shuffle(rights)
@@ -76,6 +77,7 @@ def _exercise(ex: Exercise, tr: ExamTracker, lang: str) -> None:
             if st.button(L(lang, "Revisar relaciones", "Check matches"), key=f"ex_b_{ex.id}", disabled=any(v is None for v in chosen.values())):
                 res = check_match(ex, chosen)
                 st.session_state[fb_key] = (all(res), tr.complete_exercise(ex.id) if all(res) else 0, f"{sum(res)}/{len(res)}")
+                ui.fx("step" if all(res) else "bad")
         else:  # lab: a guided hands-on practice with a checklist
             if ex.url:
                 st.link_button(f"🧪 {ex.label or L(lang, 'Abrir la práctica', 'Open the lab')} ↗", ex.url)
@@ -83,6 +85,7 @@ def _exercise(ex: Exercise, tr: ExamTracker, lang: str) -> None:
             if st.button(L(lang, "Marcar práctica terminada", "Mark lab as done"), key=f"ex_b_{ex.id}", disabled=done or not all(ticks),
                          type="primary"):
                 st.session_state[fb_key] = (True, tr.complete_exercise(ex.id), "")
+                ui.fx("step" if True else "bad")
         fb = st.session_state.get(fb_key)
         if fb:
             ok, pts, detail = fb
@@ -142,6 +145,7 @@ def _practice(exam: Exam, tr: ExamTracker, lang: str) -> None:
         c1, c2 = st.columns([1, 1])
         if c1.button(L(lang, "Revisar", "Check"), key=f"ex_p_check_{q.id}", disabled=choice is None, type="primary"):
             st.session_state[fb_key] = (choice == ci, tr.answer_practice(q.id, choice == ci))
+            ui.fx("ok" if choice == ci else "bad")
         if c2.button(L(lang, "Siguiente pregunta →", "Next question →"), key=f"ex_p_next_{q.id}"):
             st.session_state[pos_key] = pos + 1
             st.session_state.pop(fb_key, None)
@@ -243,8 +247,7 @@ def _mock(exam: Exam, tr: ExamTracker, lang: str) -> None:
         res.update(answers=answers, seconds=seconds, late=seconds > exam.mock_minutes * 60 + 15, points=tr.record_mock(res, seconds))
         st.session_state[res_key] = res
         st.session_state.pop(state_key, None)
-        if res["passed"]:
-            st.balloons()
+        ui.fx("win" if res["passed"] else "bad")
         st.rerun()
 
 

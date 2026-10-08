@@ -6,8 +6,8 @@ import json
 from urllib.parse import parse_qs, quote, urlparse
 from urllib.request import Request, urlopen
 
-SIZES = {"XS": 220, "S": 280, "M": 360, "L": 480}  # player width in px (16:9); small so it fits next to the quiz
-DEFAULT_SIZE = "S"
+SIZES = {"XS": 280, "S": 400, "M": 520, "L": 720}  # player width in px (16:9), sized for the full-width page
+DEFAULT_SIZE = "M"
 
 
 def youtube_id(url: str) -> str | None:

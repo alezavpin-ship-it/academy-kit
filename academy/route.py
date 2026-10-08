@@ -33,6 +33,9 @@ class Step:
     url: str
     kind: str
     provider: str = "Microsoft Learn"
+    vendor: str = ""  # technology / vendor of the skill (Microsoft, AWS, Cisco…)
+    number: int = 0  # class number inside the skill's path: class 1, class 2…
+    category: str = ""
 
     @property
     def key(self) -> str:
@@ -43,26 +46,52 @@ class Step:
 class FamilyRoute:
     family_id: str
     family: str
-    steps: list[Step]  # vendor training items to complete (Microsoft Learn first)
+    steps: list[Step]  # the classes to complete, ordered by vendor, skill and class number
     extras: dict[str, list[dict]]  # skill name -> reference material that is not a step (docs, guides, videos)
-    uncovered: list[str]  # skills of the family without any vendor training step yet
+    uncovered: list[str]  # skills of the family without any training step yet
+
+    def vendors(self) -> list[str]:
+        return list(dict.fromkeys(s.vendor for s in self.steps))
+
+
+def class_order(items: list[dict]) -> list[dict]:
+    """The steps of one skill in class order: the ``order`` written by the content owner (class 1, class 2…); the ones
+    without a number follow, vendor's own training first and from the smallest unit to the largest."""
+    mine = [m for m in items if m.get("kind") in STEP_KINDS and m.get("provider")]
+
+    def key(m: dict):
+        try:
+            n = int(m.get("order") or 0)
+        except (TypeError, ValueError):
+            n = 0
+        return (n <= 0, n, not is_learn(m), STEP_KINDS.index(m["kind"]))
+
+    return sorted(mine, key=key)
 
 
 def build_routes(catalog, materials: dict[str, list[dict]]) -> list[FamilyRoute]:
-    """One route per family, families with the biggest gap first."""
+    """One route per family (biggest gap first). Inside a family: Microsoft first, then the other vendors; inside a vendor
+    its skills; inside a skill its classes in order (any mix of sources: Microsoft Learn, the vendor's free training,
+    the company's own portal)."""
+    from academy.catalog import vendor_of
+
     out = []
     for fam in catalog.by_gap():
         steps, extras, uncovered = [], {}, []
-        for s in catalog.in_family(fam.id):
-            items = materials.get(s.id, [])
-            mine = [m for m in items if m.get("kind") in STEP_KINDS and m.get("provider")]
-            mine.sort(key=lambda m: (not is_learn(m), STEP_KINDS.index(m["kind"])))
-            steps += [Step(s.id, s.name, m["title"], m["url"], m["kind"], m["provider"]) for m in mine]
-            rest = [m for m in items if m not in mine]
-            if rest:
-                extras[s.name] = rest
-            if not mine:
-                uncovered.append(s.name)
+        skills = [(vendor_of(s, materials), s) for s in catalog.in_family(fam.id)]
+        vendors = list(dict.fromkeys(v for v, _ in skills))
+        vendors.sort(key=lambda v: (v != "Microsoft", v == "Vendor-neutral"))  # stable: keeps catalog order otherwise
+        for vendor in vendors:
+            for _, s in [x for x in skills if x[0] == vendor]:
+                items = materials.get(s.id, [])
+                mine = class_order(items)
+                steps += [Step(s.id, s.name, m["title"], m["url"], m["kind"], m["provider"], vendor, n, s.category)
+                          for n, m in enumerate(mine, start=1)]
+                rest = [m for m in items if m not in mine]
+                if rest:
+                    extras[s.name] = rest
+                if not mine:
+                    uncovered.append(s.name)
         out.append(FamilyRoute(fam.id, fam.name, steps, extras, uncovered))
     return out
 

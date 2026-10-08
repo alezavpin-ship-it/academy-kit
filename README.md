@@ -150,5 +150,106 @@ La app abre en inglés; el selector «Language / Idioma» de la barra lateral ca
 - Al cambiar una lección o pregunta, cámbiala en los dos archivos; las pruebas (`pytest`) avisan si dejan de coincidir.
 - En inglés solo se muestran los videos en inglés (si una lección no tuviera ninguno, se muestran todos).
 
+## Sonidos, animaciones y reportes
+
+- **Sonidos:** tonos cortos generados en el navegador (sin archivos de audio) al responder, completar un paso y terminar una
+  lección o un VBD. Se apagan con el interruptor «Sounds / Sonidos» de la barra lateral. Definidos en `academy/ui.py` (`SOUNDS`).
+- **Animaciones:** entrada de la tarjeta de siguiente paso, llenado de las barras de avance, puntos clave que aparecen uno a
+  uno y confeti al completar. Se desactivan solas si el sistema pide «reducir movimiento».
+- **Reportes por familia de skills:** pestaña «Equipo» (vista de owner: todas las familias; vista de champion: solo las suyas).
+  Estado por familia y seguimiento por persona, con descarga en Excel y en HTML para imprimir. Lógica en `academy/report.py`.
+
+## Contenido de la academia en un solo archivo (CSV / Excel)
+
+Todo lo que se estudia se edita en **un archivo**, sin tocar código:
+
+    content/academia_contenido.csv
+
+La app lo crea sola la primera vez (con el contenido que ya tiene) y lo mantiene al día cada vez que algo se cambia desde la
+propia app (Mapa de skills, cursos de una familia, importaciones).
+
+## Cómo se edita
+1. Abre `content/academia_contenido.csv` en Excel.
+2. Filtra por la columna **Tabla** para trabajar una tabla a la vez.
+3. Edita, guarda (como CSV) y cierra Excel.
+4. Vuelve a abrir la app. Revisa el archivo completo: si está bien, lo aplica y guarda un respaldo del contenido anterior en
+   `data/content_backups/`; si tiene errores **no cambia nada** y los lista en Equipo → «Contenido de la academia».
+
+También se puede descargar y subir desde la app (pestaña Equipo, vista de owner), como CSV único o como libro de Excel con
+una hoja por tabla, o por comando: `python tools/content.py export | check <archivo> | import <archivo>`.
+
+## Estructura: familia → vendor → skill → clases
+| Tabla | Qué contiene | Columnas clave |
+|---|---|---|
+| Familias | Las skill families principales (editables): brecha, roles afectados, champion | FamilyId, Name |
+| Skills | Las skills de cada familia, con su tecnología / vendor (Microsoft, AWS, GCP, Cisco, IBM…) y categoría opcional | SkillId, FamilyId, Vendor, Category |
+| LearningPaths | La ruta de carrera de cada skill: **Class** 1, 2, 3… y la fuente en **Provider** (Microsoft Learn, el fabricante, Workday Learning…) | SkillId, Class, Title, Url, Kind, Provider |
+| Cursos, Niveles, Rangos, Temas, Roles | Datos generales de cada curso, por idioma | PackId, Lang |
+| Lecciones, Preguntas, VBD | Lecciones con sus puntos clave, 3 preguntas y el entregable de valor | PackId, Lang, LessonId |
+| Recursos, LeccionRecursos | Videos y enlaces (URL, canal, idioma) y en qué lección se muestran | ResourceKey, Url |
+| Glosario | Términos y definiciones | Term |
+
+Reglas que revisa la importación:
+- En LearningPaths, `Kind` = path, module, course, lab o tutorial cuenta como clase de la ruta; doc, guide y video son material de consulta.
+  Las columnas Family, Vendor y Skill de esa tabla son informativas (se toman de Skills).
+- Si `Vendor` se deja vacío, la app lo deduce del nombre de la skill o de la fuente de su formación; si no puede, usa «Vendor-neutral».
+- Cada lección necesita 3 preguntas con 4 opciones y `AnswerLetter` A–D, al menos 2 videos de 2 canales y un VBD con 3 criterios o más.
+- El mismo curso en español e inglés lleva las mismas lecciones, en el mismo orden y con la misma respuesta correcta
+  (el avance se comparte entre idiomas).
+- Los nombres de los roles del reporte de brechas nunca viajan en el archivo: solo cuántos roles tiene cada brecha.
+
+En la app, la pestaña «Ruta de aprendizaje» sigue esa estructura: se elige la familia, se filtra por tecnología / vendor y cada
+skill muestra sus clases en orden. El curso de Cloud Security usa ejemplos, enlaces y videos de Microsoft (Azure, Entra,
+Defender, Sentinel).
+
+### Foro, reportes, certificaciones y análisis de demanda
+
+Cuatro módulos que se apoyan en la misma estructura (familia de skills → vendor → skill → clases) y en los mismos roles:
+**owner** (todo), **champion** (sus familias), **SME** (experto de una familia) y **aprendiz**.
+
+### Foro (pestaña «Foro»)
+- Cada pregunta pertenece a una familia de skills (y opcionalmente a una skill).
+- Cualquiera puede responder. La respuesta de un SME, del champion o de un owner lleva insignia, y con ella la pregunta cuenta como contestada.
+- Lo administran los owners (todas las familias) y cada champion (las suyas): nombran a los SME de la familia, marcan la respuesta aceptada,
+  fijan, cierran o reabren y ocultan lo que no corresponde. Lo oculto no se borra.
+- Los expertos ven arriba de la app cuántas preguntas de sus familias esperan respuesta. Exportable a CSV.
+
+### Reportes (pestaña «Reportes», owners y champions)
+- **Familias de skills:** estado por familia (champion, brecha, contenido, personas, avance, preguntas del foro sin contestar).
+- **Personas y ruta de carrera:** una fila por persona y otra por familia y persona, con estado: No está cumpliendo (7 días o más sin actividad),
+  En riesgo (5 a 6 días), Sin iniciar, Al corriente, Cumplido. Incluye a quien está registrado y no ha empezado.
+- **Certificaciones:** por familia (quién la tiene, quién la busca), por persona (actuales, deseables, requeridas que faltan) y por vencer en 90 días.
+- Descarga todo en Excel o en HTML para imprimir.
+
+### Registro de certificaciones
+- Cada persona registra en «Certificaciones → Mis certificaciones» las que tiene (`current`) y las que quiere (`desired`).
+- El champion / owner define las que pide cada familia (requerida o deseable) y puede corregir el registro de cualquiera o ponerle deseables.
+- Todo entra y sale por CSV:
+  - Registro: `Learner, Code, Name, Vendor, Status, Obtained, Expires, CredentialUrl`. Importar reemplaza las certificaciones de las personas del archivo.
+  - Requisitos por familia: `FamilyId, Code, Name, Vendor, Level, Url`. Importar reemplaza los de las familias del archivo.
+
+### Análisis de demanda (pestaña «Demanda», owners y champions)
+- Lee `content/demanda_roles.csv` (o un Excel subido) con las 35 columnas del reporte de roles; solo son obligatorias
+  Role ID, Role Title y Role Primary Skill. `content/demanda_roles_ejemplo.csv` trae 48 roles ficticios para probar.
+- Cada skill pedido se compara con la definición de la práctica: de la práctica, otros vendors que manejamos, foco nuevo o fuera de la práctica.
+- Muestra los skills, skills primarios y títulos de rol más pedidos, los roles fuera de la práctica y el cruce con los cursos:
+  qué skills de la práctica con demanda no tienen lecciones (cursos por crear) y cuáles ni siquiera están en el catálogo.
+- Exporta un reporte HTML con gráficos, los skills pedidos en CSV y las skills nuevas como filas listas para pegar en el archivo de contenido.
+
+### La práctica es un dato, no código
+La definición de la práctica vive en el archivo de contenido (`content/academia_contenido.csv`):
+- `Practica`: nombre y descripción.
+- `PracticaSkills`: `Term` (como lo escribe la demanda), `Aliases` (separados por `;`), `SkillId`, `FamilyId`, `Vendor`, `Scope` (core | third-party | emerging).
+- `PracticaRoles`: títulos de rol que la práctica puede cubrir, con alias.
+
+Para usar la academia en otra práctica (por ejemplo ServiceNow) se reemplazan esas tablas y las de Familias, Skills y LearningPaths.
+
+### Tendencia de la demanda y PDF
+- Cada archivo de roles que se carga se guarda con su fecha en `content/demanda_historial/demanda_AAAA-MM-DD.csv`. La pestaña «Demanda → Tendencia»
+  compara las cargas: roles por alcance en cada fecha, skills que más crecen y más bajan frente a la carga anterior, roles nuevos y roles que ya no vienen.
+- Si reemplazas `content/demanda_roles.csv` a mano, la app lo registra como una carga más (fecha = el Timestamp más reciente del archivo).
+- El reporte se descarga en PDF o en HTML, con la tendencia incluida. El PDF necesita el componente `reportlab`: si el botón sale apagado,
+  cierra la app y ejecuta `Instalar componentes.bat` una vez.
+
 ## Derechos de autor
 © 2026 Alejandro Zavala. Todos los derechos reservados (ver `LICENSE`). El aviso aparece al pie de cada página y en la barra lateral; está fijo en `academy/legal.py`, no hay pantalla ni ajuste que lo cambie, y la app no abre si se altera.

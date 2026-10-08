@@ -48,6 +48,36 @@ class Skill:
     target: str = ""  # required target proficiency, e.g. "P3 - Advanced"
     impacted_roles: int | None = None  # how many received roles show this gap
     roles: list[str] = field(default_factory=list)  # their names; only kept when the importer is told to
+    vendor: str = ""  # technology / vendor the skill belongs to: Microsoft, AWS, GCP, Cisco, IBM… ("" = work it out, see vendor_of)
+    category: str = ""  # optional grouping inside the vendor, e.g. "SIEM", "Identity"
+
+
+# Structure of the catalog: skill family -> technology / vendor -> skills (optionally by category) -> learning path (classes).
+NEUTRAL = "Vendor-neutral"
+VENDORS = ["Microsoft", "AWS", "GCP", "Cisco", "IBM", "Palo Alto Networks", "Fortinet", "CrowdStrike", "GitHub", "Anthropic", NEUTRAL]
+_VENDOR_WORDS = [("Microsoft", ("microsoft", "azure", "entra", "defender", "sentinel", "purview", "intune", "exchange", "m365", "office 365",
+                                "key vault", "conditional access", "copilot", "power platform", "sharepoint", "teams")),
+                 ("AWS", ("aws", "amazon")), ("GCP", ("gcp", "google cloud")), ("Cisco", ("cisco",)), ("IBM", ("ibm", "qradar")),
+                 ("Palo Alto Networks", ("palo alto", "prisma", "cortex")), ("Fortinet", ("fortinet", "fortigate")),
+                 ("CrowdStrike", ("crowdstrike", "falcon")), ("Anthropic", ("claude", "anthropic")), ("GitHub", ("github",))]
+_PROVIDER_VENDOR = {"microsoft learn": "Microsoft", "aws skill builder": "AWS", "google cloud skills boost": "GCP", "cisco networking academy": "Cisco",
+                    "ibm skillsbuild": "IBM", "anthropic academy": "Anthropic", "github": "GitHub"}
+
+
+def vendor_of(skill: Skill, materials: dict[str, list[dict]] | None = None) -> str:
+    """The technology / vendor of a skill: the one written in the catalog; otherwise what its name says; otherwise the
+    vendor whose official training it follows; otherwise vendor-neutral."""
+    if skill.vendor:
+        return skill.vendor
+    name = skill.name.lower()
+    for vendor, words in _VENDOR_WORDS:
+        if any(w in name for w in words):
+            return vendor
+    for m in (materials or {}).get(skill.id, []):
+        v = _PROVIDER_VENDOR.get(str(m.get("provider", "")).strip().lower())
+        if v:
+            return v
+    return NEUTRAL
 
 
 @dataclass
@@ -84,7 +114,8 @@ def load_catalog(path: str | Path | None = None) -> Catalog | None:
     fams = [Family(f["id"], f["name"], f.get("gap_volume"), f.get("role_impact"), f.get("champion", "") or "", f.get("champion_email", "") or "")
             for f in data["families"]]
     skills = [Skill(s["id"], s["name"], s["family"], bool(s.get("confirmed", True)), s.get("severity", "") or "", s.get("target", "") or "",
-                    s.get("impacted_roles"), list(s.get("roles", []))) for s in data["skills"]]
+                    s.get("impacted_roles"), list(s.get("roles", [])), s.get("vendor", "") or "", s.get("category", "") or "")
+              for s in data["skills"]]
     return Catalog(fams, skills)
 
 
@@ -92,8 +123,8 @@ def to_dict(cat: Catalog, source: str = "", updated: str = "") -> dict:
     skills = []
     for s in cat.skills:
         d = {"id": s.id, "name": s.name, "family": s.family, "confirmed": s.confirmed}
-        d.update({k: v for k, v in (("severity", s.severity), ("target", s.target), ("impacted_roles", s.impacted_roles), ("roles", s.roles))
-                  if v not in ("", None, [])})
+        d.update({k: v for k, v in (("vendor", s.vendor), ("category", s.category), ("severity", s.severity), ("target", s.target),
+                                    ("impacted_roles", s.impacted_roles), ("roles", s.roles)) if v not in ("", None, [])})
         skills.append(d)
     return {"meta": {"title": "Catálogo de skills", "updated": updated, "source": source},
             "families": [{"id": f.id, "name": f.name, "gap_volume": f.gap_volume, "role_impact": f.role_impact, "champion": f.champion,
@@ -248,8 +279,9 @@ def parse_grid(rows: list[list], keep_roles: bool = False, previous: Catalog | N
         if sid in skills:
             dupes.append(name)
             continue
+        was = next((s for s in previous.skills if s.id == sid), None) if previous else None  # vendor / category survive a new gap report
         skills[sid] = Skill(sid, name, slug(family), True, sev, cell(r, "target"), len(role_list) if "roles" in cols else None,
-                            role_list if keep_roles else [])
+                            role_list if keep_roles else [], was.vendor if was else "", was.category if was else "")
         if cell(r, "champion"):
             champs.setdefault(family, Counter())[cell(r, "champion")] += 1
         fam_roles.setdefault(family, set()).update(role_list)
@@ -299,7 +331,9 @@ def catalog_from_tables(families: list[dict], skills: list[dict], previous: Cata
             continue
         prev = old.get(slug(name))
         out.append(Skill(slug(name), name, slug(clean(s.get("family"))), True, clean(s.get("severity")), clean(s.get("target")),
-                         num(s.get("impact")), prev.roles if prev else []))
+                         num(s.get("impact")), prev.roles if prev else [],
+                         clean(s.get("vendor")) if "vendor" in s else (prev.vendor if prev else ""),
+                         clean(s.get("category")) if "category" in s else (prev.category if prev else "")))
     return Catalog(fams, out)
 
 

@@ -1,0 +1,758 @@
+{
+ "name": "Microsoft Cloud Security",
+ "description": "At Microsoft Cloud Security Practice our main goal is to work along with our customers on planning cloud security strategies, architectures and remediation processes; conduct security and control risk assessments when required; and build, test and deploy business continuity and security solution plans, on cloud, on-premises and hybrid, through Microsoft Cloud & Security solutions (Azure, Entra ID, Microsoft 365, Purview, Intune, Defender…). We also handle third-party vendors such as Symantec, Trend Micro, Cisco, Okta, Palo Alto and Fortinet, but our main focus is Microsoft tools and technologies. We design and lead strategic projects, and we also join teams as support / implementation engineers. Roles we provide: Cloud Security Engineers, Infrastructure Engineers, Technical Project/Program Managers, Sysadmins, Identity Managers and Data/Information Protection Engineers. We take part in migrations from on-premises to cloud or hybrid. We are now seeking to focus on Azure AI security and other AI security vendors such as Claude Code security.",
+ "skills": [
+  {
+   "term": "Identity & Access Management (IAM)",
+   "aliases": [
+    "IAM",
+    "Identity and Access Management",
+    "Identity Management",
+    "Identity & Access Management"
+   ],
+   "skill_id": "",
+   "family": "identity-access-management",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "IT Operations & Production Support Leadership",
+   "aliases": [
+    "Production Support",
+    "IT Operations",
+    "Operations Support"
+   ],
+   "skill_id": "production-support",
+   "family": "cloud-infrastructure-engineering",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Project & Program Technical Management",
+   "aliases": [
+    "Technical Project Management",
+    "Technical Program Management",
+    "Project Management",
+    "Program Management"
+   ],
+   "skill_id": "technical-project-program-management",
+   "family": "technical-delivery-leadership",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Automation & Process Optimization",
+   "aliases": [
+    "Automation",
+    "Process Optimization",
+    "PowerShell"
+   ],
+   "skill_id": "automation-optimization",
+   "family": "cloud-infrastructure-engineering",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Enterprise Infrastructure & Security Operations",
+   "aliases": [
+    "Infrastructure Operations",
+    "Security Operations",
+    "Enterprise Infrastructure"
+   ],
+   "skill_id": "cloud-hybrid-infrastructure",
+   "family": "cloud-infrastructure-engineering",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Entra ID",
+   "aliases": [
+    "Entra ID",
+    "Azure Active Directory",
+    "Azure AD",
+    "AAD",
+    "Microsoft Entra"
+   ],
+   "skill_id": "microsoft-entra-id",
+   "family": "identity-access-management",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Intune",
+   "aliases": [
+    "Microsoft Intune",
+    "Endpoint Manager",
+    "Microsoft Endpoint Manager",
+    "MDM"
+   ],
+   "skill_id": "",
+   "family": "microsoft-365-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Purview",
+   "aliases": [
+    "Purview"
+   ],
+   "skill_id": "microsoft-purview",
+   "family": "data-protection-risk-compliance",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Data Loss Prevention (DLP)",
+   "aliases": [
+    "DLP",
+    "Data Loss Prevention"
+   ],
+   "skill_id": "dlp-information-protection",
+   "family": "data-protection-risk-compliance",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Information Protection",
+   "aliases": [
+    "Microsoft Information Protection",
+    "MIP",
+    "AIP",
+    "Sensitivity Labels",
+    "Data Protection"
+   ],
+   "skill_id": "dlp-information-protection",
+   "family": "data-protection-risk-compliance",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Conditional Access",
+   "aliases": [
+    "Conditional Access Policies"
+   ],
+   "skill_id": "conditional-access",
+   "family": "identity-access-management",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Privileged Identity Management (PIM)",
+   "aliases": [
+    "PIM",
+    "Privileged Identity Management"
+   ],
+   "skill_id": "pim-pam",
+   "family": "identity-access-management",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Privileged Access Management (PAM)",
+   "aliases": [
+    "PAM",
+    "Privileged Access Management"
+   ],
+   "skill_id": "pim-pam",
+   "family": "identity-access-management",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Single Sign-On (SSO)",
+   "aliases": [
+    "SSO",
+    "Single Sign-On",
+    "Single Sign On",
+    "SAML",
+    "OpenID Connect"
+   ],
+   "skill_id": "microsoft-entra-id",
+   "family": "identity-access-management",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Multifactor Authentication Operations (MFA)",
+   "aliases": [
+    "MFA",
+    "Multifactor Authentication",
+    "Multi-Factor Authentication"
+   ],
+   "skill_id": "microsoft-entra-id",
+   "family": "identity-access-management",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Identity Governance",
+   "aliases": [
+    "Entra ID Governance",
+    "IGA",
+    "Access Reviews",
+    "Identity Lifecycle Management"
+   ],
+   "skill_id": "identity-governance",
+   "family": "identity-access-management",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Active Directory (on-premises)",
+   "aliases": [
+    "Active Directory",
+    "AD DS",
+    "Windows Server Active Directory"
+   ],
+   "skill_id": "",
+   "family": "identity-access-management",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "B2B / B2C",
+   "aliases": [
+    "Azure AD B2C",
+    "Entra External ID",
+    "B2B",
+    "B2C",
+    "CIAM",
+    "Azure Active Directory B2C",
+    "Entra ID B2B"
+   ],
+   "skill_id": "",
+   "family": "identity-access-management",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Azure (IaaS/PaaS/SaaS)",
+   "aliases": [
+    "Azure",
+    "Microsoft Azure",
+    "Azure Infrastructure",
+    "Azure Security"
+   ],
+   "skill_id": "microsoft-azure-security",
+   "family": "cloud-network-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Azure Networking (Firewall/WAF/NSG/ASG/Network Virtual Appliances)",
+   "aliases": [
+    "Azure Networking",
+    "Azure Firewall",
+    "Azure WAF",
+    "Network Security Groups",
+    "NSG",
+    "Azure Network Security"
+   ],
+   "skill_id": "azure-network-controls",
+   "family": "cloud-network-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Key Vault / HSM / Encryption",
+   "aliases": [
+    "Azure Key Vault",
+    "Key Vault",
+    "HSM",
+    "Encryption"
+   ],
+   "skill_id": "encryption-key-vault-hsm",
+   "family": "data-protection-risk-compliance",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Windows 10/11 (sysadmin)",
+   "aliases": [
+    "Windows 10",
+    "Windows 11",
+    "Windows Server",
+    "Windows Administration"
+   ],
+   "skill_id": "windows-unix-administration",
+   "family": "cloud-infrastructure-engineering",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Sentinel",
+   "aliases": [
+    "Microsoft Sentinel",
+    "Azure Sentinel",
+    "SIEM",
+    "KQL"
+   ],
+   "skill_id": "microsoft-sentinel",
+   "family": "cyber-defense-security-operations",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Defender for Cloud",
+   "aliases": [
+    "Defender for Cloud",
+    "Azure Security Center",
+    "CSPM"
+   ],
+   "skill_id": "defender-for-cloud",
+   "family": "cloud-network-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Defender for Cloud Apps",
+   "aliases": [
+    "Defender for Cloud Apps",
+    "MCAS",
+    "CASB"
+   ],
+   "skill_id": "",
+   "family": "cyber-defense-security-operations",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Defender for Identity",
+   "aliases": [
+    "Defender for Identity"
+   ],
+   "skill_id": "",
+   "family": "cyber-defense-security-operations",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Defender XDR",
+   "aliases": [
+    "Defender XDR",
+    "Microsoft 365 Defender",
+    "Microsoft Defender"
+   ],
+   "skill_id": "microsoft-defender-xdr",
+   "family": "cyber-defense-security-operations",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Defender for Endpoint",
+   "aliases": [
+    "Defender for Endpoint",
+    "MDE",
+    "EDR"
+   ],
+   "skill_id": "defender-for-endpoint",
+   "family": "cyber-defense-security-operations",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft Defender for Office 365",
+   "aliases": [
+    "Defender for Office 365",
+    "MDO"
+   ],
+   "skill_id": "defender-for-office-365",
+   "family": "microsoft-365-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Azure DevOps",
+   "aliases": [
+    "Azure Pipelines",
+    "Azure Repos"
+   ],
+   "skill_id": "azure-devops-github-actions",
+   "family": "application-security-devsecops",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "GitHub actions",
+   "aliases": [
+    "GitHub Actions",
+    "GitHub",
+    "GitHub Advanced Security"
+   ],
+   "skill_id": "azure-devops-github-actions",
+   "family": "application-security-devsecops",
+   "vendor": "GitHub",
+   "scope": "core"
+  },
+  {
+   "term": "Terraform",
+   "aliases": [
+    "Infrastructure as Code",
+    "IaC",
+    "Bicep"
+   ],
+   "skill_id": "infrastructure-as-code-security",
+   "family": "application-security-devsecops",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Containers & dockers security",
+   "aliases": [
+    "Container Security",
+    "Docker",
+    "Kubernetes",
+    "AKS",
+    "Containers"
+   ],
+   "skill_id": "container-security",
+   "family": "application-security-devsecops",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Secure Development Lifecycle (DevSecOps)",
+   "aliases": [
+    "DevSecOps",
+    "Secure Development Lifecycle",
+    "SDL",
+    "SAST",
+    "DAST",
+    "Application Security"
+   ],
+   "skill_id": "secure-development-lifecycle",
+   "family": "application-security-devsecops",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Microsoft 365 Security",
+   "aliases": [
+    "Microsoft 365",
+    "M365",
+    "Office 365",
+    "O365"
+   ],
+   "skill_id": "microsoft-365-security",
+   "family": "microsoft-365-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Exchange online",
+   "aliases": [
+    "Exchange Online",
+    "Microsoft Exchange",
+    "Exchange"
+   ],
+   "skill_id": "exchange-online",
+   "family": "microsoft-365-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Sharepoint",
+   "aliases": [
+    "SharePoint Online",
+    "SharePoint"
+   ],
+   "skill_id": "",
+   "family": "microsoft-365-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Teams",
+   "aliases": [
+    "Microsoft Teams"
+   ],
+   "skill_id": "",
+   "family": "microsoft-365-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Teams phone features",
+   "aliases": [
+    "Teams Phone",
+    "Teams Voice",
+    "Teams Telephony"
+   ],
+   "skill_id": "",
+   "family": "microsoft-365-security",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Azure Data (Log Analytics, Databricks, Data Factory)",
+   "aliases": [
+    "Log Analytics",
+    "Databricks",
+    "Azure Databricks",
+    "Data Factory",
+    "Azure Data Factory",
+    "Azure Data"
+   ],
+   "skill_id": "",
+   "family": "cloud-infrastructure-engineering",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Business apps",
+   "aliases": [
+    "Dynamics 365",
+    "Power Platform",
+    "Power Apps"
+   ],
+   "skill_id": "",
+   "family": "cloud-infrastructure-engineering",
+   "vendor": "Microsoft",
+   "scope": "core"
+  },
+  {
+   "term": "Unix",
+   "aliases": [
+    "Linux",
+    "RHEL",
+    "Ubuntu",
+    "Unix Administration"
+   ],
+   "skill_id": "windows-unix-administration",
+   "family": "cloud-infrastructure-engineering",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Zero Trust",
+   "aliases": [
+    "Zero Trust Architecture",
+    "Zero Trust Principles"
+   ],
+   "skill_id": "zero-trust",
+   "family": "cloud-network-security",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Security Architecture",
+   "aliases": [
+    "Cloud Security Architecture",
+    "Security Strategy",
+    "Cloud Security"
+   ],
+   "skill_id": "security-architecture",
+   "family": "technical-delivery-leadership",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Security & Risk Assessments",
+   "aliases": [
+    "Risk Assessment",
+    "Security Assessment",
+    "Control Assessment"
+   ],
+   "skill_id": "",
+   "family": "data-protection-risk-compliance",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Business Continuity",
+   "aliases": [
+    "Disaster Recovery",
+    "Business Continuity Planning",
+    "BCP"
+   ],
+   "skill_id": "",
+   "family": "cloud-infrastructure-engineering",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "Cloud Migration",
+   "aliases": [
+    "Migration to Cloud",
+    "On-Prem to Cloud Migration",
+    "Hybrid Cloud"
+   ],
+   "skill_id": "cloud-hybrid-infrastructure",
+   "family": "cloud-infrastructure-engineering",
+   "vendor": "Vendor-neutral",
+   "scope": "core"
+  },
+  {
+   "term": "AWS",
+   "aliases": [
+    "Amazon Web Services",
+    "AWS Security"
+   ],
+   "skill_id": "",
+   "family": "cloud-network-security",
+   "vendor": "AWS",
+   "scope": "third-party"
+  },
+  {
+   "term": "Google cloud",
+   "aliases": [
+    "GCP",
+    "Google Cloud Platform",
+    "Google Cloud"
+   ],
+   "skill_id": "",
+   "family": "cloud-network-security",
+   "vendor": "GCP",
+   "scope": "third-party"
+  },
+  {
+   "term": "Symantec",
+   "aliases": [
+    "Broadcom Symantec"
+   ],
+   "skill_id": "",
+   "family": "cyber-defense-security-operations",
+   "vendor": "Symantec",
+   "scope": "third-party"
+  },
+  {
+   "term": "TrendMicro",
+   "aliases": [
+    "Trend Micro"
+   ],
+   "skill_id": "",
+   "family": "cyber-defense-security-operations",
+   "vendor": "Trend Micro",
+   "scope": "third-party"
+  },
+  {
+   "term": "Cisco",
+   "aliases": [
+    "Cisco Security",
+    "Cisco Networking"
+   ],
+   "skill_id": "",
+   "family": "cloud-network-security",
+   "vendor": "Cisco",
+   "scope": "third-party"
+  },
+  {
+   "term": "Okta",
+   "aliases": [],
+   "skill_id": "",
+   "family": "identity-access-management",
+   "vendor": "Okta",
+   "scope": "third-party"
+  },
+  {
+   "term": "Palo Alto",
+   "aliases": [
+    "Palo Alto Networks",
+    "Prisma Cloud",
+    "Cortex"
+   ],
+   "skill_id": "",
+   "family": "cloud-network-security",
+   "vendor": "Palo Alto Networks",
+   "scope": "third-party"
+  },
+  {
+   "term": "Fortinet",
+   "aliases": [
+    "FortiGate"
+   ],
+   "skill_id": "",
+   "family": "cloud-network-security",
+   "vendor": "Fortinet",
+   "scope": "third-party"
+  },
+  {
+   "term": "Azure AI Security",
+   "aliases": [
+    "Azure AI",
+    "Azure OpenAI",
+    "AI Security",
+    "Security for AI"
+   ],
+   "skill_id": "azure-ai-security",
+   "family": "ai-security-governance",
+   "vendor": "Microsoft",
+   "scope": "emerging"
+  },
+  {
+   "term": "Claude Code Security",
+   "aliases": [
+    "Claude Code",
+    "Claude",
+    "Anthropic"
+   ],
+   "skill_id": "claude-code-security",
+   "family": "ai-security-governance",
+   "vendor": "Anthropic",
+   "scope": "emerging"
+  }
+ ],
+ "roles": [
+  {
+   "title": "Cloud Security Engineer",
+   "aliases": [
+    "Security Engineer",
+    "Cloud Security Architect",
+    "Cloud Security Consultant",
+    "Security Consultant",
+    "Security Architect"
+   ],
+   "scope": "core"
+  },
+  {
+   "title": "Infrastructure Engineer",
+   "aliases": [
+    "Cloud Infrastructure Engineer",
+    "Cloud Engineer",
+    "Infrastructure Architect"
+   ],
+   "scope": "core"
+  },
+  {
+   "title": "Technical Project/Program Manager",
+   "aliases": [
+    "Technical Project Manager",
+    "Technical Program Manager",
+    "Project Manager",
+    "Program Manager"
+   ],
+   "scope": "core"
+  },
+  {
+   "title": "Sysadmin",
+   "aliases": [
+    "System Administrator",
+    "Systems Administrator",
+    "Windows Administrator",
+    "Linux Administrator"
+   ],
+   "scope": "core"
+  },
+  {
+   "title": "Identity Manager",
+   "aliases": [
+    "Identity Engineer",
+    "IAM Engineer",
+    "Identity Architect",
+    "IAM Consultant",
+    "Identity and Access Management Engineer"
+   ],
+   "scope": "core"
+  },
+  {
+   "title": "Data/Information Protection Engineer",
+   "aliases": [
+    "Data Protection Engineer",
+    "Information Protection Engineer",
+    "Data Security Engineer",
+    "Purview Consultant"
+   ],
+   "scope": "core"
+  }
+ ]
+}

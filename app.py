@@ -15,8 +15,8 @@ if str(ROOT) not in sys.path:
 import streamlit as st  # noqa: E402
 
 from academy import page  # noqa: E402
+from academy import content_sync, notify  # noqa: E402
 from academy import legal  # noqa: E402
-from academy import notify  # noqa: E402
 from academy.access import load_access, save_access  # noqa: E402
 from academy.catalog import load_catalog  # noqa: E402
 from academy.exam import available_exams, load_exam  # noqa: E402
@@ -50,6 +50,16 @@ def _exam(name: str, lang: str = "en"):
 
 legal.guard()  # the copyright notice is fixed; the app does not open if it was altered
 
+# The content file (content/academia_contenido.csv) is where courses, videos, learning paths and skills are edited:
+# when it changed since the last run it is checked and, if it is right, applied before anything is shown.
+_sync = content_sync.sync()
+if _sync["status"] == "none":  # first run: write the file from what the app already holds
+    content_sync.refresh()
+    _sync = content_sync.sync()
+st.session_state["ak_content_sync"] = _sync
+if _sync["status"] == "applied":
+    st.cache_data.clear()
+
 packs = available_packs()
 if not packs:
     st.error("No packs in packs/. Copy packs/_plantilla to packs/<your-topic> and fill in pack.json. · "
@@ -69,6 +79,9 @@ with st.sidebar:
             st.session_state.pop("ak_role", None)
         role = st.selectbox(T("role", lang), opts, key="ak_role", format_func=lambda r: r or T("any_role", lang)) or None
 
+    st.toggle("Sounds" if lang == "en" else "Sonidos", value=True, key="ak_sound",
+              help="A short sound when you answer, finish a step or complete a lesson." if lang == "en"
+              else "Un sonido corto al responder, terminar un paso o completar una lección.")
     email = st.text_input(T("email", lang), key="ak_email", help=T("email_help", lang), placeholder="nombre@empresa.com" if lang == "es" else "name@company.com")
 
 conn = _conn(os.environ.get("ACADEMY_DB", str(ROOT / "data" / "academy.db")))
@@ -102,9 +115,9 @@ with st.sidebar:
                 st.caption(T("pin_bad", lang))
         owner, families = on and is_owner, (mine if on and not is_owner else set())
 
+page.render(pack, conn, learner, lang, role, catalog=catalog, packs=[_pack(n, lang) for n in packs],
+            exams=[_exam(n, lang) for n in available_exams()], owner=owner, families=families, email=email)
+
 with st.sidebar:
     st.divider()
     st.caption(legal.notice(lang))
-
-page.render(pack, conn, learner, lang, role, catalog=catalog, packs=[_pack(n, lang) for n in packs],
-            exams=[_exam(n, lang) for n in available_exams()], owner=owner, families=families)
