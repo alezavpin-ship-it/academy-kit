@@ -9,6 +9,9 @@ writes (progress database, content workbook, catalog, people, courses, saved rol
 * First start: the folders shipped with the code are copied to /home/academy-data.
 * Later deploys: only files that do not exist there yet are added (new courses, templates). What the team edited in the
   app is never overwritten. To take a shipped file again, delete it in /home/academy-data and restart.
+* ACADEMY_OWNERS (optional app setting): the app's owners, set from the Azure portal without editing files, for example
+  "a.person@company.com; Perla Marmolejo <perla.m@company.com>" (up to 3). On every start they become the owners in
+  /home/academy-data/catalog/people.csv; anyone else listed as owner there steps down to learner (or champion).
 
 Written in Python (not a shell script) so it works the same when the repository was saved on Windows (CRLF line ends).
 """
@@ -16,6 +19,7 @@ Written in Python (not a shell script) so it works the same when the repository 
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -47,10 +51,40 @@ def link_folders(app_dir: Path, data_dir: Path) -> list[str]:
     return added
 
 
+def apply_owners(app_dir: Path, data_dir: Path, spec: str) -> str:
+    """Make the people of ``spec`` (e-mails, optionally «Name <e-mail>», separated by ; , or new lines) the app's owners."""
+    if str(app_dir) not in sys.path:
+        sys.path.insert(0, str(app_dir))
+    from academy import people
+
+    path = data_dir / "catalog" / "people.csv"
+    directory = people.load(path)
+    wanted = []
+    for item in re.split(r"[;,\n]+", spec or ""):
+        m = re.match(r"^\s*(.*?)\s*<\s*([^>]+?)\s*>\s*$", item)
+        name, email = (m.group(1), m.group(2)) if m else ("", item.strip())
+        if "@" not in email:
+            continue
+        known = people.find(directory, "", email)
+        wanted.append((name or (known.name if known else email.split("@")[0].replace(".", " ").title()), email))
+    if not wanted:
+        return "ACADEMY_OWNERS has no e-mail address: owners unchanged."
+    new, problems = people.set_owners(directory, wanted)
+    if problems:
+        return "ACADEMY_OWNERS ignored: " + " ".join(problems)
+    people.save(new, path)
+    return "Owners from ACADEMY_OWNERS: " + ", ".join(e for _, e in wanted)
+
+
 def main() -> None:
     data_dir = Path(os.environ.get("ACADEMY_DATA", "/home/academy-data"))
     added = link_folders(APP_DIR, data_dir)
     print(f"Academia - Cloud: data folder {data_dir} ({len(added)} new file(s) from this deploy)", flush=True)
+    if os.environ.get("ACADEMY_OWNERS", "").strip():
+        try:
+            print("Academia - Cloud: " + apply_owners(APP_DIR, data_dir, os.environ["ACADEMY_OWNERS"]), flush=True)
+        except Exception as e:  # never keep the app from starting
+            print(f"Academia - Cloud: ACADEMY_OWNERS not applied ({e})", flush=True)
     os.chdir(APP_DIR)
     port = os.environ.get("PORT") or os.environ.get("WEBSITES_PORT") or "8000"
     # config.toml keeps a laptop safe (127.0.0.1 only); on App Service the app listens on the port the platform gives it.

@@ -132,7 +132,8 @@ with st.sidebar:
             st.rerun()
     elif not (is_owner or mine):
         st.divider()
-        st.caption("Owner or champion? An owner adds your work e-mail to People (✏️ Edit mode) with your role." if me else
+        st.caption(f"Owner or champion? An owner adds your work e-mail ({email}) to People with your role, or the Azure admin "
+                   "lists it in the app setting ACADEMY_OWNERS." if me else
                    "Owner or champion? Pick your name in «Who are you?» (or type the e-mail registered as owner) to get the owner view.")
     if is_owner or mine:
         st.divider()

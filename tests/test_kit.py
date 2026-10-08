@@ -1574,3 +1574,21 @@ def test_azure_startup_keeps_team_data_between_deploys(tmp_path):
     mod.link_folders(new, home)
     assert (new / "catalog" / "people.csv").read_text(encoding="utf-8") == "edited in the app" and (home / "catalog" / "new.csv").exists()
     assert mod.link_folders(new, home) == []  # a restart changes nothing
+
+
+def test_azure_owners_from_the_app_setting(tmp_path):
+    import importlib.util
+
+    from academy import people
+
+    spec = importlib.util.spec_from_file_location("startup", ROOT / "deploy" / "azure" / "startup.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    (tmp_path / "catalog").mkdir()
+    people.save([people.Person("Alejandro Zavala", "old@gmail.com", "owner")], tmp_path / "catalog" / "people.csv")
+    msg = mod.apply_owners(ROOT, tmp_path, "a.zavala@contoso.com; Perla Marmolejo <perla.m@contoso.com>,\nsam.calles@contoso.com")
+    d = people.load(tmp_path / "catalog" / "people.csv")
+    assert msg.startswith("Owners from ACADEMY_OWNERS") and [p.email for p in people.owners(d)] == ["a.zavala@contoso.com", "perla.m@contoso.com", "sam.calles@contoso.com"]
+    assert next(p for p in d if p.email == "sam.calles@contoso.com").name == "Sam Calles" and next(p for p in d if p.email == "old@gmail.com").role == "learner"
+    assert "ignored" in mod.apply_owners(ROOT, tmp_path, "a@x.com; b@x.com; c@x.com; d@x.com")  # more than 3: nothing changes
+    assert len(people.owners(people.load(tmp_path / "catalog" / "people.csv"))) == 3

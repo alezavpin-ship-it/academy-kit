@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import random
 from datetime import date
 
@@ -610,6 +611,8 @@ def access_section(lang: str, me: str = "", email: str = "") -> None:
     with st.expander(f"👑 App owners ({len(current)} of {cap})"):
         st.caption(f"Owners see and run everything: reports, demand, edit mode and the team. Up to {cap} owners; each one with the "
                    "work e-mail they sign in with. They are kept in People (role owner), so the content workbook shows them too.")
+        if os.environ.get("ACADEMY_OWNERS", "").strip():
+            st.info("The owners are set in Azure (app setting ACADEMY_OWNERS) and applied on every restart: change them there.")
         df = st.data_editor(pd.DataFrame(current, columns=["Person", "Email"]), num_rows="dynamic", hide_index=True, width="stretch",
                             key="ak_owners_ed", column_config={"Person": st.column_config.TextColumn("Person", required=True),
                                                                "Email": st.column_config.TextColumn("Work e-mail", required=True)})
