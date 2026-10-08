@@ -116,9 +116,15 @@ rows are kept.
 Another practice (ServiceNow, SAP…) replaces the catalog, the practice tables and this CSV; the engine stays the same.
 
 ## Demand analysis
-Reads `content\demand_roles.csv` (or an uploaded file) with the 35 columns of the roles report; only Role ID, Role Title
-and Role Primary Skill are mandatory. Every upload is kept by date in `content\demand_history\` to draw the trend.
-`content\demand_roles_sample.csv` has 48 made-up roles to try it. Client data stays on this computer.
+Reads the roles report of the organization (CSV or Excel export, 36 columns; only Role ID, Role Title and Role Primary
+Skill are mandatory, the rest are used when present). It understands the report as it comes: skills written as
+`1 - Skill name (P2 - Intermediate)` (the number and the proficiency are separated from the name), coded titles such as
+`123456-00001_Solution Architect`, US dates (`9/15/2026`) and `5-Nov-26`, `-` as an empty cell, and the column
+**Matrix cross-skills Practice** (shown in the tab *Gaps per role (matrix)* and in the PDF).
+
+**The report is confidential**: an uploaded file is only read in memory for the session and nothing is saved. An owner
+can choose *Save it in the app* to keep it in `content\demand_roles.csv` and `content\demand_history\` (by date) and
+follow the weekly trend. `content\demand_roles_sample.csv` has made-up roles to try it.
 
 ## English only
 Earlier versions kept Spanish and English side by side. On the first start, `academy/english.py` converts once: the
@@ -141,3 +147,28 @@ and questions have the same ids).
 | `packs/<id>/pack.json` | A course (`packs/_template/` is the skeleton for a new one) |
 | `catalog/` | `skills.json`, `materials.json` (learning paths), `practice.json`, `news_sources.csv` |
 | `tools/` | `content.py` (export / check / import), `validate_pack.py`, `audit_videos.py`, `export_sharepoint.py` |
+
+## People and roles (catalog/people.csv)
+`Person, Email, Role, Families, Active` — Role = owner | champion | sme | learner; Families = family ids separated by `;`.
+The sidebar offers these names in **Who are you?**: your role comes with your name (owners get the **Owner view** switch).
+A champion listed here becomes the champion of those families in the catalog (reports and notices copy them). Also the
+People tab of the content workbook and ✏️ Edit mode (Team, Reports). Owners in `config/access.json` (with the optional PIN)
+keep working.
+
+## Study material (catalog/study_material.csv)
+`Title, Url, Source, Category, Theme, Kind, Level, SkillId, Notes` — Kind = video | playlist | search | page.
+Shown in **Knowledge exchange → 📚 Study material** (filters by category, theme and text; each item opens the author's site)
+and at the end of the **Video library** (videos play inside the app). It starts with John Savill's Technical Training
+(Microsoft): 6 exact videos, his Azure Master Class, certification study crams and the themes of the practice as searches
+inside his channel, and his video index. To load **every** video of his index: open https://www.azadvertizer.net/savill.html,
+save it (File → Save as… → HTML) and upload it in *Study material tools*; every YouTube link becomes an item, with the
+heading above it as the theme. Champions select items and **Add to the learning path** of a skill.
+
+## Each family's career path (champions)
+In **Learning route**, the champion of a family (and owners) get **🧭 Manage the career path**: a table of every class of the
+family with **Status = required** (part of the path, counts for progress) | **optional** (recommended material) | **off**
+(kept in the plan, hidden from learners), the class order, kind, provider, minutes and notes. They can upload their own
+material (PowerPoint, PDF, Word, Excel, video): it becomes a class learners download. The same path is a CSV per family,
+`content/families/<family-id>.csv` (`SkillId, Skill, Class, Title, Url, Kind, Provider, Status, Minutes, Notes`): edit it in
+Excel and reopen the app (it is checked first), or download / upload it in the panel. The files, `catalog/materials.json` and
+the LearningPaths tab of the content workbook always match.

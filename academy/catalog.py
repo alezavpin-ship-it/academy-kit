@@ -364,6 +364,6 @@ def validate_materials(materials: dict[str, list[dict]], cat: Catalog | None = N
         if known is not None and sid not in known:
             errs.append(f"[material] the skill '{sid}' does not exist in the catalog.")
         for m in items:
-            if not m.get("title") or not str(m.get("url", "")).startswith("https://"):
+            if not m.get("title") or not str(m.get("url", "")).startswith(("https://", "file:")):
                 errs.append(f"[material of {sid}] the title is missing or the URL is not https.")
     return errs

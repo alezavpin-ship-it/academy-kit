@@ -1,0 +1,3 @@
+﻿SkillId,Skill,Class,Title,Url,Kind,Provider,Status,Minutes,Notes
+security-architecture,Security Architecture,,Get Started with Security Architecture Design,https://learn.microsoft.com/en-us/azure/architecture/security/security-get-started,doc,Microsoft Learn,optional,,
+strategy-roadmap,Strategy & Roadmap,1,Introduction to the Microsoft Cloud Adoption Framework,https://learn.microsoft.com/en-us/training/modules/microsoft-cloud-adoption-framework-for-azure/,module,Microsoft Learn,required,,

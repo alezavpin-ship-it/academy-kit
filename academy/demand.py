@@ -26,6 +26,7 @@ from academy.practice import CORE, EMERGING, OUTSIDE, THIRD, Practice
 ROOT = Path(__file__).resolve().parents[1]
 DEMAND_FILE = ROOT / "content" / "demand_roles.csv"
 COLUMNS = ["Timestamp", "Client", "Governance Lead", "Project", "Role ID", "Role Title", "Role Description", "Combined Skills",
+           "Matrix cross-skills Practice",
            "Role Career Level From", "Role Career Level To", "Role Status", "Role Is Sold", "Role Start Date", "Role End Date",
            "Role Market Unit", "Role Primary Contact (Email ID)", "Role Job Family Group", "Role Country/Territory", "Role Location Path",
            "Role Fulfillment Entity Path", "Role Primary Skill", "Skill Category", "Role Secondary Skill", "Role Other Skills",
@@ -120,11 +121,7 @@ def history_dir() -> Path:
 
 def snapshot_date(rows: list[dict], fallback: str = "") -> str:
     """The date a roles file speaks for: the most recent Timestamp in it (YYYY-MM-DD), else ``fallback``, else today."""
-    dates = []
-    for r in rows:
-        m = re.match(r"(\d{4}-\d{2}-\d{2})", r.get("Timestamp", "")) or re.match(r"(\d{1,2})/(\d{1,2})/(\d{4})", r.get("Timestamp", ""))
-        if m:
-            dates.append(m.group(1) if len(m.groups()) == 1 else f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}")
+    dates = [d.isoformat() for d in (parse_date(r.get("Timestamp", "")) for r in rows) if d]
     if dates:
         return max(dates)
     from datetime import date
@@ -268,17 +265,90 @@ def trend_charts(t: dict, top: int = 10) -> dict[str, str]:
                               "Skills dropping the most (fewer roles than in the previous upload)", lang)}
 
 
+def clean_skill(text: str) -> tuple[str, str]:
+    """(skill, proficiency) from what the roles report writes: '1 - User Research      (P2 - Intermediate)' -> ('User Research', 'P2')."""
+    t = re.sub(r"\s+", " ", text or "").strip()
+    level = ""
+    m = re.search(r"\(\s*(P\d)\s*(?:-[^)]*)?\)\s*$", t, re.I)
+    if m:
+        level, t = m.group(1).upper(), t[:m.start()].strip()
+    t = re.sub(r"^\d+\s*[-–.)]\s+", "", t)  # the position number of the skill in the role
+    return t.strip(" -"), level
+
+
+def clean_title(text: str) -> str:
+    """'123456-00001_Solution Architect' -> 'Solution Architect' (the report prefixes the titles with internal codes)."""
+    return re.sub(r"^\s*\d+(?:-\d+)*_\s*", "", text or "").strip()
+
+
 def split_skills(text: str) -> list[str]:
-    return [s.strip() for s in re.split(r"[;,|\n]+", text or "") if s.strip()]
+    return [clean_skill(s)[0] for s in re.split(r"[;,|\n]+", text or "") if clean_skill(s)[0]]
 
 
 def role_skills(row: dict) -> list[str]:
-    """Every skill a role asks for, once each, primary first."""
+    """Every skill a role asks for, once each, primary first (the skill category, repeated in Combined Skills, is left out)."""
     out: dict[str, str] = {}
+    category = clean_skill(row.get("Skill Category", ""))[0].lower()
     for col in SKILL_COLUMNS:
         for s in split_skills(row.get(col, "")):
-            out.setdefault(s.lower(), s)
+            if s.lower() != category:
+                out.setdefault(s.lower(), s)
     return list(out.values())
+
+
+def practice_matrix(text: str) -> dict[str, list[tuple[str, str]]]:
+    """The «Matrix cross-skills Practice» column: {"aligned": [(family, skill)], "gaps": [(family, skill)]}.
+
+        • Practice Matches (Aligned Capabilities)
+        - Data Protection, Risk & Compliance: Compliance / Risk Assessment
+        • Unaligned Skills & Gaps
+        - Technical Delivery Leadership: Technical Project / Program Management, Remediation Leadership"""
+    out: dict[str, list[tuple[str, str]]] = {"aligned": [], "gaps": []}
+    part = None
+    for line in (text or "").splitlines():
+        low = line.strip().lower()
+        if not low:
+            continue
+        if "unaligned" in low or "gap" in low and ":" not in low:
+            part = "gaps"
+            continue
+        if "match" in low or "aligned" in low and ":" not in low:
+            part = "aligned"
+            continue
+        m = re.match(r"^[-•*·\s]*([^:]+):\s*(.+)$", line.strip())
+        if part and m:
+            family = m.group(1).strip()
+            for skill in re.split(r",(?![^()]*\))|;", m.group(2)):
+                if skill.strip():
+                    out[part].append((family, skill.strip()))
+    return out
+
+
+def parse_date(text: str):
+    """A date from the formats the report and Excel write: 2026-09-15, 9/15/2026 (US), 15/9/2026, 5-Nov-26, Excel datetimes."""
+    from datetime import date, datetime
+
+    t = (text or "").strip()
+    if not t or t == "-":
+        return None
+    m = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", t)
+    if m:
+        return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+    m = re.match(r"(\d{1,2})/(\d{1,2})/(\d{2,4})", t)
+    if m:
+        a, b, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        y = y + 2000 if y < 100 else y
+        month, day = (b, a) if a > 12 else (a, b)  # US order (month/day) unless the first number cannot be a month
+        try:
+            return date(y, month, day)
+        except ValueError:
+            return None
+    for fmt in ("%d-%b-%y", "%d-%b-%Y", "%d %b %Y", "%b %d, %Y"):
+        try:
+            return datetime.strptime(t, fmt).date()
+        except ValueError:
+            pass
+    return None
 
 
 # ------------------------------------------------------------------------------------------------ analysis
@@ -303,12 +373,15 @@ def analyze(rows: list[dict], practice: Practice, catalog=None, packs: list | No
     by = {k: Counter() for k in ("Skill Category", "Client", "Industry Level 1", "Role Country/Territory", "Role Status", "Role Market Unit",
                                  "Role Career Level From", "month")}
     scope_roles, outside_roles = Counter(), []
+    from collections import defaultdict
+
+    matrix: dict[tuple[str, str], Counter] = defaultdict(Counter)
     for r in rows:
-        p_term, p_scope, p_entry = canon(r["Role Primary Skill"]) if r["Role Primary Skill"] else ("—", OUTSIDE, None)
-        role = practice.match_role(r["Role Title"])
+        p_term, p_scope, p_entry = canon(clean_skill(r["Role Primary Skill"])[0]) if r["Role Primary Skill"] else ("—", OUTSIDE, None)
+        title = clean_title(r["Role Title"]) or "—"
+        role = practice.match_role(title)
         scope = p_scope if p_scope != OUTSIDE else (role.scope if role else OUTSIDE)  # a role is ours by its primary skill or by its title
         scope_roles[scope] += 1
-        title = r["Role Title"] or "—"
         titles[title] += 1
         title_scope[title] = scope if title_scope.get(title, OUTSIDE) == OUTSIDE else title_scope[title]
         primary[p_term] += 1
@@ -322,11 +395,16 @@ def analyze(rows: list[dict], practice: Practice, catalog=None, packs: list | No
                 skills[term] += 1
                 info[term] = (sc, entry)
         for k in by:
-            if k != "month" and r.get(k):
-                by[k][r[k]] += 1
-        m = re.match(r"(\d{4})-(\d{2})", r.get("Role Start Date", "")) or re.match(r"\d{1,2}/(\d{1,2})/(\d{4})", r.get("Role Start Date", ""))
-        if m:
-            by["month"][f"{m.group(1)}-{m.group(2)}" if len(m.group(1)) == 4 else f"{m.group(2)}-{int(m.group(1)):02d}"] += 1
+            v = clean_skill(r.get(k, ""))[0] if k == "Skill Category" else (r.get(k) or "").strip()
+            if k != "month" and v and v != "-":
+                by[k][v] += 1
+        start = parse_date(r.get("Role Start Date", ""))
+        if start:
+            by["month"][f"{start.year}-{start.month:02d}"] += 1
+        mx = practice_matrix(r.get("Matrix cross-skills Practice", ""))
+        for part in ("aligned", "gaps"):
+            for pair in dict.fromkeys(mx[part]):
+                matrix[pair][part] += 1
         if scope == OUTSIDE:
             outside_roles.append(r)
 
@@ -359,14 +437,25 @@ def analyze(rows: list[dict], practice: Practice, catalog=None, packs: list | No
                    "_scope": title_scope[t]} for t, n in _top(titles)]
     combo_rows = [{k["title"]: t, k["pskill"]: s, k["scope"]: (SCOPE_NAME[info[s][0]]), k["roles"]: n, "_scope": info[s][0]}
                   for (t, s), n in sorted(combos.items(), key=lambda kv: (-kv[1], kv[0]))]
-    outside_rows = [{k["id"]: r["Role ID"], k["title"]: r["Role Title"], k["pskill"]: r["Role Primary Skill"], k["client"]: r["Client"],
+    outside_rows = [{k["id"]: r["Role ID"], k["title"]: clean_title(r["Role Title"]), k["pskill"]: clean_skill(r["Role Primary Skill"])[0], k["client"]: r["Client"],
                      k["project"]: r["Project"], k["status"]: r["Role Status"]} for r in outside_roles]
     # what to build next: demanded skills of the practice without a course, most requested first
     backlog = [{x: r[x] for x in (k["skill"], k["scope"], k["roles"], k["primary"], k["family"], k["vendor"], k["catalog"], k["lessons"],
                                   k["classes"], k["cover"])} | {"_scope": r["_scope"], "_cover": r["_cover"], "_entry": r["_entry"]}
                for r in skill_rows if r["_scope"] != OUTSIDE and r["_cover"] != "lessons"]
     in_practice = sum(n for sc, n in scope_roles.items() if sc != OUTSIDE)
-    return {"lang": lang, "keys": k, "rows": len(rows), "skills": skill_rows, "primary": primary_rows, "titles": title_rows, "combos": combo_rows,
+    names = {s.name.lower(): s.id for s in catalog.skills} if catalog else {}
+
+    def in_academy(skill: str) -> str:
+        t = practice.match_skill(skill)
+        sid = (t.skill_id if t else "") or names.get(skill.lower(), "")
+        if not sid or sid not in known:
+            return COVER["new"]
+        return COVER["lessons"] if lessons_of.get(sid) else (COVER["path"] if materials.get(sid) else COVER["none"])
+
+    matrix_rows = [{"Skill family": fam, "Skill": skill, "Roles where it is a gap": c["gaps"], "Roles where it is aligned": c["aligned"],
+                    "In the academy": in_academy(skill)} for (fam, skill), c in sorted(matrix.items(), key=lambda kv: (-kv[1]["gaps"], -kv[1]["aligned"], kv[0]))]
+    return {"lang": lang, "keys": k, "rows": len(rows), "skills": skill_rows, "matrix": matrix_rows, "primary": primary_rows, "titles": title_rows, "combos": combo_rows,
             "outside_roles": outside_rows, "backlog": backlog, "scope_roles": dict(scope_roles),
             "by": {name: _top(c) for name, c in by.items() if name != "month"}, "months": sorted(by["month"].items()),
             "summary": {"roles": len(rows), "in_practice": in_practice, "outside": len(rows) - in_practice,
@@ -458,56 +547,121 @@ def charts(a: dict, top: int = 15) -> dict[str, str]:
 def sample_history() -> list[tuple[str, list[dict]]]:
     """Two made-up weekly uploads, to try the trend: last week's and this week's (most roles repeat, some close, some are new)."""
     now = sample_rows()
-    before = [dict(r, Timestamp="2026-09-30 10:00") for r in now[:34]] + [dict(r, Timestamp="2026-09-30 10:00") for r in sample_rows(10, seed=3, first=900)]
-    return [("2026-09-30", before), ("2026-10-07", [dict(r, Timestamp="2026-10-07 10:00") for r in now])]
+    before = [dict(r, Timestamp="9/30/2026") for r in now[:34]] + [dict(r, Timestamp="9/30/2026") for r in sample_rows(10, seed=3, first=109000)]
+    return [("2026-09-30", before), ("2026-10-07", [dict(r, Timestamp="10/7/2026") for r in now])]
+
+
+PROFICIENCY = {"P1": "P1 - Basic", "P2": "P2 - Intermediate", "P3": "P3 - Advanced", "P4": "P4 - Expert"}
+_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+# The made-up roles of the sample, in the shape of the organization's report:
+# (title, [(skill, proficiency)] primary first, skill category, job family, {practice family: aligned skills}, {family: gaps})
+SAMPLE_ROLES = [
+    ("Cloud Security Engineer", [("Microsoft Defender for Cloud", "P3"), ("Microsoft Sentinel", "P2"), ("Azure", "P2"), ("Zero Trust", "P2"), ("KQL", "P2")],
+     "Security Operations", "Technology",
+     {"Cyber Defense & Security Operations": ["Microsoft Defender for Cloud", "Microsoft Sentinel", "KQL"], "Cloud & Network Security": ["Zero Trust"]},
+     {"Cloud / Infrastructure Engineering": ["Azure Landing Zones"]}),
+    ("Security Operations Analyst", [("Microsoft Sentinel", "P3"), ("Microsoft Defender XDR", "P2"), ("KQL", "P3"), ("Incident Response", "P2")],
+     "Security Operations", "Technology",
+     {"Cyber Defense & Security Operations": ["Microsoft Sentinel", "Microsoft Defender XDR", "KQL"]},
+     {"Cyber Defense & Security Operations": ["Incident Response", "Threat Hunting"]}),
+    ("Identity Engineer", [("Microsoft Entra ID", "P3"), ("Conditional Access", "P3"), ("PIM", "P2"), ("MFA", "P2"), ("Identity Governance", "P2")],
+     "Identity", "Technology",
+     {"Identity & Access Management": ["Microsoft Entra ID", "Conditional Access", "PIM"]},
+     {"Identity & Access Management": ["Identity Governance"]}),
+    ("IAM Consultant", [("Okta", "P3"), ("SSO", "P2"), ("MFA", "P2"), ("Active Directory", "P2")], "Identity", "Technology",
+     {"Identity & Access Management": ["SSO", "MFA", "Active Directory"]}, {"Identity & Access Management": ["Okta"]}),
+    ("Data Protection Engineer", [("Microsoft Purview", "P3"), ("DLP", "P2"), ("Information Protection", "P2"), ("Microsoft 365", "P2")],
+     "Data Security", "Technology",
+     {"Data Protection, Risk & Compliance": ["Microsoft Purview"], "Microsoft 365 Security": ["Microsoft 365"]},
+     {"Data Protection, Risk & Compliance": ["DLP / Information Protection"]}),
+    ("Infrastructure Engineer", [("Azure", "P3"), ("Terraform", "P2"), ("Azure Networking", "P2"), ("Windows Server", "P2"), ("Linux", "P1")],
+     "Infrastructure", "Technology",
+     {"Cloud / Infrastructure Engineering": ["Azure", "Windows Server"], "Cloud & Network Security": ["Azure Networking"]},
+     {"Cloud / Infrastructure Engineering": ["Terraform", "Linux"]}),
+    ("Technical Project Manager", [("Project Management", "P3"), ("Azure", "P1"), ("Stakeholder Management", "P3"), ("Agile", "P2")],
+     "Delivery", "Delivery",
+     {"Technical Delivery Leadership": ["Technical Project / Program Management"]},
+     {"Technical Delivery Leadership": ["Stakeholder Management", "Agile Delivery"]}),
+    ("DevSecOps Engineer", [("Azure DevOps", "P3"), ("GitHub Actions", "P2"), ("Terraform", "P2"), ("Kubernetes", "P2"), ("SAST", "P2")],
+     "Application Security", "Technology",
+     {"Application Security & DevSecOps": ["Azure DevOps", "GitHub Actions"]},
+     {"Application Security & DevSecOps": ["SAST", "Kubernetes"]}),
+    ("Endpoint Engineer", [("Intune", "P3"), ("Microsoft Defender for Endpoint", "P2"), ("Windows 11", "P2"), ("Conditional Access", "P1")],
+     "Endpoint", "Technology",
+     {"Microsoft 365 Security": ["Intune", "Microsoft Defender for Endpoint"], "Identity & Access Management": ["Conditional Access"]}, {}),
+    ("AI Security Consultant", [("Azure AI Security", "P3"), ("Microsoft Purview", "P2"), ("Azure OpenAI", "P2"), ("Responsible AI", "P2")],
+     "AI", "Technology",
+     {"AI Security & Governance": ["Azure AI Security", "Azure OpenAI"], "Data Protection, Risk & Compliance": ["Microsoft Purview"]},
+     {"AI Security & Governance": ["Responsible AI"]}),
+    ("Network Security Engineer", [("Palo Alto", "P3"), ("Fortinet", "P2"), ("Cisco", "P2"), ("Azure Firewall", "P2")], "Network", "Technology",
+     {"Cloud & Network Security": ["Azure Firewall"]}, {"Cloud & Network Security": ["Palo Alto", "Fortinet", "Cisco"]}),
+    ("Cloud Engineer", [("AWS", "P3"), ("Terraform", "P2"), ("Kubernetes", "P2"), ("Linux", "P2")], "Infrastructure", "Technology",
+     {}, {"Cloud / Infrastructure Engineering": ["AWS", "Terraform", "Kubernetes"]}),
+    ("ServiceNow Developer", [("ServiceNow ITSM", "P3"), ("JavaScript", "P2"), ("ServiceNow SecOps", "P2"), ("REST APIs", "P2")],
+     "Platforms", "Technology", {}, {"Other": ["ServiceNow ITSM", "JavaScript"]}),
+    ("SAP Security Consultant", [("SAP GRC", "P3"), ("SAP S/4HANA", "P2"), ("SAP Fiori", "P1")], "ERP", "Technology",
+     {}, {"Other": ["SAP GRC", "SAP S/4HANA"]}),
+    ("Data Engineer", [("Azure Databricks", "P3"), ("Python", "P2"), ("Azure Data Factory", "P2"), ("SQL", "P2")], "Data & AI", "Technology",
+     {}, {"Other": ["Azure Databricks", "Python"]}),
+    ("Full Stack Developer", [("Java", "P3"), ("React", "P2"), ("Spring Boot", "P2"), ("SQL", "P2")], "Software Engineering", "Technology",
+     {}, {"Other": ["Java", "React"]}),
+    ("Salesforce Administrator", [("Salesforce", "P3"), ("Apex", "P2"), ("Salesforce Sales Cloud", "P2")], "Platforms", "Technology",
+     {}, {"Other": ["Salesforce"]}),
+    ("Power BI Analyst", [("Power BI", "P3"), ("SQL", "P2"), ("DAX", "P2"), ("Excel", "P1")], "Data & AI", "Technology",
+     {}, {"Other": ["Power BI", "DAX"]}),
+]
+
+
+def sample_skill(n: int, name: str, level: str) -> str:
+    """A skill written the way the report writes it: '1 - Microsoft Sentinel            (P3 - Advanced)'."""
+    return f"{f'{n} - {name}':<40}({PROFICIENCY[level]})"
+
+
+def sample_matrix(aligned: dict[str, list[str]], gaps: dict[str, list[str]]) -> str:
+    """The «Matrix cross-skills Practice» cell, in the report's layout."""
+    parts = []
+    for head, groups in (("• Practice Matches (Aligned Capabilities)", aligned), ("• Unaligned Skills & Gaps", gaps)):
+        if groups:
+            parts.append("\n".join([head] + [f"- {fam}: {', '.join(skills)}" for fam, skills in groups.items()]))
+    return "\n\n".join(parts)
 
 
 def sample_rows(n: int = 48, seed: int = 7, first: int = 100200) -> list[dict]:
-    """Made-up roles to try the module (fictional clients and people). Replace them with the real export."""
+    """Made-up roles in the same shape as the organization's roles report (fictional clients, codes and people): numbered
+    skills with their proficiency, titles with an internal code, US dates, '-' for empty cells and the practice matrix.
+    Replace them with the real export (which is read for the session only, unless an owner saves it)."""
     import random
 
     rng = random.Random(seed)
-    roles = [  # (title, primary, secondary, others, category, job family)
-        ("Cloud Security Engineer", "Microsoft Defender for Cloud", "Microsoft Sentinel", "Azure; Zero Trust; KQL", "Security", "Technology"),
-        ("Cloud Security Engineer", "Microsoft Sentinel", "Microsoft Defender XDR", "KQL; Azure; Incident Response", "Security", "Technology"),
-        ("Identity Engineer", "Microsoft Entra ID", "Conditional Access", "PIM; MFA; SSO; Identity Governance", "Identity", "Technology"),
-        ("IAM Consultant", "Okta", "SSO", "MFA; Active Directory", "Identity", "Technology"),
-        ("Data Protection Engineer", "Microsoft Purview", "DLP", "Information Protection; Microsoft 365", "Data Security", "Technology"),
-        ("Infrastructure Engineer", "Azure", "Terraform", "Azure Networking; Windows Server; Linux", "Infrastructure", "Technology"),
-        ("Technical Project Manager", "Project Management", "Azure", "Stakeholder Management; Agile", "Delivery", "Delivery"),
-        ("DevSecOps Engineer", "Azure DevOps", "GitHub Actions", "Terraform; Kubernetes; SAST", "Application Security", "Technology"),
-        ("Endpoint Engineer", "Intune", "Microsoft Defender for Endpoint", "Windows 11; Conditional Access", "Endpoint", "Technology"),
-        ("AI Security Consultant", "Azure AI Security", "Microsoft Purview", "Azure OpenAI; Responsible AI", "AI", "Technology"),
-        ("Network Security Engineer", "Palo Alto", "Fortinet", "Cisco; Azure Firewall", "Network", "Technology"),
-        ("Cloud Engineer", "AWS", "Terraform", "Kubernetes; Linux", "Infrastructure", "Technology"),
-        ("ServiceNow Developer", "ServiceNow ITSM", "JavaScript", "ServiceNow SecOps; REST APIs", "Platforms", "Technology"),
-        ("SAP Security Consultant", "SAP GRC", "SAP S/4HANA", "SAP Fiori", "ERP", "Technology"),
-        ("Data Engineer", "Azure Databricks", "Python", "Azure Data Factory; SQL", "Data & AI", "Technology"),
-        ("Full Stack Developer", "Java", "React", "Spring Boot; SQL", "Software Engineering", "Technology"),
-        ("Salesforce Administrator", "Salesforce", "Apex", "Salesforce Sales Cloud", "Platforms", "Technology"),
-        ("Power BI Analyst", "Power BI", "SQL", "DAX; Excel", "Data & AI", "Technology"),
-    ]
-    weights = [7, 6, 6, 2, 4, 5, 3, 3, 3, 2, 2, 2, 3, 2, 2, 3, 1, 2]
-    clients = [("Cliente Demo A", "Banking", "Retail Banking"), ("Cliente Demo B", "Retail", "Consumer Goods"), ("Cliente Demo C", "Energy", "Utilities"),
-               ("Cliente Demo D", "Health", "Providers"), ("Cliente Demo E", "Public Service", "Government"), ("Cliente Demo F", "Insurance", "Life")]
-    leads = ["lead.uno@example.com", "lead.dos@example.com", "lead.tres@example.com"]
+    weights = [7, 4, 6, 2, 4, 5, 3, 3, 3, 2, 2, 2, 3, 2, 2, 3, 1, 2]
+    clients = [("Demo Client A", "Banking", "Retail Banking"), ("Demo Client B", "Retail", "Consumer Goods"), ("Demo Client C", "Energy", "Utilities"),
+               ("Demo Client D", "Health", "Providers"), ("Demo Client E", "Public Service", "-"), ("Demo Client F", "-", "-")]
+    leads = ["lead.one@example.com", "lead.two@example.com", "lead.three@example.com"]
+
+    def short(y: int, m: int, d: int) -> str:  # 1-Oct-26
+        return f"{d}-{_MONTHS[m - 1]}-{y % 100:02d}"
+
     out = []
     for i in range(n):
-        title, prim, sec, other, cat, fam = rng.choices(roles, weights)[0]
+        title, skills, cat, fam, aligned, gaps = rng.choices(SAMPLE_ROLES, weights)[0]
         client, ind1, ind2 = rng.choice(clients)
         month = rng.randint(1, 6)
         level = rng.choice([8, 9, 10, 11])
         country = rng.choice(["Mexico", "Mexico", "United States", "Brazil", "Spain"])
-        combined = "; ".join(dict.fromkeys([prim, sec] + split_skills(other)))
-        out.append({"Timestamp": f"2026-{rng.randint(7, 9):02d}-{rng.randint(1, 28):02d} 10:{rng.randint(10, 59)}", "Client": client,
-                    "Governance Lead": rng.choice(leads), "Project": f"Proyecto Demo {rng.randint(1, 12):02d}", "Role ID": f"R-{first + i}",
-                    "Role Title": title, "Role Description": f"(mock) {title} for {client}: {prim} with {sec}.", "Combined Skills": combined,
+        numbered = [sample_skill(k, name, lvl) for k, (name, lvl) in enumerate(skills, start=1)]
+        out.append({"Timestamp": f"{rng.randint(7, 9)}/{rng.randint(1, 28)}/2026", "Client": client,
+                    "Governance Lead": rng.choice(leads), "Project": f"Demo Project {rng.randint(1, 12):02d}", "Role ID": str(first + i),
+                    "Role Title": f"{rng.randint(100000, 999999)}-{rng.randint(10000, 99999)}_{title}",
+                    "Role Description": f"(mock) {title} for {client}: {skills[0][0]} with {skills[1][0]}.",
+                    "Combined Skills": " | ".join([numbered[0], cat] + numbered[1:]), "Matrix cross-skills Practice": sample_matrix(aligned, gaps),
                     "Role Career Level From": str(level), "Role Career Level To": str(level - 1),
                     "Role Status": rng.choice(["Open", "Open", "Open", "Filled", "Cancelled"]), "Role Is Sold": rng.choice(["Yes", "Yes", "No"]),
-                    "Role Start Date": f"2026-{month + 6:02d}-01", "Role End Date": f"2027-{month:02d}-28", "Role Market Unit": "Growth Markets",
+                    "Role Start Date": short(2026, month + 6, 1), "Role End Date": short(2027, month, 28), "Role Market Unit": "Growth Markets",
                     "Role Primary Contact (Email ID)": rng.choice(leads), "Role Job Family Group": fam, "Role Country/Territory": country,
                     "Role Location Path": f"Global/{country}", "Role Fulfillment Entity Path": "Global/Technology/Security",
-                    "Role Primary Skill": prim, "Skill Category": cat, "Role Secondary Skill": sec, "Role Other Skills": other,
+                    "Role Primary Skill": numbered[0], "Skill Category": cat, "Role Secondary Skill": numbered[1],
+                    "Role Other Skills": " | ".join(numbered[2:]) or "-",
                     "Project Country/Territory": country, "Role Created By (Email ID)": rng.choice(leads),
                     "Role Location Type": rng.choice(["Remote", "Hybrid", "Onsite"]), "Role Work Location": country, "Role Source Location": country,
                     "Role Accepting Resumes": rng.choice(["Yes", "No"]), "Role Has Security/Nationality Restriction": rng.choice(["No", "No", "Yes"]),

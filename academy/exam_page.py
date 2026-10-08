@@ -19,10 +19,16 @@ KIND_ICON = {"path": "🧭", "module": "📘", "course": "🎓", "lab": "🧪", 
 
 def material_links(items: list[dict], cols: int = 2) -> None:
     """Support material as link buttons (title, provider)."""
+    from academy.family_path import file_path
+
     grid = st.columns(cols)
     for i, m in enumerate(items):
         label = f"{KIND_ICON.get(m.get('kind', 'doc'), '📄')} {m['title']}"
-        grid[i % cols].link_button(label, m["url"], help=m.get("provider", ""), width="stretch")
+        local = file_path(m["url"])
+        if local is not None:  # a file a champion uploaded (deck, PDF…)
+            grid[i % cols].download_button(label, local.read_bytes(), file_name=local.name, key=f"mat_{i}_{m['url']}", width="stretch")
+        elif str(m["url"]).startswith("https://"):
+            grid[i % cols].link_button(label, m["url"], help=m.get("provider", ""), width="stretch")
 
 
 def assistant_box(prompt: str, lang: str, key: str, label: str = "") -> None:

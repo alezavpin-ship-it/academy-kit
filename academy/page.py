@@ -13,7 +13,7 @@ from academy import content_sync, editor, notify, quiz, report, report_pdf, trac
 from academy import content_xlsx as content
 from academy.access import load_access, save_access
 from academy.catalog import (DEFAULT_SHEET, Catalog, vendor_of, load_materials, parse_grid, parse_text, read_xlsx,
-                             save_catalog, save_materials, sheet_names, validate_catalog, validate_materials)
+                             save_catalog, sheet_names, validate_catalog)
 from academy import assistant as ai
 from academy.exam_page import assistant_box, exams_tab, material_links
 from academy.certs import Certs
@@ -211,6 +211,10 @@ def library(pack: Pack, lang: str) -> None:
         if used:
             st.caption(T("used_in", lang) + ", ".join(used))
     st.caption(T("third_party", lang))
+    st.divider()
+    from academy.study_page import study_bank
+
+    study_bank(None, False, key="lib_sm", player=True)  # the practice's study material (John Savill and more), to watch here
 
 
 def progress_tab(pack: Pack, tr: Tracker, lang: str, role: str | None) -> None:
@@ -251,7 +255,7 @@ def champion_team(conn, packs: list[Pack], exams: list, catalog, families: set[s
     names = [f.name for f in catalog.families if f.id in families]
     st.markdown("#### My family: " + ", ".join(names))
     st.caption("You only see people taking lessons or certifications of your skill family.")
-    family_courses_editor(catalog, families, lang)
+    st.caption("Run your family's career path (classes on / off, your own decks, the family's CSV) in **Learning route → 🧭 Manage the career path**.")
     rows = notify.family_team(conn, packs, exams, catalog, families)
     if not rows:
         st.info("Nobody has started your family's content yet.")
@@ -292,44 +296,6 @@ def _material_item(r: dict) -> dict:
     if pd.notna(r.get("order")):
         item["order"] = int(r["order"])
     return item
-
-
-def family_courses_editor(catalog, families: set[str], lang: str) -> None:
-    """The family lead adds or removes the route's steps for THEIR skills: Microsoft Learn, the vendor's path, or courses of
-    the company's own portal (Workday Learning). The app only links to them; each person opens the course with their own sign-in."""
-    skills = [s for s in catalog.skills if s.family in families]
-    by_name = {s.name: s.id for s in skills}
-    mats = load_materials()
-    with st.expander("My family's courses: add or remove route steps"):
-        st.caption(("Paste the course link (Microsoft Learn, the vendor's path or Workday Learning). Module, path, course and lab "
-                     "count as route steps; guide, doc and video are reference material."))
-        df = _materials_table([(s.name, mats.get(s.id, [])) for s in skills], "course")
-        ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key="ak_fam_courses", column_config={
-            "skill": st.column_config.SelectboxColumn(T("sk_col_skill", lang), options=list(by_name), required=True),
-            "order": _class_column(lang),
-            "title": st.column_config.TextColumn("Course title", required=True),
-            "url": st.column_config.LinkColumn("URL", required=True, validate=r"^https://.+"),
-            "provider": st.column_config.SelectboxColumn("Provider", options=PROVIDERS, required=True),
-            "kind": st.column_config.SelectboxColumn("Kind", options=["course", "path", "module", "lab", "video", "guide", "doc"],
-                                                     required=True),
-            "verified": st.column_config.TextColumn("Verified (date)")})
-        if st.button("Save my family's courses", key="ak_fam_courses_save", type="primary"):
-            new: dict[str, list[dict]] = {}
-            for r in ed.to_dict("records"):
-                if pd.notna(r.get("skill")) and pd.notna(r.get("title")) and pd.notna(r.get("url")) and r["skill"] in by_name:
-                    item = _material_item(r)
-                    item["verified"] = item["verified"] or date.today().isoformat()
-                    new.setdefault(by_name[r["skill"]], []).append(item)
-            errs = validate_materials(new, catalog)
-            if errs:
-                for e in errs:
-                    st.error(e)
-            else:
-                merged = {k: v for k, v in mats.items() if k not in by_name.values()}  # other families' material is untouched
-                merged.update(new)
-                save_materials(merged)
-                content_sync.refresh()  # the content file always mirrors what the app holds
-                st.toast("Courses saved.")
 
 
 def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: str, only: set[str] | None = None) -> None:
@@ -655,7 +621,7 @@ def access_section(lang: str) -> None:
                 st.toast("Access saved.")
 
 
-def route_tab(catalog: Catalog | None, conn, learner: str, lang: str) -> None:
+def route_tab(catalog: Catalog | None, conn, learner: str, lang: str, manage: set[str] | None = None) -> None:
     """The learning route: per skill family, the vendor's own training (Microsoft Learn for Microsoft skills) as steps."""
     if not catalog:
         st.info("The skills catalog is not loaded yet.")
@@ -666,6 +632,10 @@ def route_tab(catalog: Catalog | None, conn, learner: str, lang: str) -> None:
                   "career path for the rest. Open each step, complete it on its site and mark it here."))
     labels = {r.family_id: f"{r.family} ({len(r.steps)} {'steps'})" for r in routes}
     fid = st.selectbox("Skill family", list(labels), key="rt_family", format_func=lambda k: labels[k])
+    if fid in (manage or set()):  # the family's champion (or an owner) runs its path here
+        from academy.family_page import manage_family
+
+        manage_family(catalog, fid, learner.strip() or "me")
     route = next(r for r in routes if r.family_id == fid)
     vendors, vendor = route.vendors(), "*"
     if len(vendors) > 1:  # family -> technology / vendor -> skill -> class 1, class 2…
@@ -700,7 +670,10 @@ def route_tab(catalog: Catalog | None, conn, learner: str, lang: str) -> None:
             st.markdown(f"{'✅' if ok else '🟠' if nxt and stp.key == nxt.key else '○'} **{'Class'} {stp.number} · {stp.title}**")
             st.caption(f"{kind_name.get(stp.kind, stp.kind)} · {stp.provider}")
             a, b = st.columns([1, 2])
-            a.link_button(f"Open on {stp.provider} ↗", stp.url, width="stretch")
+            from academy.family_page import download_step
+
+            if not download_step(stp.url, stp.title, f"rt_dl_{stp.key}", a):
+                a.link_button(f"Open on {stp.provider} ↗", stp.url, width="stretch")
             if ok:
                 b.caption("Completed" + (f" · [{'evidence'}]({done[stp.key]})" if done[stp.key].startswith("https://") else ""))
             else:
@@ -825,16 +798,16 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
         pending = len(forum.waiting(mine)) if mine else 0
         if pending:
             st.warning(f"**Forum:** {pending} question(s) in your skill families are waiting for an expert's answer. Open them in the Forum tab.")
-    sections = [("tab_route", lambda: route_tab(catalog, conn, learner, lang)), ("tab_course", lambda: course(pack, tr, lang, role)), ("tab_glossary", lambda: glossary(pack, tr, lang)),
+    sections = [("tab_route", lambda: route_tab(catalog, conn, learner, lang, ({f.id for f in catalog.families} if owner else families) if catalog else set())), ("tab_course", lambda: course(pack, tr, lang, role)), ("tab_glossary", lambda: glossary(pack, tr, lang)),
                 ("tab_library", lambda: library(pack, lang)), ("tab_progress", lambda: progress_tab(pack, tr, lang, role)),
                 ("tab_skills", lambda: skills_tab(catalog, packs, lang, owner, families)),
                 ("tab_certs", lambda: certifications_tab(exams, conn, learner, lang, catalog, leader=owner or bool(families))),
                 ("tab_forum", lambda: forum_tab(conn, catalog, learner, email, lang, owner, families)),
                 ("tab_rhythm", lambda: rhythm_page.rhythm_tab(conn, catalog, packs, exams, learner, owner, families)),
-                ("tab_news", lambda: news_page.knowledge_tab(lang))]  # Knowledge exchange: the practice's reading bank
+                ("tab_news", lambda: news_page.knowledge_tab(lang, catalog, leader=owner or bool(families)))]  # Knowledge exchange: the practice's reading bank
     if owner or families:  # reports are for owners (every family) and champions (their own)
         sections.append(("tab_reports", lambda: reports_tab(conn, packs, exams, catalog, lang, learner.strip() or "me", None if owner else families)))
-        sections.append(("tab_demand", lambda: demand_tab(catalog, packs, lang)))  # what the market asks for, against the practice and the courses
+        sections.append(("tab_demand", lambda: demand_tab(catalog, packs, lang, owner)))  # what the market asks for, against the practice and the courses
     if owner:  # team measurements are for owners and leaders only
 
         def team_view() -> None:
@@ -855,6 +828,9 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
     if owner:  # ✏️ Edit mode: the owner edits the section's own content with drop-down lists
         sections = [(key, _editable(key, draw, pack, conn, catalog, learner, lang)) for key, draw in sections]
     labels = [f"{n} · {T(key, lang)}" for n, (key, _) in enumerate(sections, start=1)]
+    leader_tabs = [n for n, (key, _) in enumerate(sections) if key in ("tab_reports", "tab_demand", "tab_team")]
+    if leader_tabs:  # two rows: the learner's sections, then the owner / champion tools in another color
+        ui.tab_rows(leader_tabs[0], "Owner tools" if owner else "Champion tools")
     goto = st.session_state.pop("ak_goto", None)  # set by the «start lesson» button: open that tab
     target = next((lb for lb, (key, _) in zip(labels, sections) if key == goto), None)
     try:

@@ -11,6 +11,8 @@ is in English: one row per thing, no language columns.
     PracticeSkills   the skills of the practice as the demand writes them: term, aliases, catalog skill, family, vendor, scope
     PracticeRoles    the role titles the practice can staff, with aliases
     NewsSources      the security news sites the practice follows (Knowledge exchange; also catalog/news_sources.csv)
+    People           who is who: owners, champions and SMEs of each family (also catalog/people.csv)
+    StudyMaterial    recommended training content by theme, e.g. John Savill's videos (also catalog/study_material.csv)
     Courses          one row per course (title, subtitle, version…)
     Levels / Ranks / Topics / Roles   the levels, ranks, video-library topics and roles of each course
     Lessons          one row per lesson: level, title, summary, key points, practice link, skills
@@ -37,11 +39,12 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 
-from academy import news
+from academy import news, people, study
 from academy.catalog import (Catalog, Family, Skill, catalog_path, load_catalog, load_materials, materials_path, save_catalog, save_materials,
                              validate_catalog, validate_materials, vendor_of)
 from academy.pack import PACKS_DIR, _parse, validate
 from academy.practice import Practice, RoleTerm, Term, load_practice, practice_path, save_practice, scope_of
+from academy.family_path import status_of
 from academy.route import class_order
 
 LANGUAGE = "en"  # the only language of the academy
@@ -50,11 +53,13 @@ LETTERS = "ABCD"
 SHEETS: dict[str, list[str]] = {
     "Families": ["FamilyId", "Name", "GapVolume", "RoleImpact", "Champion", "ChampionEmail"],
     "Skills": ["SkillId", "Name", "FamilyId", "Vendor", "Category", "Confirmed", "Severity", "Target", "ImpactedRoles"],
-    "LearningPaths": ["SkillId", "Family", "Vendor", "Skill", "Class", "Title", "Url", "Kind", "Provider", "Verified"],
+    "LearningPaths": ["SkillId", "Family", "Vendor", "Skill", "Class", "Title", "Url", "Kind", "Provider", "Status", "Minutes", "Notes", "Verified"],
     "Practice": ["Name", "Description"],
     "PracticeSkills": ["Term", "Aliases", "SkillId", "FamilyId", "Vendor", "Scope"],
     "PracticeRoles": ["RoleTitle", "Aliases", "Scope"],
     "NewsSources": ["Name", "Category", "Url", "FeedUrl", "Splash", "Enabled", "Description"],
+    "People": ["Person", "Email", "Role", "Families", "Active"],
+    "StudyMaterial": ["Title", "Url", "Source", "Category", "Theme", "Kind", "Level", "SkillId", "Notes"],
     "Courses": ["PackId", "Title", "Subtitle", "Disclaimer", "Version", "Updated"],
     "Levels": ["PackId", "SortOrder", "Level"],
     "Ranks": ["PackId", "Name", "Points", "Emoji", "Color", "Image"],
@@ -71,12 +76,13 @@ SHEETS: dict[str, list[str]] = {
 SECTIONS = [
     ("Skills catalog", "FF5800", ["Families", "Skills", "LearningPaths"],
      "Skill families, their skills (with vendor) and each skill's career path (class 1, 2, 3…)."),
-    ("Practice", "2A78D6", ["Practice", "PracticeSkills", "PracticeRoles", "NewsSources"],
-     "What the practice is, which skills / technologies and roles it covers (demand analysis) and the news it follows (Knowledge exchange)."),
+    ("Practice", "2A78D6", ["Practice", "PracticeSkills", "PracticeRoles", "NewsSources", "People"],
+     "What the practice is, the skills and roles it covers (demand analysis), the news it follows and who is who (owners, champions, SMEs)."),
     ("Courses", "6B6762", ["Courses", "Levels", "Ranks", "Topics", "Roles"],
      "General data of each course: levels, ranks, topics of the video library and roles."),
     ("Lessons", "1C1C1E", ["Lessons", "Questions"], "Each lesson with its key points and its 3 check questions."),
-    ("Videos and links", "1BAF7A", ["Resources", "LessonResources"], "The videos and links (URL, channel) and the lessons that show them."),
+    ("Videos and links", "1BAF7A", ["Resources", "LessonResources", "StudyMaterial"],
+     "The videos and links (URL, channel), the lessons that show them, and the study material bank (Knowledge exchange, Video library)."),
     ("Glossary", "4A3AA7", ["Glossary"], "Terms and definitions of each course."),
 ]
 SHEETS = {name: SHEETS[name] for _, _, names, _ in SECTIONS for name in names}
@@ -86,8 +92,12 @@ CHOICES = {"AnswerLetter": list("ABCD"), "Confirmed": ["yes", "no"], "Severity":
            "Scope": ["core", "third-party", "emerging"],
            ("Resources", "Kind"): ["video", "playlist", "link"], ("Resources", "Level"): ["basic", "intermediate", "advanced"],
            ("NewsSources", "Splash"): ["yes", "no"], ("NewsSources", "Enabled"): ["yes", "no"],
-           ("LearningPaths", "Kind"): ["path", "module", "course", "lab", "tutorial", "doc", "guide", "video", "exam"]}
-OPTIONAL = {"Families", "Skills", "Practice", "PracticeSkills", "PracticeRoles", "NewsSources"}  # without them the catalog / practice on disk stays
+           ("People", "Role"): ["owner", "champion", "sme", "learner"], ("People", "Active"): ["yes", "no"],
+           ("StudyMaterial", "Kind"): ["video", "playlist", "search", "page"], ("StudyMaterial", "Level"): ["basic", "intermediate", "advanced"],
+           ("LearningPaths", "Kind"): ["path", "module", "course", "lab", "tutorial", "deck", "doc", "guide", "video", "exam"],
+           ("LearningPaths", "Status"): ["required", "optional", "off"]}
+NEW_COLUMNS = {"Status", "Minutes", "Notes"}  # columns added later: files written before them still import
+OPTIONAL = {"Families", "Skills", "Practice", "PracticeSkills", "PracticeRoles", "NewsSources", "People", "StudyMaterial"}  # without them the catalog / practice on disk stays
 TABLE = "Table"  # first column of the single CSV: the sheet each row belongs to
 # names used by earlier versions of the file
 LEGACY_SHEETS = {"Cursos": "Courses", "Niveles": "Levels", "Rangos": "Ranks", "Temas": "Topics", "Lecciones": "Lessons", "Preguntas": "Questions",
@@ -119,6 +129,9 @@ README = [
     "    writes it, Aliases its other names (separated by ;), Scope = core | third-party | emerging. Anything else is outside the practice.",
     "11. NewsSources: the sites of the Knowledge exchange. FeedUrl is the RSS / Atom feed (optional); Splash = yes opens the academy",
     "    with that source's latest news; Enabled = no hides it. Addresses must start with https://.",
+    "12. People: Role = owner | champion | sme | learner; Families = family ids separated by ; (champions and SMEs).",
+    "    A champion listed here becomes the champion of those families in Families.",
+    "13. StudyMaterial: Kind = video | playlist | search | page; SkillId (optional) ties an item to a skill of the catalog.",
     "",
     "On import the app checks everything and saves nothing if it finds a problem; it makes a backup before saving.",
 ]
@@ -145,6 +158,8 @@ def _rows(packs: list[dict], materials: dict[str, list[dict]], catalog, practice
         out["PracticeRoles"] = [[r.title, "; ".join(r.aliases), r.scope] for r in practice.roles]
     out["NewsSources"] = [[x.name, x.category, x.url, x.feed, "yes" if x.splash else "no", "yes" if x.enabled else "no", x.description]
                           for x in news.load_sources()]
+    out["People"] = [x.row() for x in people.load()]
+    out["StudyMaterial"] = [x.row() for x in study.load()]
     for d in packs:
         m = d["meta"]
         key = [m["id"]]
@@ -188,11 +203,12 @@ def _rows(packs: list[dict], materials: dict[str, list[dict]], catalog, practice
         head = [sid, fam_name.get(x.family, "") if x else "", vendor_of(x, materials) if x else "", x.name if x else ""]
         steps = class_order(materials[sid])
         for n, i in enumerate(steps, start=1):
-            out["LearningPaths"].append(head + [n, i.get("title", ""), i.get("url", ""), i.get("kind", ""), i.get("provider", ""), i.get("verified", "")])
+            out["LearningPaths"].append(head + [n, i.get("title", ""), i.get("url", ""), i.get("kind", ""), i.get("provider", ""),
+                                                status_of(i), i.get("minutes", ""), i.get("notes", ""), i.get("verified", "")])
         for i in materials[sid]:
             if i not in steps:
-                out["LearningPaths"].append(head + ["", i.get("title", ""), i.get("url", ""), i.get("kind", ""), i.get("provider", ""),
-                                                    i.get("verified", "")])
+                out["LearningPaths"].append(head + [i.get("order", ""), i.get("title", ""), i.get("url", ""), i.get("kind", ""), i.get("provider", ""),
+                                                    status_of(i), i.get("minutes", ""), i.get("notes", ""), i.get("verified", "")])
     return out
 
 
@@ -331,7 +347,7 @@ def _sheet(wb, name: str, problems: list[str]) -> list[dict]:
         return []
     it = wb[found].iter_rows(values_only=True)
     head = [_text(h) for h in next(it, [])]
-    missing = [c for c in SHEETS[name] if c not in head]
+    missing = [c for c in SHEETS[name] if c not in head and c not in NEW_COLUMNS]
     if missing:
         problems.append(f"[{name}] missing columns: {', '.join(missing)}.")
         return []
@@ -371,7 +387,7 @@ def _load_csv(raw: bytes, problems: list[str]) -> dict[str, list[dict]]:
         problems.append(f'The CSV has no "{TABLE}" column in its first row.')
         return data
     for name, cols in SHEETS.items():
-        missing = [c for c in cols if c not in head]
+        missing = [c for c in cols if c not in head and c not in NEW_COLUMNS]
         if missing and name not in OPTIONAL:
             problems.append(f"[{name}] missing columns: {', '.join(missing)}.")
     for n, row in enumerate(rows[1:], start=2):
@@ -532,6 +548,7 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
     materials: dict[str, list[dict]] = {}
     for r in sorted(data["LearningPaths"], key=lambda r: (_int(r.get("Class")) is None, _int(r.get("Class")) or 0)):  # stable: class 1, 2, 3…
         item = {"title": _text(r["Title"]), "url": _text(r["Url"]), "kind": _text(r["Kind"]), "provider": _text(r["Provider"]),
+                "status": _text(r.get("Status")).lower(), "minutes": _int(r.get("Minutes")), "notes": _text(r.get("Notes")),
                 "verified": _text(r["Verified"])}
         item = {k: v for k, v in item.items() if v}
         if _int(r.get("Class")):
@@ -560,10 +577,33 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
         sources, bad = news.parse_sources(news.to_csv([]) + "\r\n".join(
             ",".join('"' + _text(r.get(c)).replace('"', '""') + '"' for c in news.COLUMNS) for r in data["NewsSources"]).encode("utf-8"))
         problems += bad
+    directory = None
+    if data["People"]:
+        directory, bad = people.parse(_as_csv(people.COLUMNS, data["People"]), {f.id for f in catalog.families} if catalog else None)
+        problems += bad
+        if catalog and not bad:
+            catalog, moved = people.sync_catalog(directory, catalog)
+            new_catalog = new_catalog or moved
+    bank = None
+    if data["StudyMaterial"]:
+        bank, bad = study.parse(_as_csv(study.COLUMNS, data["StudyMaterial"]))
+        problems += bad
+        known = catalog.skill_ids() if catalog else set()
+        problems += [f"[StudyMaterial] '{i.title}': SkillId '{i.skill_id}' is not in Skills." for i in bank if i.skill_id and known and i.skill_id not in known]
     return {"packs": packs, "materials": materials, "catalog": catalog, "new_catalog": new_catalog, "practice": practice, "news": sources,
+            "people": directory, "study": bank,
             "problems": problems, "summary": summary,
             "learning_paths": sum(len(v) for v in materials.values()),
             "families": len(catalog.families) if catalog else 0, "skills": len(catalog.skills) if catalog else 0}
+
+
+def _as_csv(columns: list[str], rows: list[dict]) -> bytes:
+    """Rows of a sheet as the CSV their module reads (so the workbook and the CSV file pass the same checks)."""
+    buf = io.StringIO(newline="")
+    w = csv.writer(buf, lineterminator="\r\n")
+    w.writerow(columns)
+    w.writerows([_text(r.get(c)) for c in columns] for r in rows)
+    return buf.getvalue().encode("utf-8")
 
 
 def target_file(pack_id: str, packs_dir: Path | None = None) -> Path:
@@ -592,6 +632,13 @@ def apply(result: dict, packs_dir: Path | None = None, backup_dir: Path | None =
             backup.mkdir(parents=True, exist_ok=True)
             shutil.copy2(np_, backup / np_.name)
         written.append(news.save_sources(result["news"]))
+    for key, path_of, save in (("people", people.people_path, people.save), ("study", study.study_path, study.save)):
+        if result.get(key) is not None:
+            f = path_of()
+            if f.exists():
+                backup.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(f, backup / f.name)
+            written.append(save(result[key]))
     mp, cp, pp = materials_path(), catalog_path(), practice_path()
     if result.get("practice") is not None:
         if pp.exists():
@@ -605,4 +652,7 @@ def apply(result: dict, packs_dir: Path | None = None, backup_dir: Path | None =
     if result.get("new_catalog") and result.get("catalog"):
         written.append(save_catalog(result["catalog"], source="Content file", updated=datetime.now().date().isoformat()))
     written.append(save_materials(result["materials"]))
+    from academy import family_path
+
+    family_path.refresh(result.get("catalog"), result["materials"])  # the CSV of each family follows
     return written

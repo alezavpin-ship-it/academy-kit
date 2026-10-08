@@ -15,7 +15,7 @@ if str(ROOT) not in sys.path:
 import streamlit as st  # noqa: E402
 
 from academy import page  # noqa: E402
-from academy import content_sync, english, notify  # noqa: E402
+from academy import content_sync, english, family_path, notify, people  # noqa: E402
 from academy import legal  # noqa: E402
 from academy.access import load_access, save_access  # noqa: E402
 from academy.catalog import load_catalog  # noqa: E402
@@ -62,6 +62,12 @@ if _sync["status"] == "none":  # first run: write the file from what the app alr
 st.session_state["ak_content_sync"] = _sync
 if _sync["status"] == "applied":
     st.cache_data.clear()
+# Each family's career path is also a CSV (content/families/<family>.csv) its champion may edit in Excel.
+_fam = family_path.sync(load_catalog())
+st.session_state["ak_family_sync"] = _fam
+if _fam["applied"]:
+    content_sync.refresh()
+    st.cache_data.clear()
 
 packs = available_packs()
 if not packs:
@@ -72,7 +78,17 @@ with st.sidebar:
     name = st.selectbox(T("pack"), packs, index=packs.index(default) if default in packs else 0, key="ak_pack",
                         format_func=lambda n: _pack(n).title)
     pack = _pack(name)
-    learner = st.text_input(T("who"), value=st.query_params.get("u", "me"), key="ak_learner", help=T("who_help"))
+    directory = [x for x in people.load() if x.active]  # the people directory (catalog/people.csv): pick your name
+    if directory:
+        names = [x.name for x in directory] + ["Someone else…"]
+        asked = st.query_params.get("u", "")
+        pick = st.selectbox("Who are you?", names, index=names.index(asked) if asked in names else 0, key="ak_person",
+                            help="The names of the people directory (Team → ✏️ Edit mode → People, or catalog/people.csv). "
+                                 "Your role (owner, champion, SME) comes with your name.")
+        learner = st.text_input(T("who"), value=asked or "me", key="ak_learner", help=T("who_help")) if pick == names[-1] else pick
+    else:
+        learner = st.text_input(T("who"), value=st.query_params.get("u", "me"), key="ak_learner", help=T("who_help"))
+    person = people.find(directory, learner)
     role = None
     if pack.roles:
         opts = [""] + list(pack.roles)
@@ -82,7 +98,7 @@ with st.sidebar:
 
     st.toggle("Sounds", value=True, key="ak_sound",
               help="A short sound when you answer, finish a step or complete a lesson.")
-    email = st.text_input(T("email"), key="ak_email", help=T("email_help"), placeholder="name@company.com")
+    email = st.text_input(T("email"), key="ak_email", help=T("email_help"), placeholder="name@company.com") or (person.email if person else "")
 
 conn = _conn(os.environ.get("ACADEMY_DB", str(ROOT / "data" / "academy.db")))
 who = learner.strip() or "me"
@@ -94,17 +110,20 @@ catalog = load_catalog()
 # Views: end user by default; owners, leaders and champions can switch on the owner view (see academy/access.py).
 acc = load_access()
 owner, families = False, set()
-is_owner = acc.is_owner(who, email)
-mine = acc.champion_families(who, email, catalog)
+is_owner = acc.is_owner(who, email) or people.is_owner(directory, who, email)
+mine = acc.champion_families(who, email, catalog) | people.families_of(directory, who, email)
 with st.sidebar:
-    if not acc.configured:
+    if not acc.configured and not any(x.role == people.OWNER for x in directory):
         st.divider()
         st.caption(T("claim"))
         if st.button(T("claim_btn"), key="ak_claim"):
             acc.owners = [email or who]
             save_access(acc)
             st.rerun()
-    elif is_owner or mine:
+    elif not (is_owner or mine):
+        st.divider()
+        st.caption("Owner or champion? Pick your name in «Who are you?» (or type the e-mail registered as owner) to get the owner view.")
+    if is_owner or mine:
         st.divider()
         on = st.toggle(T("view_owner" if is_owner else "view_champion"), value=True, key="ak_owner_view",
                        help=T("view_owner_help" if is_owner else "view_champion_help"))

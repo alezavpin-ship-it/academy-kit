@@ -1,0 +1,6 @@
+﻿SkillId,Skill,Class,Title,Url,Kind,Provider,Status,Minutes,Notes
+microsoft-defender-xdr,Microsoft Defender XDR,1,Mitigate threats using Microsoft Defender XDR (SC-200),https://learn.microsoft.com/en-us/training/paths/sc-200-mitigate-threats-using-microsoft-365-defender/,path,Microsoft Learn,required,,
+microsoft-defender-xdr,Microsoft Defender XDR,2,Defend against Cyberthreats with Microsoft Defender XDR lab exercises,https://learn.microsoft.com/en-us/training/modules/defend-against-cyberthreats-microsoft-defender-xdr-labs/,lab,Microsoft Learn,required,,
+microsoft-sentinel,Microsoft Sentinel,1,Configure your Microsoft Sentinel environment (SC-200),https://learn.microsoft.com/en-us/training/paths/sc-200-configure-azure-sentinel-environment/,path,Microsoft Learn,required,,
+microsoft-sentinel,Microsoft Sentinel,,Microsoft Sentinel skill-up training,https://learn.microsoft.com/en-us/azure/sentinel/skill-up-resources,doc,Microsoft Learn,optional,,
+defender-for-endpoint,Defender for Endpoint,1,Mitigate threats using Microsoft Defender for Endpoint (SC-200),https://learn.microsoft.com/en-us/training/paths/sc-200-mitigate-threats-using-microsoft-defender-for-endpoint/,path,Microsoft Learn,required,,

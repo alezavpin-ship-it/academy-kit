@@ -32,7 +32,7 @@ def _signature() -> tuple:
     return tuple((str(f), f.stat().st_mtime_ns) for f in files if f.exists())
 
 
-def _import_box(lang: str, current: list[dict]) -> None:
+def _import_box(lang: str, current: list[dict], owner: bool = False) -> None:
     path = demand.demand_path()
     with st.expander("📥 Load the roles file (CSV or Excel) · template and test data",
                      expanded=not current):
@@ -48,37 +48,52 @@ def _import_box(lang: str, current: list[dict]) -> None:
             for day, sample in demand.sample_history():
                 demand.save_snapshot(sample, day)
             st.rerun()
+        st.info("🔒 **Confidential data.** A roles file you upload here is **only read**: the analysis runs in memory for this session and "
+                "nothing is saved. An owner can choose to save it so the academy keeps it and follows the trend week over week.")
         up = st.file_uploader("Roles file", type=["csv", "xlsx"], key="dm_up")
         if up is not None:
             rows, problems = demand.parse(up.getvalue())
             for e in problems:
                 (st.warning if rows else st.error)(e)
             if rows:
+                st.session_state["dm_session"] = {"name": up.name, "rows": rows, "date": demand.snapshot_date(rows)}
                 a, b = st.columns([2, 3])
-                day = a.text_input("Date of this upload (YYYY-MM-DD)", value=demand.snapshot_date(rows),
-                                   key=f"dm_day_{up.name}", help=("Every upload is kept with its date to compare the demand week over week. "
-                                                                   "An existing upload with that date is replaced."))
-                b.caption(f"{len(rows)} roles read.")
-                if b.button("Save this upload", type="primary", key="dm_save", width="stretch"):
-                    try:
-                        demand.save_snapshot(rows, day.strip())
-                    except ValueError:
-                        st.error("The date must be YYYY-MM-DD.")
-                    else:
-                        st.rerun()
+                b.caption(f"{len(rows)} roles read from «{up.name}» · analyzed below, not saved.")
+                if owner:
+                    day = a.text_input("Date of this upload (YYYY-MM-DD)", value=demand.snapshot_date(rows),
+                                       key=f"dm_day_{up.name}", help=("Saved uploads are kept with their date to compare the demand week over week. "
+                                                                       "An existing upload with that date is replaced."))
+                    if b.button("Save it in the app (owners) to follow the trend", key="dm_save", width="stretch"):
+                        try:
+                            demand.save_snapshot(rows, day.strip())
+                        except ValueError:
+                            st.error("The date must be YYYY-MM-DD.")
+                        else:
+                            st.session_state.pop("dm_session", None)
+                            st.rerun()
+                else:
+                    a.caption("Only an owner can save a roles file in the app.")
         snaps = demand.snapshots()
         if snaps:
             st.caption("Saved uploads: " + " · ".join(d for d, _ in snaps)
                        + f" (folder `{demand.history_dir()}`; delete a file there to remove that upload).")
 
 
-def demand_tab(catalog, packs: list, lang: str) -> None:
+def demand_tab(catalog, packs: list, lang: str, owner: bool = False) -> None:
     path = demand.demand_path()
     demand.sync_history()  # a roles file replaced by hand becomes one more dated upload
     rows = _rows(str(path), path.stat().st_mtime_ns) if path.exists() else []
     practice = load_practice()
     st.markdown(f"Which skills, technologies and roles are being requested, which belong to the **{practice.name or '—'}** practice and which already have a course in the academy.")
-    _import_box(lang, rows)
+    _import_box(lang, rows, owner)
+    session = st.session_state.get("dm_session")
+    if session:  # a file read in this session only: analyzed, not saved
+        c = st.columns([5, 1])
+        c[0].warning(f"Showing «{session['name']}» ({len(session['rows'])} roles, {session['date']}): read in memory for this session, **not saved**.")
+        if c[1].button("Close it", key="dm_close", width="stretch"):
+            st.session_state.pop("dm_session", None)
+            st.rerun()
+        rows = session["rows"]
     if not practice.skills:
         st.warning("The practice is not defined yet: fill in the Practica, PracticaSkills and PracticaRoles tables of the content file.")
     if not rows:
@@ -114,7 +129,7 @@ def demand_tab(catalog, packs: list, lang: str) -> None:
     st.markdown(f"<style>{demand.CHART_CSS}</style>" + ch["share"] + demand.legend(lang), unsafe_allow_html=True)
     tabs = st.tabs(["Skills", "Trend", "Roles and primary skill",
                     "Outside the practice", "Demand against courses",
-                    "Other views", "Practice definition"])
+                    "Other views", "Practice definition", "Gaps per role (matrix)"])
     css = ""  # the chart styles were written once, above
     with tabs[0]:
         st.markdown(css + ch["skills"], unsafe_allow_html=True)
@@ -175,3 +190,10 @@ def demand_tab(catalog, packs: list, lang: str) -> None:
                                     "Scope": t.scope} for t in practice.skills]), hide_index=True, width="stretch")
         st.dataframe(pd.DataFrame([{"RoleTitle": r.title, "Aliases": "; ".join(r.aliases), "Scope": r.scope} for r in practice.roles]),
                      hide_index=True, width="stretch")
+    with tabs[7]:
+        st.markdown("**Gaps per role, from the file's «Matrix cross-skills Practice» column**: for every role, the practice capabilities it "
+                    "matches and the ones the team lacks, counted across roles and crossed with the academy's content.")
+        if a.get("matrix"):
+            st.dataframe(pd.DataFrame(a["matrix"]), hide_index=True, width="stretch")
+        else:
+            st.info("This file has no «Matrix cross-skills Practice» column (or it is empty).")

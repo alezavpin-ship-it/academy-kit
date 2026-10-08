@@ -1,0 +1,4 @@
+﻿SkillId,Skill,Class,Title,Url,Kind,Provider,Status,Minutes,Notes
+microsoft-365-security,Microsoft 365 Security,1,Explore security solutions in Microsoft Defender XDR,https://learn.microsoft.com/en-us/training/modules/explore-security-solutions-microsoft-365-defender/,module,Microsoft Learn,required,,
+microsoft-365-security,Microsoft 365 Security,2,Govern and secure Microsoft 365 tenants and workloads,https://learn.microsoft.com/en-us/training/paths/govern-secure-microsoft-365-tenants-workloads/,path,Microsoft Learn,required,,
+defender-for-office-365,Defender for Office 365,1,Defend against threats with Microsoft 365,https://learn.microsoft.com/en-us/training/paths/m365-security-threat-protection/,path,Microsoft Learn,required,,

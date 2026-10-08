@@ -57,14 +57,17 @@ class FamilyRoute:
 def class_order(items: list[dict]) -> list[dict]:
     """The steps of one skill in class order: the ``order`` written by the content owner (class 1, class 2…); the ones
     without a number follow, vendor's own training first and from the smallest unit to the largest."""
-    mine = [m for m in items if m.get("kind") in STEP_KINDS and m.get("provider")]
+    from academy.family_path import REQUIRED, status_of
+
+    mine = [m for m in items if status_of(m) == REQUIRED]  # the champion's «required» classes (vendor steps by default)
 
     def key(m: dict):
         try:
             n = int(m.get("order") or 0)
         except (TypeError, ValueError):
             n = 0
-        return (n <= 0, n, not is_learn(m), STEP_KINDS.index(m["kind"]))
+        kind = m.get("kind")
+        return (n <= 0, n, not is_learn(m), STEP_KINDS.index(kind) if kind in STEP_KINDS else len(STEP_KINDS))
 
     return sorted(mine, key=key)
 
@@ -74,6 +77,7 @@ def build_routes(catalog, materials: dict[str, list[dict]]) -> list[FamilyRoute]
     its skills; inside a skill its classes in order (any mix of sources: Microsoft Learn, the vendor's free training,
     the company's own portal)."""
     from academy.catalog import vendor_of
+    from academy.family_path import OFF, status_of
 
     out = []
     for fam in catalog.by_gap():
@@ -85,9 +89,9 @@ def build_routes(catalog, materials: dict[str, list[dict]]) -> list[FamilyRoute]
             for _, s in [x for x in skills if x[0] == vendor]:
                 items = materials.get(s.id, [])
                 mine = class_order(items)
-                steps += [Step(s.id, s.name, m["title"], m["url"], m["kind"], m["provider"], vendor, n, s.category)
+                steps += [Step(s.id, s.name, m["title"], m["url"], m.get("kind", "course"), m.get("provider") or "Champion", vendor, n, s.category)
                           for n, m in enumerate(mine, start=1)]
-                rest = [m for m in items if m not in mine]
+                rest = [m for m in items if m not in mine and status_of(m) != OFF]  # optional material; «off» is hidden
                 if rest:
                     extras[s.name] = rest
                 if not mine:

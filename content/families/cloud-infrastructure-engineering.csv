@@ -1,0 +1,6 @@
+﻿SkillId,Skill,Class,Title,Url,Kind,Provider,Status,Minutes,Notes
+windows-unix-administration,Windows / Unix Administration,1,Manage Windows Servers and Workloads in a Hybrid Environment,https://learn.microsoft.com/en-us/training/paths/manage-windows-servers-workloads-hybrid-environment/,path,Microsoft Learn,required,,
+windows-unix-administration,Windows / Unix Administration,2,Deploy and administer Linux virtual machines on Azure AZ-1007,https://learn.microsoft.com/en-us/training/paths/deploy-administer-linux-virtual-machines-azure/,path,Microsoft Learn,required,,
+automation-optimization,Automation & Optimization,1,Explore Azure Automation with DevOps,https://learn.microsoft.com/en-us/training/modules/explore-azure-automation-devops/,module,Microsoft Learn,required,,
+cloud-hybrid-infrastructure,Cloud / Hybrid Infrastructure,1,Bring Azure innovation to your hybrid environments with Azure Arc,https://learn.microsoft.com/en-us/training/paths/manage-hybrid-infrastructure-with-azure-arc/,path,Microsoft Learn,required,,
+cloud-hybrid-infrastructure,Cloud / Hybrid Infrastructure,2,Implement a Windows Server hybrid cloud infrastructure,https://learn.microsoft.com/en-us/training/paths/implement-windows-server-hybrid-cloud-infrastructure/,path,Microsoft Learn,required,,

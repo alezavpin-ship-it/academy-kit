@@ -13,7 +13,7 @@ UI: dict[str, str] = {
     "tab_course": "Course",
     "tab_glossary": "Glossary",
     "tab_library": "Video library",
-    "tab_progress": "Progress & badges",
+    "tab_progress": "Progress",
     "tab_team": "Team",
     "tab_rhythm": "Rhythm",
     "tab_news": "Knowledge exchange",

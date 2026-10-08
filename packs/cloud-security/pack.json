@@ -1507,7 +1507,9 @@
    "topic": "references",
    "why": "Recommended configurations per provider (AWS, Azure, GCP, Kubernetes…), the basis of almost every CSPM.",
    "kind": "link",
-   "level": "basic"
+   "level": "basic",
+   "who": "",
+   "verified": ""
   },
   "ref_nist_ir": {
    "title": "NIST SP 800-61 Rev. 3 - Incident Response Recommendations",
@@ -1517,7 +1519,9 @@
    "topic": "references",
    "why": "The current incident response guide (April 2025).",
    "kind": "link",
-   "level": "basic"
+   "level": "basic",
+   "who": "",
+   "verified": ""
   },
   "ref_nist_zt": {
    "title": "NIST SP 800-207 - Zero Trust Architecture",
@@ -1527,7 +1531,9 @@
    "topic": "references",
    "why": "The formal definition of Zero Trust architecture.",
    "kind": "link",
-   "level": "basic"
+   "level": "basic",
+   "who": "",
+   "verified": ""
   },
   "ref_ms_shared": {
    "title": "Shared responsibility in the cloud",

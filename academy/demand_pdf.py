@@ -200,6 +200,8 @@ def to_pdf(a: dict, practice: Practice, generated: str = "", tr: dict | None = N
              Paragraph(escape("Role titles"), st["h2"]), table(a["titles"]),
              Paragraph(escape("Role title and primary skill"), st["h2"]), table(a["combos"]),
              Paragraph(escape("Roles outside the practice"), st["h2"]), table(a["outside_roles"])]
+    if a.get("matrix"):
+        story += [Paragraph(escape("Gaps per role (Matrix cross-skills Practice)"), st["h2"]), table(a["matrix"], 60)]
 
     def footer(canvas, doc):
         canvas.saveState()

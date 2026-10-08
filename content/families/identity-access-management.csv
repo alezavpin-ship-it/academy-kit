@@ -1,0 +1,6 @@
+﻿SkillId,Skill,Class,Title,Url,Kind,Provider,Status,Minutes,Notes
+conditional-access,Conditional Access,1,Implement an authentication and access management solution (SC-300),https://learn.microsoft.com/en-us/training/paths/implement-authentication-access-management-solution/,path,Microsoft Learn,required,,
+identity-governance,Identity Governance,1,Describe the Identity Protection and Governance Capabilities of Microsoft Entra,https://learn.microsoft.com/en-us/training/modules/describe-identity-protection-governance-capabilities/,module,Microsoft Learn,required,,
+microsoft-entra-id,Microsoft Entra ID,1,Implement an identity management solution using Microsoft Entra ID (SC-300),https://learn.microsoft.com/en-us/training/paths/implement-identity-management-solution/,path,Microsoft Learn,required,,
+microsoft-entra-id,Microsoft Entra ID,,Study guide for Exam SC-300,https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-300,guide,Microsoft Learn,optional,,
+pim-pam,PIM/PAM,1,Secure Access to Resources by Using Microsoft Entra,https://learn.microsoft.com/en-us/training/paths/secure-access-resources-entra/,path,Microsoft Learn,required,,

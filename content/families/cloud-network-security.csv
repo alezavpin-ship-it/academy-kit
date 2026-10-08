@@ -1,0 +1,10 @@
+﻿SkillId,Skill,Class,Title,Url,Kind,Provider,Status,Minutes,Notes
+azure-network-controls,Azure Network Controls,1,Introduction to Secure Network Infrastructure with Azure network security,https://learn.microsoft.com/en-us/training/paths/secure-networking-infrastructure/,path,Microsoft Learn,required,,
+azure-network-controls,Azure Network Controls,2,Configure secure access to your workloads using Azure virtual networking AZ-1002,https://learn.microsoft.com/en-us/training/paths/configure-secure-workloads-using-azure-virtual-networking/,path,Microsoft Learn,required,,
+azure-network-controls,Azure Network Controls,,Preparing for AZ-500: Secure Networking (Part 2 of 4),https://learn.microsoft.com/en-us/shows/exam-readiness-zone/preparing-for-az-500-02-fy25,video,Microsoft Learn,optional,,
+defender-for-cloud,Defender for Cloud,1,Secure Azure services and workloads with Microsoft Defender for Cloud (SC-5002),https://learn.microsoft.com/en-us/training/paths/secure-azure-services-workloads-defender-cloud/,path,Microsoft Learn,required,,
+microsoft-azure-security,Microsoft Azure Security,1,"Introduction to security, compliance, and identity concepts",https://learn.microsoft.com/en-us/training/paths/describe-concepts-of-security-compliance-identity/,path,Microsoft Learn,required,,
+microsoft-azure-security,Microsoft Azure Security,,Study guide for Exam AZ-500: Microsoft Azure Security Technologies,https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/az-500,guide,Microsoft Learn,optional,,
+zero-trust,Zero Trust,1,Introduction to Zero Trust,https://learn.microsoft.com/en-us/training/modules/zero-trust-introduction/,module,Microsoft Learn,required,,
+zero-trust,Zero Trust,2,Introduction to Zero Trust and Best Practice Frameworks,https://learn.microsoft.com/en-us/training/modules/introduction-zero-trust-best-practice-frameworks/,module,Microsoft Learn,required,,
+zero-trust,Zero Trust,,Zero Trust Guidance Center,https://learn.microsoft.com/en-us/security/zero-trust/,doc,Microsoft Learn,optional,,

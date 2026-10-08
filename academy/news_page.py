@@ -74,7 +74,15 @@ def splash() -> None:
 
 
 # ---------------------------------------------------------------------------------------------- Knowledge exchange
-def knowledge_tab(lang: str = "en") -> None:
+def knowledge_tab(lang: str = "en", catalog=None, leader: bool = False) -> None:
+    """Two sections: the latest news of the practice's sources, and the study material (training content by theme)."""
+    part = st.segmented_control("Knowledge exchange", ["📰 News", "📚 Study material"], default="📰 News", key="kx_part",
+                                label_visibility="collapsed") or "📰 News"
+    if part == "📚 Study material":
+        from academy.study_page import study_bank
+
+        study_bank(catalog, leader, key="kx_sm")
+        return
     sources = [s for s in news.load_sources() if s.enabled]
     st.markdown("#### Knowledge exchange")
     st.caption("A reading bank of security news from the sources this practice follows: Microsoft, cloud providers, security vendors, "

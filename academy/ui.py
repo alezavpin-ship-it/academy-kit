@@ -17,12 +17,14 @@ from academy.progress import Tracker
 ORANGE, CARBON = "#FF5800", "#1C1C1E"
 
 CSS = """<style>
+/* the whole app at 80 % (Streamlit sizes text and spacing in rem): more fits on the screen without the browser zoom */
+html{font-size:80%}
 /* a full web page, not a centered form: the content uses the whole window (up to very wide screens) */
 .block-container{max-width:1920px;padding:2.25rem clamp(1.25rem,3.5vw,4rem) 4rem}
 h1{font-size:clamp(2.1rem,2.6vw,3rem)!important}
 div[data-testid="stMetricValue"]{font-size:clamp(1.9rem,2.2vw,2.6rem)}
-div[data-testid="stTabs"] [role="tab"]{padding:.6rem .55rem}
-div[data-testid="stTabs"] [role="tab"] p{font-size:1rem;font-weight:600}
+div[data-testid="stTabs"] [role="tab"]{padding:.5rem .45rem}
+div[data-testid="stTabs"] [role="tab"] p{font-size:.95rem;font-weight:600}
 div[data-testid="stTabs"] [role="tablist"]{gap:.35rem}
 .ak-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;height:100%}
 .ak-tile{background:rgba(255,255,255,.08);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;justify-content:center;gap:2px}
@@ -144,6 +146,32 @@ def legal_footer(lang: str) -> None:
 
 def inject_css() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
+
+
+LEADER = "#2A78D6"  # the owner / champion tools wear blue, the learner's sections the academy's orange
+
+
+def tab_rows(learner_tabs: int, label: str = "Owner tools") -> None:
+    """The page's tabs in two rows: the learner's sections first, then (owner / champion view) their tools, in another color.
+
+    One st.tabs keeps working underneath (state, deep links, tests); CSS wraps its tab list: a zero-height flex item placed
+    between both groups forces the second row."""
+    k = learner_tabs + 1
+    st.markdown(f"""<style>
+.st-key-ak_tabs [role="tablist"]{{flex-wrap:wrap;row-gap:.55rem;overflow:visible!important;width:auto!important}}
+.st-key-ak_tabs [role="tablist"]>*{{order:1}}
+.st-key-ak_tabs [role="tablist"]::after{{content:"";position:static!important;flex:0 0 100%;width:100%;height:0;order:2;border:0!important;background:none!important}}
+.st-key-ak_tabs [role="tablist"]>[role="tab"]:nth-child(n+{k}){{order:3;border:1px solid {LEADER}66;background:{LEADER}14;border-radius:999px;
+  padding:.3rem .95rem;margin-top:.15rem}}
+.st-key-ak_tabs [role="tablist"]>[role="tab"]:nth-child(n+{k}) p{{color:{LEADER}!important}}
+.st-key-ak_tabs [role="tablist"]>[role="tab"]:nth-child(n+{k})[aria-selected="true"]{{background:{LEADER};border-color:{LEADER}}}
+.st-key-ak_tabs [role="tablist"]>[role="tab"]:nth-child(n+{k})[aria-selected="true"] p{{color:#FFFFFF!important}}
+.st-key-ak_tabs [role="tablist"]>[role="tab"]:nth-child({k})::before{{content:"{label}";position:absolute;right:calc(100% + .7rem);
+  white-space:nowrap;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:{LEADER}}}
+.st-key-ak_tabs [role="tablist"]>[role="tab"]:nth-child({k}){{margin-left:7.5rem;position:relative}}
+.st-key-ak_tabs [role="tablist"]>[role="tab"]:nth-child(n+{k}) .react-aria-SelectionIndicator{{display:none}}
+.st-key-ak_tabs [role="tablist"]+button,.st-key-ak_tabs button[aria-label*="croll"]{{display:none}}
+</style>""", unsafe_allow_html=True)
 
 
 def next_lesson(pack: Pack, tr: Tracker, role: str | None = None) -> Lesson | None:

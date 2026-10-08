@@ -1,0 +1,11 @@
+﻿SkillId,Skill,Class,Title,Url,Kind,Provider,Status,Minutes,Notes
+azure-devops-github-actions,Azure DevOps / GitHub Actions,1,AZ-400: Implement CI with Azure Pipelines and GitHub Actions,https://learn.microsoft.com/en-us/training/paths/az-400-implement-ci-azure-pipelines-github-actions/,path,Microsoft Learn,required,,
+azure-devops-github-actions,Azure DevOps / GitHub Actions,,Secure the DevOps platform environment for Zero Trust,https://learn.microsoft.com/en-us/security/zero-trust/develop/secure-devops-platform-environment-zero-trust,doc,Microsoft Learn,optional,,
+container-security,Container Security,1,Secure Azure Application Platform Services for the Cloud and AI Security Engineer,https://learn.microsoft.com/en-us/training/paths/secure-application-platform-services/,path,Microsoft Learn,required,,
+container-security,Container Security,,Concepts - Security in Azure Kubernetes Services (AKS),https://learn.microsoft.com/en-us/azure/aks/concepts-security,doc,Microsoft Learn,optional,,
+infrastructure-as-code-security,Infrastructure as Code Security,1,AZ-400: Manage infrastructure as code using Azure and DSC,https://learn.microsoft.com/en-us/training/paths/az-400-manage-infrastructure-as-code-using-azure/,path,Microsoft Learn,required,,
+infrastructure-as-code-security,Infrastructure as Code Security,,DevSecOps for Infrastructure as Code (IaC),https://learn.microsoft.com/en-us/azure/architecture/solution-ideas/articles/devsecops-infrastructure-as-code,doc,Microsoft Learn,optional,,
+sast-dast,SAST / DAST,1,Introduction to GitHub Advanced Security,https://learn.microsoft.com/en-us/training/modules/introduction-github-advanced-security/,module,Microsoft Learn,required,,
+sast-dast,SAST / DAST,2,GitHub Advanced Security Part 1 of 2,https://learn.microsoft.com/en-us/training/paths/github-advanced-security/,path,Microsoft Learn,required,,
+sast-dast,SAST / DAST,3,GitHub Advanced Security Part 2 of 2,https://learn.microsoft.com/en-us/training/paths/github-advanced-security-2,path,Microsoft Learn,required,,
+secure-development-lifecycle,Secure Development Lifecycle,1,AZ-400: Implement security and validate code bases for compliance,https://learn.microsoft.com/en-us/training/paths/az-400-implement-security-validate-code-bases-compliance/,path,Microsoft Learn,required,,

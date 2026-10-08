@@ -1,9 +1,8 @@
 {
   "meta": {
-    "title": "Catálogo de skills - Cloud Security",
-    "updated": "2026-10-01",
-    "source": "Reporte de brechas del equipo (skill families con Gap Volume y Role Impact Count; 34 skills).",
-    "note": "Familias según el prompt de correlación del equipo (9 familias). 'champion' = quien lidera el upskilling de la familia (vacío = por asignar). Este archivo se reemplaza al importar el Excel o editar el catálogo desde la app."
+    "title": "Skills catalog",
+    "updated": "2026-10-08",
+    "source": "Content file"
   },
   "families": [
     {
@@ -11,63 +10,72 @@
       "name": "Microsoft 365 Security",
       "gap_volume": 194,
       "role_impact": 97,
-      "champion": ""
+      "champion": "",
+      "champion_email": ""
     },
     {
       "id": "technical-delivery-leadership",
       "name": "Technical Delivery Leadership",
       "gap_volume": 184,
       "role_impact": 96,
-      "champion": ""
+      "champion": "",
+      "champion_email": ""
     },
     {
       "id": "data-protection-risk-compliance",
       "name": "Data Protection, Risk & Compliance",
       "gap_volume": 116,
       "role_impact": 58,
-      "champion": ""
+      "champion": "",
+      "champion_email": ""
     },
     {
       "id": "cloud-infrastructure-engineering",
       "name": "Cloud / Infrastructure Engineering",
       "gap_volume": 108,
       "role_impact": 58,
-      "champion": ""
+      "champion": "",
+      "champion_email": ""
     },
     {
       "id": "cloud-network-security",
       "name": "Cloud & Network Security",
       "gap_volume": 98,
       "role_impact": 49,
-      "champion": ""
+      "champion": "",
+      "champion_email": ""
     },
     {
       "id": "cyber-defense-security-operations",
       "name": "Cyber Defense & Security Operations",
       "gap_volume": 79,
       "role_impact": 40,
-      "champion": ""
+      "champion": "",
+      "champion_email": ""
     },
     {
       "id": "application-security-devsecops",
       "name": "Application Security & DevSecOps",
       "gap_volume": 47,
       "role_impact": 24,
-      "champion": ""
+      "champion": "",
+      "champion_email": ""
     },
     {
       "id": "ai-security-governance",
       "name": "AI Security & Governance",
       "gap_volume": null,
       "role_impact": null,
-      "champion": ""
+      "champion": "",
+      "champion_email": ""
     },
     {
       "id": "identity-access-management",
       "name": "Identity & Access Management",
       "gap_volume": null,
       "role_impact": null,
-      "champion": ""
+      "champion": "",
+      "champion_email": ""
     }
   ],
   "skills": [
@@ -75,205 +83,239 @@
       "id": "microsoft-365-security",
       "name": "Microsoft 365 Security",
       "family": "microsoft-365-security",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "defender-for-office-365",
       "name": "Defender for Office 365",
       "family": "microsoft-365-security",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "exchange-online",
       "name": "Exchange Online",
       "family": "microsoft-365-security",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "conditional-access",
       "name": "Conditional Access",
       "family": "identity-access-management",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "identity-governance",
       "name": "Identity Governance",
       "family": "identity-access-management",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "microsoft-entra-id",
       "name": "Microsoft Entra ID",
       "family": "identity-access-management",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "pim-pam",
       "name": "PIM/PAM",
       "family": "identity-access-management",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "remediation-leadership",
       "name": "Remediation Leadership",
       "family": "technical-delivery-leadership",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Vendor-neutral"
     },
     {
       "id": "security-architecture",
       "name": "Security Architecture",
       "family": "technical-delivery-leadership",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "strategy-roadmap",
       "name": "Strategy & Roadmap",
       "family": "technical-delivery-leadership",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "technical-project-program-management",
       "name": "Technical Project / Program Management",
       "family": "technical-delivery-leadership",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Vendor-neutral"
     },
     {
       "id": "stakeholder-governance",
       "name": "Stakeholder Governance",
       "family": "technical-delivery-leadership",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Vendor-neutral"
     },
     {
       "id": "dlp-information-protection",
       "name": "DLP / Information Protection",
       "family": "data-protection-risk-compliance",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "microsoft-purview",
       "name": "Microsoft Purview",
       "family": "data-protection-risk-compliance",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "encryption-key-vault-hsm",
       "name": "Encryption / Key Vault / HSM",
       "family": "data-protection-risk-compliance",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "production-support",
       "name": "Production Support",
       "family": "cloud-infrastructure-engineering",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Vendor-neutral"
     },
     {
       "id": "windows-unix-administration",
       "name": "Windows / Unix Administration",
       "family": "cloud-infrastructure-engineering",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "automation-optimization",
       "name": "Automation & Optimization",
       "family": "cloud-infrastructure-engineering",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "cloud-hybrid-infrastructure",
       "name": "Cloud / Hybrid Infrastructure",
       "family": "cloud-infrastructure-engineering",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "azure-network-controls",
       "name": "Azure Network Controls",
       "family": "cloud-network-security",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "defender-for-cloud",
       "name": "Defender for Cloud",
       "family": "cloud-network-security",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "microsoft-azure-security",
       "name": "Microsoft Azure Security",
       "family": "cloud-network-security",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "zero-trust",
       "name": "Zero Trust",
       "family": "cloud-network-security",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "microsoft-defender-xdr",
       "name": "Microsoft Defender XDR",
       "family": "cyber-defense-security-operations",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "microsoft-sentinel",
       "name": "Microsoft Sentinel",
       "family": "cyber-defense-security-operations",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "defender-for-endpoint",
       "name": "Defender for Endpoint",
       "family": "cyber-defense-security-operations",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "azure-devops-github-actions",
       "name": "Azure DevOps / GitHub Actions",
       "family": "application-security-devsecops",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "container-security",
       "name": "Container Security",
       "family": "application-security-devsecops",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "infrastructure-as-code-security",
       "name": "Infrastructure as Code Security",
       "family": "application-security-devsecops",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "sast-dast",
       "name": "SAST / DAST",
       "family": "application-security-devsecops",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "secure-development-lifecycle",
       "name": "Secure Development Lifecycle",
       "family": "application-security-devsecops",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "azure-ai-security",
       "name": "Azure AI Security",
       "family": "ai-security-governance",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     },
     {
       "id": "claude-code-security",
       "name": "Claude Code Security",
       "family": "ai-security-governance",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Anthropic"
     },
     {
       "id": "responsible-ai-governance",
       "name": "Responsible AI Governance",
       "family": "ai-security-governance",
-      "confirmed": true
+      "confirmed": true,
+      "vendor": "Microsoft"
     }
   ]
 }

@@ -1,0 +1,8 @@
+﻿SkillId,Skill,Class,Title,Url,Kind,Provider,Status,Minutes,Notes
+dlp-information-protection,DLP / Information Protection,1,Implement and manage Microsoft Purview Data Loss Prevention (SC-401),https://learn.microsoft.com/en-us/training/paths/purview-implement-manage-dlp/,path,Microsoft Learn,required,,
+dlp-information-protection,DLP / Information Protection,2,Implement Microsoft Purview Information Protection (SC-401),https://learn.microsoft.com/en-us/training/paths/purview-implement-information-protection/,path,Microsoft Learn,required,,
+microsoft-purview,Microsoft Purview,1,Describe the Data Security Solutions of Microsoft Purview,https://learn.microsoft.com/en-us/training/modules/describe-purview-data-solutions/,module,Microsoft Learn,required,,
+microsoft-purview,Microsoft Purview,,Study guide for Exam SC-401,https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/sc-401,guide,Microsoft Learn,optional,,
+encryption-key-vault-hsm,Encryption / Key Vault / HSM,1,Configure and manage secrets in Azure Key Vault,https://learn.microsoft.com/en-us/training/modules/configure-and-manage-azure-key-vault/,module,Microsoft Learn,required,,
+encryption-key-vault-hsm,Encryption / Key Vault / HSM,2,Manage Certificates and Monitor Azure Key Vault,https://learn.microsoft.com/en-us/training/modules/manage-certificates-monitor-key-vault/,module,Microsoft Learn,required,,
+encryption-key-vault-hsm,Encryption / Key Vault / HSM,3,Secure Azure Key Vault with defense in depth for the Cloud and AI Workloads,https://learn.microsoft.com/en-us/training/paths/configure-key-vault-security/,path,Microsoft Learn,required,,

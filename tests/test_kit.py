@@ -18,6 +18,13 @@ from academy.videos import embed_src, playlist_id, youtube_id
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@pytest.fixture(autouse=True)
+def _family_files(tmp_path, monkeypatch):
+    """The family CSV files of every test go to its own folder, never to content/families."""
+    monkeypatch.setenv("ACADEMY_FAMILIES", str(tmp_path / "families"))
+    monkeypatch.setenv("ACADEMY_FAMILIES_STATE", str(tmp_path / "families_state.json"))
+
+
 @pytest.fixture
 def pack():
     return load_pack("cloud-security")
@@ -119,6 +126,10 @@ def _run(tmp_path, monkeypatch, owners=("me",), **state):
         (tmp_path / "practice.json").write_text((ROOT / "catalog" / "practice.json").read_text(encoding="utf-8"), encoding="utf-8")
     monkeypatch.setenv("ACADEMY_CONTENT_STATE", str(tmp_path / "content_state.json"))
     monkeypatch.setenv("ACADEMY_NEWS_OFFLINE", "1")  # tests never go to the internet
+    monkeypatch.setenv("ACADEMY_PEOPLE", str(tmp_path / "people.csv"))  # no directory unless a test writes one
+    monkeypatch.setenv("ACADEMY_STUDY", str(tmp_path / "study_material.csv"))
+    if not (tmp_path / "study_material.csv").exists():
+        (tmp_path / "study_material.csv").write_bytes((ROOT / "catalog" / "study_material.csv").read_bytes())
     monkeypatch.setenv("ACADEMY_NEWS_CACHE", str(tmp_path / "news_cache.json"))
     monkeypatch.setenv("ACADEMY_NEWS", str(tmp_path / "news_sources.csv"))
     if not (tmp_path / "news_sources.csv").exists():
@@ -500,7 +511,9 @@ def test_route_tab_marks_a_step(tmp_path, monkeypatch):
 
 
 def test_family_lead_adds_a_workday_course(tmp_path, monkeypatch):
-    """A champion adds a course of the company portal for a skill of their family; it becomes a step of the route."""
+    """A champion runs their family's path: a Workday course becomes a class, another one is switched off, their own deck is
+    uploaded; learners see only the required classes and download the deck."""
+    from academy import family_path as fp
     from academy.catalog import load_materials
     from academy.route import build_routes
 
@@ -510,18 +523,58 @@ def test_family_lead_adds_a_workday_course(tmp_path, monkeypatch):
             f["champion"] = "me"
     (tmp_path / "skills.json").write_text(json.dumps(data), encoding="utf-8")
     base = json.loads((catmod.CATALOG_PATH.parent / "materials.json").read_text(encoding="utf-8"))
-    base["stakeholder-governance"] = [{"title": "Stakeholder Management Essentials", "url": "https://wd5.myworkday.com/empresa/learning/course/123",
-                                       "provider": "Workday Learning", "kind": "course", "verified": "2026-10-01"}]
     (tmp_path / "materials.json").write_text(json.dumps(base), encoding="utf-8")
     at = _run(tmp_path, monkeypatch, owners=("jefa",))
-    assert not at.exception and any("My family's courses" in e.label for e in at.expander)
-    at.button(key="ak_fam_courses_save").click().run()  # saving keeps the family's rows and every other family's material
-    assert not at.exception
-    saved = load_materials(tmp_path / "materials.json")
-    assert saved["stakeholder-governance"][0]["provider"] == "Workday Learning" and "microsoft-sentinel" in saved
-    route = next(r for r in build_routes(load_catalog(tmp_path / "skills.json"), saved) if r.family_id == "technical-delivery-leadership")
-    step = next(s for s in route.steps if s.skill_id == "stakeholder-governance")
-    assert step.provider == "Workday Learning" and "Stakeholder Governance" not in route.uncovered
+    assert not at.exception and any("Manage the career path" in e.label for e in at.expander) is False  # first family is not theirs
+    at.selectbox(key="rt_family").set_value("technical-delivery-leadership").run()
+    assert not at.exception and any("Manage the career path of Technical Delivery Leadership" in e.label for e in at.expander)
+    cat = load_catalog(tmp_path / "skills.json")
+    fid = "technical-delivery-leadership"
+    rows = fp.rows(fid, cat, load_materials(tmp_path / "materials.json"))
+    first = next(r for r in rows if r["Status"] == fp.REQUIRED)
+    rows = [dict(r, Status=fp.OFF) if r is first else r for r in rows]
+    rows.append({"SkillId": "stakeholder-governance", "Class": 1, "Title": "Stakeholder Management Essentials",
+                 "Url": "https://wd5.myworkday.com/empresa/learning/course/123", "Kind": "course", "Provider": "Workday Learning", "Status": "required"})
+    deck = fp.save_file(fid, "Kickoff deck.pptx", b"PK fake pptx")
+    assert deck == f"file:{fid}/Kickoff deck.pptx" and fp.file_path(deck).read_bytes() == b"PK fake pptx"
+    rows.append({"Skill": "Stakeholder Governance", "Class": 2, "Title": "Our kickoff deck", "Url": deck, "Kind": "deck", "Status": "required"})
+    new, problems = fp.parse(fp.to_csv(rows), fid, cat)
+    assert problems == []
+    mats = fp.replace(fid, new, cat, load_materials(tmp_path / "materials.json"))
+    assert "microsoft-sentinel" in mats  # other families untouched
+    route = next(r for r in build_routes(cat, mats) if r.family_id == fid)
+    assert first["Title"] not in [s.title for s in route.steps]  # switched off: hidden from learners
+    sg = [s.title for s in route.steps if s.skill_id == "stakeholder-governance"]
+    assert sg == ["Stakeholder Management Essentials", "Our kickoff deck"] and "Stakeholder Governance" not in route.uncovered
+    bad = fp.parse(b"SkillId,Title,Url,Status\nmicrosoft-sentinel,X,https://x,required\nstakeholder-governance,Y,ftp://y,maybe\n", fid, cat)[1]
+    assert len(bad) == 2  # another family's skill; a bad link / status
+    with pytest.raises(ValueError):
+        fp.save_file(fid, "script.exe", b"x")
+    assert fp.file_path("file:../../etc/passwd") is None
+
+
+def test_family_csv_files_sync_both_ways(tmp_path, monkeypatch):
+    from academy import family_path as fp
+    from academy.catalog import load_materials
+
+    import shutil
+
+    for name in ("materials.json", "skills.json"):
+        shutil.copy(catmod.CATALOG_PATH.parent / name, tmp_path / name)
+    monkeypatch.setenv("ACADEMY_CATALOG", str(tmp_path / "skills.json"))  # materials.json is read next to it
+    cat = load_catalog()
+    assert fp.sync(cat) == {"applied": [], "problems": {}}  # first run writes one file per family
+    files = sorted(p.stem for p in (tmp_path / "families").glob("*.csv"))
+    assert files == sorted(f.id for f in cat.families)
+    path = tmp_path / "families" / "identity-access-management.csv"
+    text = path.read_text(encoding="utf-8-sig").replace(",required,", ",off,", 1)
+    path.write_text(text, encoding="utf-8-sig")
+    out = fp.sync(cat)
+    assert out["applied"] == ["identity-access-management"]
+    assert any(m.get("status") == "off" for s in cat.in_family("identity-access-management") for m in load_materials().get(s.id, []))
+    path.write_text(text.replace("https://", "ftp://", 1), encoding="utf-8-sig")
+    out = fp.sync(cat)
+    assert out["problems"] and path.read_text(encoding="utf-8-sig").count("ftp://") == 1  # a broken edit is reported and left for the champion
 
 
 # ---------------------------------------------------------------------------------------------- AI assistant
@@ -709,6 +762,9 @@ def _content_sandbox(tmp_path, monkeypatch):
     monkeypatch.setenv("ACADEMY_CONTENT", str(tmp_path / "content" / "academy_content.xlsx"))
     monkeypatch.setenv("ACADEMY_CONTENT_STATE", str(tmp_path / "content_state.json"))
     shutil.copy(ROOT / "catalog" / "news_sources.csv", tmp_path / "news_sources.csv")
+    for name, env in (("people.csv", "ACADEMY_PEOPLE"), ("study_material.csv", "ACADEMY_STUDY")):
+        shutil.copy(ROOT / "catalog" / name, tmp_path / name)
+        monkeypatch.setenv(env, str(tmp_path / name))
     monkeypatch.setenv("ACADEMY_NEWS", str(tmp_path / "news_sources.csv"))
     monkeypatch.setattr(content, "PACKS_DIR", packs)
     return content, packs
@@ -979,7 +1035,7 @@ def test_demand_analysis_and_report(tmp_path):
     from academy.practice import load_practice
 
     rows = demand.sample_rows()
-    assert list(rows[0]) == demand.COLUMNS and len(demand.COLUMNS) == 35
+    assert list(rows[0]) == demand.COLUMNS and len(demand.COLUMNS) == 36
     again, problems = demand.parse(demand.to_csv(rows))
     assert again == rows and problems == []
     semi = "Role ID;Role Title;Role Primary Skill;Role Other Skills\nR1;Cloud Security Engineer;Azure AD;Sentinel, KQL | Java\nR2;SAP Consultant;SAP GRC;\n"
@@ -1034,7 +1090,8 @@ def test_demand_snapshots_and_trend(tmp_path, monkeypatch):
 
     monkeypatch.setenv("ACADEMY_DEMAND", str(tmp_path / "content" / "demand_roles.csv"))
     (week1, rows1), (week2, rows2) = demand.sample_history()
-    assert demand.snapshot_date(rows1) == week1 == "2026-09-30" and demand.snapshot_date([{"Timestamp": "07/10/2026 09:00"}]) == "2026-10-07"
+    assert demand.snapshot_date(rows1) == week1 == "2026-09-30" and demand.snapshot_date([{"Timestamp": "10/7/2026 09:00"}]) == "2026-10-07" \
+        and demand.snapshot_date([{"Timestamp": "22/09/2026"}]) == "2026-09-22"
     assert demand.save_snapshot(rows2) == week2 and demand.save_snapshot(rows1) == week1  # loaded out of order
     assert [d for d, _ in demand.snapshots()] == [week1, week2] and demand.load() == rows2  # the current file is always the newest upload
     demand.sync_history()
@@ -1306,3 +1363,98 @@ def test_rhythm_and_skills_render_in_the_app(tmp_path, monkeypatch):
     skills = _run(tmp_path, monkeypatch, ak_cert_view="skills")
     assert not skills.exception and any("Register the skills" in m.value for m in skills.markdown)
     assert any("Team skills matrix" in m.value for m in skills.markdown)  # Reports → Skills matrix (owner)
+
+
+# ---------------------------------------------------------------------------------------------- study material and people
+SAVED_PAGE = b"""<html><body><h2>Azure Master Class</h2><a href="https://www.youtube.com/watch?v=aaa111">Module 1 - Introduction</a>
+<a href="https://www.azadvertizer.net/other.html">not a video</a><h3>Security</h3><a href='//youtu.be/bbb222'>Key Vault &amp; HSM</a>
+<a href="https://www.youtube.com/playlist?list=PL123">AZ-500 playlist</a><a href="https://www.youtube.com/watch?v=aaa111">dup</a></body></html>"""
+
+
+def test_study_material_bank_import_and_learning_path(tmp_path):
+    from academy import study
+
+    seed = study.savill_seed()
+    assert sum(i.kind == "video" for i in seed) == 6 and all(i.url.startswith("https://") for i in seed)
+    assert {i.category for i in seed} == {"Microsoft"} and all(i.source == study.SAVILL for i in seed)
+    known = load_catalog().skill_ids()
+    assert all(not i.skill_id or i.skill_id in known for i in seed)  # every item points to a real skill of the catalog
+    back, problems = study.parse(study.to_csv(seed))
+    assert back == seed and problems == []
+    page = study.from_page(SAVED_PAGE)
+    assert [(i.title, i.theme, i.kind) for i in page] == [("Module 1 - Introduction", "Azure Master Class", "video"),
+                                                         ("Key Vault & HSM", "Security", "video"), ("AZ-500 playlist", "Security", "playlist")]
+    assert page[1].url == "https://youtu.be/bbb222"
+    merged = study.merge(seed, page + seed[:2])
+    assert len(merged) == len(seed) + 3  # links already in the bank are not repeated
+    assert study.as_class(page[2])["kind"] == "course" and study.as_class(page[0])["kind"] == "video"
+    assert study.parse(b"Title,Url,Kind\nX,http://x,video\nY,https://y,podcast\n")[1] and len(study.parse(b"Title,Url\n")[0]) == 0
+
+
+def test_people_directory_roles_and_catalog_champions(tmp_path):
+    from academy import people
+
+    cat = load_catalog()
+    net = "cloud-network-security"
+    raw = (f"Person,Email,Role,Families,Active\nAlejandro Zavala,ale@x.com,owner,,yes\nCarla,carla@x.com,champion,{net},yes\n"
+           f"Sam,,sme,{net}; ai-security-governance,yes\nOld,,learner,,no\n").encode()
+    dirx, problems = people.parse(raw, {f.id for f in cat.families})
+    assert problems == [] and len(dirx) == 4
+    assert people.is_owner(dirx, "alejandro zavala") and people.is_owner(dirx, "x", "ALE@x.com") and not people.is_owner(dirx, "Carla")
+    assert people.families_of(dirx, "Carla") == {net} and people.families_of(dirx, "Sam", role=people.SME) == {net, "ai-security-governance"}
+    synced, changed = people.sync_catalog(dirx, cat)
+    fam = next(f for f in synced.families if f.id == net)
+    assert changed and (fam.champion, fam.champion_email) == ("Carla", "carla@x.com")
+    bad = people.parse(b"Person,Role,Families\nA,boss,\nB,champion,\nC,sme,nope\n", {f.id for f in cat.families})[1]
+    assert len(bad) == 3
+    assert people.parse(people.to_csv(dirx))[0] == dirx
+
+
+def test_directory_name_gives_the_owner_view_and_study_sections_render(tmp_path, monkeypatch):
+    from academy import people
+
+    people.save([people.Person("Alejandro Zavala", "ale@x.com", "owner"), people.Person("Luis", "", "learner")], tmp_path / "people.csv")
+    at = _run(tmp_path, monkeypatch, owners=None)
+    assert not at.exception and at.session_state["ak_person"] == "Alejandro Zavala"
+    assert "ak_owner_view" in [t.key for t in at.toggle] and len(_tab_labels(at)) == 13  # owner by name, no e-mail typed
+    assert not any(str(b.key) == "ak_claim" for b in at.button)  # an owner exists in the directory: nothing to claim
+    at.selectbox(key="ak_person").set_value("Luis").run()
+    assert not at.exception and "ak_owner_view" not in [t.key for t in at.toggle]
+    at = _run(tmp_path, monkeypatch, owners=None, kx_part="📚 Study material")
+    assert not at.exception and any("Study material" in m.value for m in at.markdown)
+    assert any("Azure Master Class" in e.label for e in at.expander) or any("Certification study cram" in e.label for e in at.expander)
+
+
+def test_demand_reads_the_organization_report_format(tmp_path, monkeypatch):
+    """The real roles report numbers the skills, adds their proficiency, prefixes titles with codes, writes US dates and carries a
+    «Matrix cross-skills Practice» column. (Made-up values in the same shape: the real file is confidential.)"""
+    from academy import demand
+    from academy.practice import load_practice
+
+    head = demand.COLUMNS
+    role = dict.fromkeys(head, "")
+    role.update({"Timestamp": "9/15/2026", "Client": "Demo Client", "Role ID": "900001", "Role Title": "111111-22222_Security Architect",
+                 "Combined Skills": "1 - Microsoft Sentinel (P3 - Advanced) | Security Operations | 2 - KQL (P2 - Intermediate) | 3 - Java (P1 - Basic)",
+                 "Role Primary Skill": "1 - Microsoft Sentinel                                   (P3 - Advanced)", "Skill Category": "Security Operations",
+                 "Role Other Skills": "2 - KQL                     (P2 - Intermediate) | 3 - Java       (P1 - Basic)",
+                 "Role Start Date": "5-Nov-26", "Role End Date": "31-Aug-27", "Industry Level 1": "-",
+                 "Matrix cross-skills Practice": "• Practice Matches (Aligned Capabilities)\n- Cyber Defense & Security Operations: Microsoft Sentinel\n\n"
+                                                 "• Unaligned Skills & Gaps\n- Data Protection, Risk & Compliance: Microsoft Purview, DLP / Information Protection"})
+    buf = __import__("io").StringIO()
+    w = __import__("csv").DictWriter(buf, fieldnames=head)
+    w.writeheader()
+    w.writerow(role)
+    rows, problems = demand.parse(buf.getvalue().encode("utf-8"))
+    assert problems == [] and demand.snapshot_date(rows) == "2026-09-15"
+    assert demand.role_skills(rows[0]) == ["Microsoft Sentinel", "KQL", "Java"]  # numbers, proficiency and the category left out
+    a = demand.analyze(rows, load_practice(ROOT / "catalog" / "practice.json"), load_catalog(), [load_pack("cloud-security")], {}, "en")
+    assert a["titles"][0]["Role title"] == "Security Architect" and a["months"] == [("2026-11", 1)]
+    assert a["summary"]["in_practice"] == 1 and not any(name == "-" for name, _ in a["by"]["Industry Level 1"])
+    gaps = {(r["Skill family"], r["Skill"]): r for r in a["matrix"]}
+    assert gaps[("Data Protection, Risk & Compliance", "Microsoft Purview")]["Roles where it is a gap"] == 1
+    assert gaps[("Cyber Defense & Security Operations", "Microsoft Sentinel")]["Roles where it is aligned"] == 1
+    # in the app: an uploaded file is read for the session only; nothing is written
+    monkeypatch.setenv("ACADEMY_DEMAND", str(tmp_path / "demand_roles.csv"))
+    at = _run(tmp_path, monkeypatch, dm_session={"name": "roles.csv", "rows": rows, "date": "2026-09-15"})
+    assert not at.exception and any("not saved" in w.value for w in at.warning)
+    assert not (tmp_path / "demand_roles.csv").exists() and not (tmp_path / "demand_history").exists()

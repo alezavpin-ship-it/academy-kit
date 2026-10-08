@@ -1,0 +1,7 @@
+﻿SkillId,Skill,Class,Title,Url,Kind,Provider,Status,Minutes,Notes
+azure-ai-security,Azure AI Security,1,Secure AI Interactions and Environments with Microsoft Purview (SC-401),https://learn.microsoft.com/en-us/training/paths/purview-protect-ai/,path,Microsoft Learn,required,,
+azure-ai-security,Azure AI Security,,Examen AI-901: Microsoft Azure AI Fundamentals,https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-901/,exam,Microsoft Learn,optional,,
+claude-code-security,Claude Code Security,1,Claude Code 101,https://anthropic.skilljar.com/claude-code-101,course,Anthropic Academy,required,,
+responsible-ai-governance,Responsible AI Governance,1,Embrace Responsible AI Principles and Practices,https://learn.microsoft.com/en-us/training/modules/embrace-responsible-ai-principles-practices/,module,Microsoft Learn,required,,
+responsible-ai-governance,Responsible AI Governance,,What is Responsible AI,https://learn.microsoft.com/en-us/azure/machine-learning/concept-responsible-ai?view=azureml-api-2,doc,Microsoft Learn,optional,,
+responsible-ai-governance,Responsible AI Governance,,Responsible AI for agent design,https://learn.microsoft.com/en-us/agents/design-guidelines/responsible-ai,doc,Microsoft Learn,optional,,

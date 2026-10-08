@@ -102,7 +102,10 @@ class Forum:
 
     def sme_families(self, learner: str, email: str = "") -> set[str]:
         me = {_norm(learner), _norm(email)} - {""}
-        return {fam for fam, people in self.smes().items() if me & {_norm(p) for p in people}}
+        from academy import people as directory
+
+        listed = directory.families_of(directory.load(), learner, email, directory.SME)  # SMEs named in the people directory
+        return listed | {fam for fam, people in self.smes().items() if me & {_norm(p) for p in people}}
 
     def role_in(self, family: str, learner: str, email: str = "", owner: bool = False, champion_of: set[str] | None = None) -> str:
         """The badge this person answers with in a family: owner, champion, sme or '' (a fellow learner)."""

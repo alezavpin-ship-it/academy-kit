@@ -30,17 +30,17 @@ SECTION_TABLES: dict[str, list[str]] = {
     "tab_route": ["LearningPaths", "Skills", "Families"],
     "tab_course": ["Lessons", "Questions", "LessonResources", "Levels", "Courses"],
     "tab_glossary": ["Glossary"],
-    "tab_library": ["Resources", "Topics"],
+    "tab_library": ["Resources", "Topics", "StudyMaterial"],
     "tab_progress": ["Ranks", "Roles"],
     "tab_skills": ["Families", "Skills", "LearningPaths"],
-    "tab_reports": ["Families"],
+    "tab_reports": ["Families", "People"],
     "tab_demand": ["PracticeSkills", "PracticeRoles", "Practice"],
-    "tab_news": ["NewsSources"],
+    "tab_news": ["NewsSources", "StudyMaterial"],
 }
 TABLE_NAME = {"Courses": "Courses", "Levels": "Levels", "Ranks": "Ranks", "Topics": "Topics", "Roles": "Course roles", "Lessons": "Lessons",
               "Questions": "Questions", "Resources": "Videos and links", "LessonResources": "Videos of each lesson", "Glossary": "Glossary",
               "Families": "Skill families", "Skills": "Skills", "LearningPaths": "Learning paths (classes)", "Practice": "Practice",
-              "PracticeSkills": "Practice skills", "PracticeRoles": "Practice roles", "NewsSources": "News sources"}
+              "PracticeSkills": "Practice skills", "PracticeRoles": "Practice roles", "NewsSources": "News sources", "StudyMaterial": "Study material", "People": "People and roles"}
 ABOUT = {"Lessons": "One row per lesson: level, title, summary, key points and the skills it builds.",
          "Questions": "The 3 questions of each lesson: 4 options and the correct letter.",
          "LessonResources": "Which videos each lesson shows and in what order (at least 2, from 2 channels).",
@@ -53,13 +53,13 @@ LONG = {"Summary", "Question", "Why", "Definition", "Description", "Subtitle", "
 # primary keys: written freely (they are what the other tables choose from)
 KEYS = {("Courses", "PackId"), ("Lessons", "LessonId"), ("Resources", "ResourceKey"), ("Topics", "TopicId"), ("Families", "FamilyId"),
         ("Skills", "SkillId"), ("Levels", "Level"), ("Glossary", "Term"), ("PracticeSkills", "Term"), ("PracticeRoles", "RoleTitle"),
-        ("Roles", "Role"), ("Ranks", "Name"), ("Practice", "Name"), ("NewsSources", "Name")}
+        ("Roles", "Role"), ("Ranks", "Name"), ("Practice", "Name"), ("NewsSources", "Name"), ("StudyMaterial", "Title"), ("People", "Person")}
 # copied from Skills when the file is written: shown, not edited
 INFO = {("LearningPaths", "Family"), ("LearningPaths", "Vendor"), ("LearningPaths", "Skill")}
 # several values in one cell, separated by ";"
-MULTI = {("Lessons", "Skills"), ("Lessons", "CatalogSkills"), ("Roles", "Skills"), ("PracticeSkills", "Aliases"), ("PracticeRoles", "Aliases")}
+MULTI = {("People", "Families"), ("Lessons", "Skills"), ("Lessons", "CatalogSkills"), ("Roles", "Skills"), ("PracticeSkills", "Aliases"), ("PracticeRoles", "Aliases")}
 # free text columns that still repeat values: offered as a list of what is already used (+ new options)
-REPEATED = {"Channel", "Provider", "Category", "Vendor", "Champion", "Target", "Who", "Level", "Emoji", "Color", "PracticeLabel"}
+REPEATED = {"Theme", "Source", "Channel", "Provider", "Category", "Vendor", "Champion", "Target", "Who", "Level", "Emoji", "Color", "PracticeLabel"}
 # when a new row leaves its id empty, it is made from this column
 ID_FROM = {("Families", "FamilyId"): "Name", ("Skills", "SkillId"): "Name", ("Lessons", "LessonId"): "Title",
            ("Resources", "ResourceKey"): "Title", ("Topics", "TopicId"): "Name"}
@@ -125,6 +125,8 @@ def options(table: str, col: str, data: dict[str, list[dict]], extra: dict) -> l
         return _uniq(_split(_values(data.get("Lessons", []), "Skills")), own, added)
     if col == "Vendor":
         return _uniq(VENDORS, own, added)
+    if (table, col) == ("People", "Families"):
+        return _uniq(_values(data.get("Families", []), "FamilyId"), own, added)
     if (table, col) == ("NewsSources", "Category"):
         from academy.news import CATEGORIES
 
