@@ -26,12 +26,18 @@ CONTENT_FILE = ROOT / "content" / "academy_content.xlsx"
 STATE_FILE = ROOT / "data" / "content_state.json"
 
 
+def _ws() -> Path:
+    from academy import workspace
+
+    return workspace.root()
+
+
 def content_path() -> Path:
-    return Path(os.environ.get("ACADEMY_CONTENT") or CONTENT_FILE)
+    return Path(os.environ.get("ACADEMY_CONTENT") or _ws() / "content" / "academy_content.xlsx")
 
 
 def state_path() -> Path:
-    return Path(os.environ.get("ACADEMY_CONTENT_STATE") or STATE_FILE)
+    return Path(os.environ.get("ACADEMY_CONTENT_STATE") or _ws() / "data" / "content_state.json")
 
 
 def _schema() -> list[str]:

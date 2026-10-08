@@ -44,7 +44,9 @@ COVER = {"lessons": "Has a course", "path": "Learning path only",
 
 
 def demand_path() -> Path:
-    return Path(os.environ.get("ACADEMY_DEMAND") or DEMAND_FILE)
+    from academy import workspace
+
+    return Path(os.environ.get("ACADEMY_DEMAND") or workspace.root() / "content" / "demand_roles.csv")
 
 
 # ------------------------------------------------------------------------------------------------ reading

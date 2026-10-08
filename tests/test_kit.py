@@ -769,7 +769,7 @@ def _content_sandbox(tmp_path, monkeypatch):
         shutil.copy(ROOT / "catalog" / name, tmp_path / name)
         monkeypatch.setenv(env, str(tmp_path / name))
     monkeypatch.setenv("ACADEMY_NEWS", str(tmp_path / "news_sources.csv"))
-    monkeypatch.setattr(content, "PACKS_DIR", packs)
+    monkeypatch.setenv("ACADEMY_PACKS", str(packs))
     return content, packs
 
 
@@ -1555,7 +1555,7 @@ def test_up_to_three_owners_kept_in_people(tmp_path, monkeypatch):
     people.save(new, tmp_path / "people.csv")
     for who in ("Ana Lopez", "Bo Chen"):
         at = _run(tmp_path, monkeypatch, owners=None, ak_person=who)
-        assert not at.exception and any(e.label == "👑 App owners (3 of 3)" for e in at.expander), who
+        assert not at.exception and any(e.label == "👑 Global owners (3 of 3)" for e in at.expander), who
 
 
 def test_azure_startup_keeps_team_data_between_deploys(tmp_path):
@@ -1622,3 +1622,49 @@ def test_your_role_narrows_the_dashboard_and_the_course(tmp_path, monkeypatch, p
     assert f"Showing the **{len(scope)}** lessons" in " ".join(c.value for c in at.caption)
     lessons = next(s for s in at.selectbox if s.label == "Lesson")
     assert set(lessons.options) <= {f"○ {x.title}" for x in scope} | {f"✅ {x.title}" for x in scope}
+
+
+def test_practices_are_separate_spaces(tmp_path, monkeypatch):
+    from academy import pack as packmod
+    from academy import people, workspace
+
+    monkeypatch.setenv("ACADEMY_PRACTICES", str(tmp_path / "practices.csv"))
+    monkeypatch.setenv("ACADEMY_PRACTICES_DIR", str(tmp_path / "practices"))
+    first = workspace.default_id()
+    assert [p.id for p in workspace.load()] == [first] and workspace.root(first) == ROOT
+    ppm = workspace.create("PPM", "Program and product management")
+    assert ppm.id == "ppm" and [p.id for p in workspace.load()] == [first, "ppm"]
+    with pytest.raises(ValueError):
+        workspace.create("ppm")
+    workspace.use("ppm")
+    try:
+        assert workspace.root() == tmp_path / "practices" / "ppm" and packmod.available_packs() == ["ppm"]
+        starter = packmod.load_pack("ppm")
+        assert starter.title == "PPM Practice" and starter.lessons == [] and packmod.validate(starter) == []
+        from academy.catalog import catalog_path
+
+        assert catalog_path() == tmp_path / "practices" / "ppm" / "catalog" / "skills.json"
+    finally:
+        workspace.use(first)
+    assert packmod.available_packs() == ["cloud-security"]
+    with pytest.raises(ValueError):
+        workspace.update([workspace.Practice(first, "X", active=False), workspace.Practice("ppm", "PPM", active=False)])
+    # people: one practice each; global owners everywhere, a practice's owners only there
+    d = [people.Person("Ana", "ana@x.com", "owner"), people.Person("Perla", "perla@x.com", "owner", practice="ppm"),
+         people.Person("Sam", "sam@x.com", "learner", practice="ppm"), people.Person("Bo", "bo@x.com", "learner")]
+    assert people.is_owner(d, "", "ana@x.com", "ppm") and people.is_owner(d, "", "perla@x.com", "ppm")
+    assert not people.is_owner(d, "", "perla@x.com", first) and not people.is_owner(d, "", "perla@x.com")
+    assert [p.name for p in people.members(d, "ppm", first)] == ["Perla", "Sam"] and [p.name for p in people.members(d, first, first)] == ["Bo"]
+    merged = people.replace_members(d, "ppm", first, [people.Person("Sam", "sam@x.com", "champion", ("delivery",))])
+    assert {p.name for p in merged} == {"Ana", "Sam", "Bo"} and next(p for p in merged if p.name == "Sam").practice == "ppm"
+    raw = people.to_csv(d)
+    assert people.parse(raw)[0] == d and people.parse(raw)[1] == []
+    # in the app: a global owner opens PPM from the sidebar; a PPM learner lands in PPM without a choice
+    people.save(d, tmp_path / "people.csv")
+    at = _run(tmp_path, monkeypatch, owners=None, ak_person="Ana", ak_practice="ppm")
+    assert not at.exception
+    assert next(s for s in at.selectbox if s.label == "Practice").value == "ppm"
+    assert any("PPM Practice" in m.value for m in at.markdown) and any("no lessons yet" in m.value for m in at.markdown)
+    at = _run(tmp_path, monkeypatch, owners=None, ak_person="Sam")
+    assert not at.exception and not any(s.label == "Practice" for s in at.selectbox)
+    assert any("Practice: **PPM**" in c.value for c in at.caption)

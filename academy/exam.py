@@ -20,6 +20,13 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 EXAMS_DIR = Path(__file__).resolve().parents[1] / "exams"
+
+
+def exams_dir() -> Path:
+    """exams/ of the practice in use."""
+    from academy import workspace
+
+    return workspace.root() / "exams"
 PRACTICE_POINTS, EXERCISE_POINTS, PASS_POINTS = 5, 10, 50
 SCALE = 1000  # mock results are reported on the 0-1000 scale certification exams use
 
@@ -113,16 +120,17 @@ def load_exam(path: str | Path, lang: str | None = None) -> Exam:
     """Load exams/<id>/exam.json. ``lang`` is ignored: English only."""
     p = Path(path)
     if not p.exists():
-        p = EXAMS_DIR / str(path)
+        p = exams_dir() / str(path)
     if p.is_dir():
         p = p / "exam.json"
     return _parse(json.loads(p.read_text(encoding="utf-8")))
 
 
 def available_exams() -> list[str]:
-    if not EXAMS_DIR.exists():
+    root = exams_dir()
+    if not root.exists():
         return []
-    return sorted(d.name for d in EXAMS_DIR.iterdir() if (d / "exam.json").exists() and not d.name.startswith("_"))
+    return sorted(d.name for d in root.iterdir() if (d / "exam.json").exists() and not d.name.startswith("_"))
 
 
 def validate_exam(exam: Exam, catalog=None) -> list[str]:

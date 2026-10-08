@@ -132,6 +132,18 @@ inventory) and the courses, the recommended actions with the champion who owns e
 upload and the roles by start month. It works on a file read for the session too (compared with the saved uploads) and
 says so on the cover. The *Detailed report (PDF)* keeps every chart and table.
 
+## Practices
+Each practice of the organization (Microsoft Cloud Security, PPM…) is its own space: courses, role families and skills,
+learning paths, demand, study material, news sources and its own content workbook. The first practice lives in the app
+folder as always; every other one in `practices/<id>/` with the same folders. The list is `catalog/practices.csv`.
+
+* **Global owners** (role owner with an empty Practice in People) pick any practice in the sidebar and add new ones in
+  **Team → 🏢 Practices**. A new practice starts with an empty catalog and a first course without lessons, ready to fill
+  in ✏️ Edit mode.
+* Everyone else belongs to one practice (column **Practice** of `catalog/people.csv`; empty = the first practice) and
+  only sees that one. Each practice can have up to 3 owners of its own (**Team → 👑 Owners of …**).
+* The People sheet of a practice's workbook lists that practice's people; saving it leaves the others untouched.
+
 ## Azure App Service
 `deploy/azure/startup.py` (startup command: `python deploy/azure/startup.py`), `deploy/azure/package.py` (the zip to deploy: no data, config or roles
 files) and `.github/workflows/main_academia-cloud-test.yml` (Deployment Center's workflow: tests, package and deploy on every push to main). With `ACADEMY_AUTH=entra` the
@@ -164,8 +176,8 @@ and questions have the same ids).
 ## People and roles (catalog/people.csv)
 `Person, Email, Role, Families, Active` — Role = owner | champion | sme | learner; Families = family ids separated by `;`.
 The sidebar offers these names in **Who are you?**: your role comes with your name (owners get the **Owner view** switch).
-Up to **3 owners** (ACADEMY_MAX_OWNERS changes it): an owner names them in **Team → 👑 App owners**, with the work
-e-mail each one signs in with; they are saved in People with role `owner`.
+Up to **3 global owners** and up to 3 owners per practice (ACADEMY_MAX_OWNERS changes it): **Team → 👑 Global owners** and
+**Team → 👑 Owners of …**, with the work e-mail each one signs in with; they are saved in People with role `owner`.
 A champion listed here becomes the champion of those families in the catalog (reports and notices copy them). Also the
 People tab of the content workbook and ✏️ Edit mode (Team, Reports). Owners in `config/access.json` (with the optional PIN)
 keep working.

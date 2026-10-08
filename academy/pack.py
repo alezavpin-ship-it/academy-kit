@@ -14,6 +14,15 @@ from urllib.parse import urlparse
 
 from academy.videos import embed_src
 
+
+def packs_dir() -> Path:
+    """packs/ of the practice in use (ACADEMY_PACKS names another folder)."""
+    import os
+
+    from academy import workspace
+
+    return Path(os.environ.get("ACADEMY_PACKS") or workspace.root() / "packs")
+
 PACKS_DIR = Path(__file__).resolve().parents[1] / "packs"
 
 
@@ -138,14 +147,15 @@ def load_pack(path: str | Path, lang: str | None = None) -> Pack:
     """Load packs/<name>/pack.json (pass the folder, the json file or just the pack name). ``lang`` is ignored: English only."""
     p = Path(path)
     if not p.exists():
-        p = PACKS_DIR / str(path)
+        p = packs_dir() / str(path)
     if p.is_dir():
         p = p / "pack.json"
     return _parse(json.loads(p.read_text(encoding="utf-8")), p.parent)
 
 
 def available_packs() -> list[str]:
-    return sorted(d.name for d in PACKS_DIR.iterdir() if (d / "pack.json").exists() and not d.name.startswith("_"))
+    root = packs_dir()
+    return sorted(d.name for d in root.iterdir() if (d / "pack.json").exists() and not d.name.startswith("_")) if root.is_dir() else []
 
 
 def validate(pack: Pack, catalog=None) -> list[str]:

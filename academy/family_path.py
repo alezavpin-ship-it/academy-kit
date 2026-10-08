@@ -38,7 +38,9 @@ MAX_FILE_MB = 50  # the upload limit of Streamlit (server.maxUploadSize)
 
 
 def folder() -> Path:
-    return Path(os.environ.get("ACADEMY_FAMILIES") or ROOT / "content" / "families")
+    from academy import workspace
+
+    return Path(os.environ.get("ACADEMY_FAMILIES") or workspace.root() / "content" / "families")
 
 
 def files_folder() -> Path:
@@ -46,7 +48,9 @@ def files_folder() -> Path:
 
 
 def state_path() -> Path:
-    return Path(os.environ.get("ACADEMY_FAMILIES_STATE") or ROOT / "data" / "families_state.json")
+    from academy import workspace
+
+    return Path(os.environ.get("ACADEMY_FAMILIES_STATE") or workspace.root() / "data" / "families_state.json")
 
 
 # ------------------------------------------------------------------------------------------------ uploaded files

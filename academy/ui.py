@@ -226,7 +226,12 @@ def hero(pack: Pack, tr: Tracker, lang: str, role: str | None = None) -> None:
         with right:
             st.markdown(f'<div class="ak-tiles">{tiles}</div>', unsafe_allow_html=True)
         with left:
-            if les is None:
+            if not scope:
+                st.markdown(f'<div class="ak-eyebrow"><b class="ak-pill">{"Getting ready"}</b></div>'
+                            f'<h2 class="ak-hero-title">{html.escape(pack.title)}</h2>'
+                            f'<p class="ak-hero-sum">{"This course has no lessons yet. The practice owners add them in ✏️ Edit mode (Course tab) or in the content workbook; meanwhile, the learning route and Knowledge exchange are ready."}</p>',
+                            unsafe_allow_html=True)
+            elif les is None:
                 st.markdown(f'<div class="ak-eyebrow"><b class="ak-pill">{"Route complete"}</b></div>'
                             f'<h2 class="ak-hero-title">{"You completed every lesson of your role." if role else "You completed every lesson."}</h2>'
                             f'<p class="ak-hero-sum">{"Review the glossary or prepare a certification."}</p>',

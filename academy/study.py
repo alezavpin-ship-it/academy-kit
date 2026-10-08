@@ -54,7 +54,9 @@ class Item:
 
 
 def study_path() -> Path:
-    return Path(os.environ.get("ACADEMY_STUDY") or STUDY_FILE)
+    from academy import workspace
+
+    return Path(os.environ.get("ACADEMY_STUDY") or workspace.root() / "catalog" / "study_material.csv")
 
 
 def _text(v) -> str:

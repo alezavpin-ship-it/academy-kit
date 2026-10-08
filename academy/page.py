@@ -605,44 +605,62 @@ def content_section(lang: str) -> None:
     st.divider()
 
 
-def access_section(lang: str, me: str = "", email: str = "") -> None:
-    """Owners name the app's owners (up to people.max_owners(), kept in People), the optional PIN and the security group."""
+def _owners_editor(directory, acc, scope: str, title: str, help_text: str, key: str, me: str, email: str) -> None:
+    """One list of owners: the global ones (``scope`` empty) or a practice's."""
     from academy import content_sync
     from academy import people as directory_mod
 
-    acc = load_access()
-    directory = directory_mod.load()
     cap = directory_mod.max_owners()
-    current = [(p.name, p.email) for p in directory_mod.owners(directory)]
-    for o in acc.owners:  # owners of the earlier list (config/access.json) move into People when this is saved
-        if not any(o.strip().lower() in (n.lower(), e.lower()) for n, e in current):
-            current.append((o.split("@")[0].replace(".", " ").title() if "@" in o else o, o if "@" in o else ""))
-    with st.expander(f"👑 App owners ({len(current)} of {cap})"):
-        st.caption(f"Owners see and run everything: reports, demand, edit mode and the team. Up to {cap} owners; each one with the "
-                   "work e-mail they sign in with. They are kept in People (role owner), so the content workbook shows them too.")
-        if os.environ.get("ACADEMY_OWNERS", "").strip():
-            st.info("The owners are set in Azure (app setting ACADEMY_OWNERS) and applied on every restart: change them there.")
+    current = [(p.name, p.email) for p in directory_mod.owners(directory, scope)]
+    if not scope:
+        for o in acc.owners:  # owners of the earlier list (config/access.json) move into People when this is saved
+            if not any(o.strip().lower() in (n.lower(), e.lower()) for n, e in current):
+                current.append((o.split("@")[0].replace(".", " ").title() if "@" in o else o, o if "@" in o else ""))
+    with st.expander(f"👑 {title} ({len(current)} of {cap})"):
+        st.caption(help_text)
+        if not scope and os.environ.get("ACADEMY_OWNERS", "").strip():
+            st.info("The global owners are set in Azure (app setting ACADEMY_OWNERS) and applied on every restart: change them there.")
         df = st.data_editor(pd.DataFrame(current, columns=["Person", "Email"]), num_rows="dynamic", hide_index=True, width="stretch",
-                            key="ak_owners_ed", column_config={"Person": st.column_config.TextColumn("Person", required=True),
-                                                               "Email": st.column_config.TextColumn("Work e-mail", required=True)})
+                            key=f"{key}_ed", column_config={"Person": st.column_config.TextColumn("Person", required=True),
+                                                            "Email": st.column_config.TextColumn("Work e-mail", required=True)})
         rows = [(str(r.Person or ""), str(r.Email or "")) for r in df.itertuples() if str(r.Person or "").strip() or str(r.Email or "").strip()]
         if len(rows) > cap:
             st.warning(f"At most {cap} owners: remove {len(rows) - cap}.")
-        if st.button("Save owners", key="ak_owners_save", type="primary", disabled=len(rows) > cap):
+        if st.button("Save owners", key=f"{key}_save", type="primary", disabled=len(rows) > cap):
             mine = {me.strip().lower(), email.strip().lower()} - {"", "me"}
-            new, problems = directory_mod.set_owners(directory, rows)
-            if not problems and mine and not any({n.lower(), e.lower()} & mine for n, e in rows):
+            new, problems = directory_mod.set_owners(directory, rows, scope)
+            if not scope and not problems and mine and not any({n.lower(), e.lower()} & mine for n, e in rows):
                 problems = ["Keep yourself in the list (another owner can remove you later), so the app is never left without you mid-change."]
             if problems:
                 st.error("\n\n".join(problems))
             else:
                 directory_mod.save(new)
-                acc.owners = []  # one list of owners: People
-                save_access(acc)
+                if not scope:
+                    acc.owners = []  # one list of owners: People
+                    save_access(acc)
                 content_sync.refresh()
                 st.cache_data.clear()
                 st.toast("Owners saved.")
                 st.rerun()
+
+
+def access_section(lang: str, me: str = "", email: str = "", global_owner: bool = False) -> None:
+    """Owners: the global owners (global owners only), the owners of this practice, the optional PIN and security group."""
+    from academy import people as directory_mod
+    from academy import workspace
+
+    acc = load_access()
+    directory = directory_mod.load()
+    cap = directory_mod.max_owners()
+    here = workspace.find(workspace.current())
+    if global_owner:
+        _owners_editor(directory, acc, "", "Global owners",
+                       f"Global owners see and run every practice and add new ones. Up to {cap}, each with the work e-mail they sign in with.",
+                       "ak_owners", me, email)
+    if here is not None:
+        _owners_editor(directory, acc, here.id, f"Owners of {here.name}",
+                       f"They run this practice only: reports, demand, edit mode and its team. Up to {cap}; global owners are owners here too.",
+                       f"ak_owners_{here.id}", me, email)
     with st.expander("Access: PIN and security group"):
         st.caption(("Offline the owner view is not a security control. On Azure, Microsoft Entra ID signs everyone in and the owners "
                      "above are matched by their work e-mail."))
@@ -658,6 +676,42 @@ def access_section(lang: str, me: str = "", email: str = "") -> None:
                 acc.set_pin(pin)
             save_access(acc)
             st.toast("Access saved.")
+
+
+def practices_section() -> None:
+    """Global owners: the practices of the organization, and a new one with its own space (courses, people, content)."""
+    from academy import workspace
+
+    items = workspace.load()
+    with st.expander(f"🏢 Practices ({len(items)})"):
+        st.caption("Each practice is its own space: courses, role families and skills, learning paths, demand, study material, news "
+                   "sources and content workbook. People belong to one practice (column Practice in People); global owners open any "
+                   "of them from the sidebar.")
+        df = st.data_editor(pd.DataFrame([{"Id": x.id, "Name": x.name, "Description": x.description, "Active": x.active} for x in items]),
+                            hide_index=True, width="stretch", key="ak_practices_ed", num_rows="fixed", disabled=["Id"],
+                            column_config={"Active": st.column_config.CheckboxColumn("Active")})
+        if st.button("Save practices", key="ak_practices_save"):
+            try:
+                workspace.update([workspace.Practice(str(r.Id), str(r.Name or "").strip() or str(r.Id), str(r.Description or "").strip(), bool(r.Active))
+                                  for r in df.itertuples()])
+            except ValueError as e:
+                st.error(str(e))
+            else:
+                st.toast("Practices saved.")
+                st.rerun()
+        st.markdown("**Add a practice**")
+        c = st.columns([2, 3])
+        name = c[0].text_input("Name", key="ak_practice_new_name", placeholder="PPM")
+        desc = c[1].text_input("Description", key="ak_practice_new_desc", placeholder="Program and product management")
+        if st.button("Create the practice", key="ak_practice_new", type="primary", disabled=not name.strip()):
+            try:
+                new = workspace.create(name, desc)
+            except ValueError as e:
+                st.error(str(e))
+            else:
+                st.session_state["ak_practice_next"] = new.id  # opened on the next run
+                st.cache_data.clear()
+                st.rerun()
 
 
 def route_tab(catalog: Catalog | None, conn, learner: str, lang: str, manage: set[str] | None = None) -> None:
@@ -817,7 +871,7 @@ def _editable(key: str, draw, pack: Pack, conn, catalog, learner: str, lang: str
 # ---------------------------------------------------------------------------------------------- page
 def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = None, catalog: Catalog | None = None,
            packs: list[Pack] | None = None, exams: list | None = None, owner: bool = False, families: set[str] | None = None,
-           email: str = "") -> None:
+           email: str = "", global_owner: bool = False) -> None:
     """``owner``: the owner view (whole team's measurements, notices, gap numbers, catalog administration).
     ``families``: for a champion who is not an owner, the role families they lead; they see only those people and numbers."""
     families = set() if owner else (families or set())
@@ -853,7 +907,9 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
             team_tab(conn, pack, lang)
             notices_section(conn, packs, exams, catalog, lang)
             content_section(lang)
-            access_section(lang, learner, email)
+            access_section(lang, learner, email, global_owner)
+            if global_owner:
+                practices_section()
             assistant_section(lang)
 
         sections.append(("tab_team", team_view))

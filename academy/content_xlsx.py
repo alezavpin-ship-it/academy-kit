@@ -42,7 +42,7 @@ from pathlib import Path
 from academy import news, people, study
 from academy.catalog import (Catalog, Family, Skill, catalog_path, load_catalog, load_materials, materials_path, save_catalog, save_materials,
                              validate_catalog, validate_materials, vendor_of)
-from academy.pack import PACKS_DIR, _parse, validate
+from academy.pack import _parse, packs_dir as _packs_dir, validate
 from academy.practice import Practice, RoleTerm, Term, load_practice, practice_path, save_practice, scope_of
 from academy.family_path import status_of
 from academy.route import class_order
@@ -140,7 +140,9 @@ README = [
 # ------------------------------------------------------------------------------------------------ files on disk
 def pack_files(packs_dir: Path | None = None) -> list[Path]:
     """Every course file: packs/<id>/pack.json (template folders, starting with '_', excluded)."""
-    root = packs_dir or PACKS_DIR
+    root = packs_dir or _packs_dir()
+    if not root.is_dir():
+        return []
     return [d / "pack.json" for d in sorted(p for p in root.iterdir() if p.is_dir() and not p.name.startswith("_")) if (d / "pack.json").exists()]
 
 
@@ -158,7 +160,9 @@ def _rows(packs: list[dict], materials: dict[str, list[dict]], catalog, practice
         out["PracticeRoles"] = [[r.title, "; ".join(r.aliases), r.scope] for r in practice.roles]
     out["NewsSources"] = [[x.name, x.category, x.url, x.feed, "yes" if x.splash else "no", "yes" if x.enabled else "no", x.description]
                           for x in news.load_sources()]
-    out["People"] = [x.row() for x in people.load()]
+    from academy import workspace
+
+    out["People"] = [x.row()[:len(people.SHEET_COLUMNS)] for x in people.members(people.load(), workspace.current(), workspace.default_id())]
     out["StudyMaterial"] = [x.row() for x in study.load()]
     for d in packs:
         m = d["meta"]
@@ -558,6 +562,9 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
     summary = [{"Course": pid, "Lessons": len(p["lessons"]), "Questions": sum(len(x["quiz"]) for x in p["lessons"]),
                 "Resources": len(p["resources"]), "Glossary": len(p["glossary"])} for pid, p in packs.items()]
     practice = None
+    if len([r for r in data["Practice"] if any(_text(v) for v in r.values())]) > 1:
+        problems.append("[Practice] this table describes the practice of this content file (one row). To add a practice, use "
+                        "Team → 🏢 Practices: each practice gets its own courses, role families, people and content file.")
     if data["Practice"] or data["PracticeSkills"] or data["PracticeRoles"]:
         head = data["Practice"][0] if data["Practice"] else {}
         practice = Practice(_text(head.get("Name")), _text(head.get("Description")),
@@ -579,7 +586,7 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
         problems += bad
     directory = None
     if data["People"]:
-        directory, bad = people.parse(_as_csv(people.COLUMNS, data["People"]), {f.id for f in catalog.families} if catalog else None)
+        directory, bad = people.parse(_as_csv(people.SHEET_COLUMNS, data["People"]), {f.id for f in catalog.families} if catalog else None)
         problems += bad
         if catalog and not bad:
             catalog, moved = people.sync_catalog(directory, catalog)
@@ -607,14 +614,14 @@ def _as_csv(columns: list[str], rows: list[dict]) -> bytes:
 
 
 def target_file(pack_id: str, packs_dir: Path | None = None) -> Path:
-    return (packs_dir or PACKS_DIR) / pack_id / "pack.json"
+    return (packs_dir or _packs_dir()) / pack_id / "pack.json"
 
 
 def apply(result: dict, packs_dir: Path | None = None, backup_dir: Path | None = None) -> list[Path]:
     """Write what ``read`` / ``build`` parsed. Refuses while there are problems. Returns the files written (backup first)."""
     if result["problems"]:
         raise ValueError("The content has problems; nothing was saved.")
-    root = packs_dir or PACKS_DIR
+    root = packs_dir or _packs_dir()
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     backup = (backup_dir or root.parent / "data" / "content_backups") / stamp
     written = []
@@ -632,13 +639,18 @@ def apply(result: dict, packs_dir: Path | None = None, backup_dir: Path | None =
             backup.mkdir(parents=True, exist_ok=True)
             shutil.copy2(np_, backup / np_.name)
         written.append(news.save_sources(result["news"]))
+    from academy import workspace
+
     for key, path_of, save in (("people", people.people_path, people.save), ("study", study.study_path, study.save)):
         if result.get(key) is not None:
             f = path_of()
             if f.exists():
                 backup.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(f, backup / f.name)
-            written.append(save(result[key]))
+            value = result[key]
+            if key == "people":  # the sheet holds this practice's people: the others (and the global owners) stay
+                value = people.replace_members(people.load(), workspace.current(), workspace.default_id(), value)
+            written.append(save(value))
     mp, cp, pp = materials_path(), catalog_path(), practice_path()
     if result.get("practice") is not None:
         if pp.exists():

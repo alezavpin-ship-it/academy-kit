@@ -19,8 +19,10 @@ SEVERITIES = ["High", "Medium", "Low"]
 
 
 def catalog_path() -> Path:
-    """catalog/skills.json, or the file named by ACADEMY_CATALOG."""
-    return Path(os.environ.get("ACADEMY_CATALOG") or CATALOG_PATH)
+    """catalog/skills.json of the practice in use, or the file named by ACADEMY_CATALOG."""
+    from academy import workspace
+
+    return Path(os.environ.get("ACADEMY_CATALOG") or workspace.root() / "catalog" / "skills.json")
 
 
 def slug(name: str) -> str:

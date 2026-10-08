@@ -108,7 +108,8 @@ UI: dict[str, str] = {
     "who_help": "Your progress is saved under this name.",
     "role": "Your role",
     "any_role": "(all)",
-    "pack": "Practice",
+    "pack": "Course",
+    "practice_label": "Practice",
 }
 
 

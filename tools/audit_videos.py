@@ -14,14 +14,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from academy.pack import PACKS_DIR  # noqa: E402
+from academy.pack import packs_dir  # noqa: E402
 from academy.videos import embed_src, oembed  # noqa: E402
 
 
 def main(target: str, fix: bool = False) -> int:
     p = Path(target)
     if not p.exists():
-        p = PACKS_DIR / target
+        p = packs_dir() / target
     if p.is_dir():
         p = p / "pack.json"
     data = json.loads(p.read_text(encoding="utf-8"))

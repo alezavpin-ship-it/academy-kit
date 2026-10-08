@@ -25,7 +25,7 @@ import sys
 from pathlib import Path
 
 APP_DIR = Path(__file__).resolve().parents[2]
-FOLDERS = ("data", "config", "catalog", "content", "packs", "exams", "export")
+FOLDERS = ("data", "config", "catalog", "content", "packs", "exams", "export", "practices")
 
 
 def link_folders(app_dir: Path, data_dir: Path) -> list[str]:

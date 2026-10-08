@@ -145,7 +145,10 @@ def practice_titles(root: Path | None = None) -> bool:
     Only the course title changes (provider names such as Cisco Networking Academy stay). Returns True when a title changed."""
     import re
 
-    root = root or ROOT
+    if root is None:
+        from academy import workspace
+
+        root = workspace.root()
     changed = False
     top = root / "packs"
     for f in sorted(top.glob("*/pack.json")) if top.is_dir() else []:

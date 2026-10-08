@@ -77,7 +77,9 @@ class Reading:
 
 # ------------------------------------------------------------------------------------------------ sources (CSV)
 def sources_path() -> Path:
-    return Path(os.environ.get("ACADEMY_NEWS") or SOURCES_FILE)
+    from academy import workspace
+
+    return Path(os.environ.get("ACADEMY_NEWS") or workspace.root() / "catalog" / "news_sources.csv")
 
 
 def _yes(v) -> bool:
@@ -284,7 +286,9 @@ def cover_image(item: Item, fetch=_get) -> str:
 
 # ------------------------------------------------------------------------------------------------ cache
 def cache_path() -> Path:
-    return Path(os.environ.get("ACADEMY_NEWS_CACHE") or CACHE_FILE)
+    from academy import workspace
+
+    return Path(os.environ.get("ACADEMY_NEWS_CACHE") or workspace.root() / "data" / "news_cache.json")
 
 
 def _load_cache() -> dict:

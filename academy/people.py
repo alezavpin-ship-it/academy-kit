@@ -3,10 +3,13 @@ workbook (tab People) or in the app's edit mode:
 
     catalog/people.csv      (or the file named by ACADEMY_PEOPLE)
 
-    Person, Email, Role, Families, Active
+    Person, Email, Role, Families, Active, Practice
 
-* Role = owner (sees and runs everything; at most 3 active owners, ACADEMY_MAX_OWNERS changes it) | champion (runs the role families listed in Families) | sme (answers in the
-  forum as the expert of the families listed) | learner.
+* Role = owner | champion (runs the role families listed in Families) | sme (answers in the forum as the expert of the
+  families listed) | learner.
+* Practice = the id of the person's practice (catalog/practices.csv); empty = the first practice. A person belongs to one
+  practice. An owner with an empty Practice is a GLOBAL owner (sees and runs every practice, adds practices); an owner with
+  a Practice runs only that one. At most 3 active owners of each kind (ACADEMY_MAX_OWNERS changes it).
 * Families = family ids separated by ";" (for champions and SMEs).
 * Active = no keeps the person in the file without showing them in the list of names.
 
@@ -26,7 +29,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PEOPLE_FILE = ROOT / "catalog" / "people.csv"
-COLUMNS = ["Person", "Email", "Role", "Families", "Active"]
+COLUMNS = ["Person", "Email", "Role", "Families", "Active", "Practice"]
+SHEET_COLUMNS = COLUMNS[:5]  # the People sheet of a practice's content workbook: the practice is the workbook's own
 OWNER, CHAMPION, SME, LEARNER = "owner", "champion", "sme", "learner"
 ROLES = [OWNER, CHAMPION, SME, LEARNER]
 MAX_OWNERS = 3
@@ -46,9 +50,14 @@ class Person:
     role: str = LEARNER
     families: tuple[str, ...] = ()
     active: bool = True
+    practice: str = ""  # empty = the first practice (for an owner: every practice)
 
     def row(self) -> list[str]:
-        return [self.name, self.email, self.role, "; ".join(self.families), "yes" if self.active else "no"]
+        return [self.name, self.email, self.role, "; ".join(self.families), "yes" if self.active else "no", self.practice]
+
+    @property
+    def global_owner(self) -> bool:
+        return self.role == OWNER and not self.practice
 
     def matches(self, learner: str, email: str = "") -> bool:
         me = {_norm(learner), _norm(email)} - {""}
@@ -94,10 +103,13 @@ def parse(raw: bytes, family_ids: set[str] | None = None) -> tuple[list[Person],
             problems.append(f"[people row {n}] '{name}' is repeated.")
             continue
         seen.add(name.lower())
-        out.append(Person(name, email, role, fams, (r.get("Active") or "yes").strip().lower() not in ("no", "n", "false", "0")))
-    active = [p.name for p in out if p.role == OWNER and p.active]
-    if len(active) > max_owners():
-        problems.append(f"[people] at most {max_owners()} active owners: {', '.join(active)}. Make the others champions or learners.")
+        out.append(Person(name, email, role, fams, (r.get("Active") or "yes").strip().lower() not in ("no", "n", "false", "0"),
+                          (r.get("Practice") or "").strip()))
+    for scope in sorted({p.practice for p in out if p.role == OWNER}):
+        active = [p.name for p in out if p.role == OWNER and p.active and p.practice == scope]
+        if len(active) > max_owners():
+            what = f"owners of the practice '{scope}'" if scope else "active owners"
+            problems.append(f"[people] at most {max_owners()} {what}: {', '.join(active)}. Make the others champions or learners.")
     return out, problems
 
 
@@ -125,23 +137,50 @@ def find(people: list[Person], learner: str, email: str = "") -> Person | None:
     return next((p for p in people if p.matches(learner, email)), None)
 
 
-def is_owner(people: list[Person], learner: str, email: str = "") -> bool:
-    return any(p.role == OWNER and p.matches(learner, email) for p in people)
+def is_owner(people: list[Person], learner: str, email: str = "", practice: str | None = None) -> bool:
+    """A global owner, or (with ``practice``) an owner of that practice."""
+    return any(p.role == OWNER and p.matches(learner, email) and (not p.practice or (practice is not None and p.practice == practice))
+               for p in people)
 
 
-def owners(people: list[Person]) -> list[Person]:
-    return [p for p in people if p.role == OWNER and p.active]
+def is_global_owner(people: list[Person], learner: str, email: str = "") -> bool:
+    return any(p.global_owner and p.matches(learner, email) for p in people)
 
 
-def set_owners(people: list[Person], new: list[tuple[str, str]]) -> tuple[list[Person], list[str]]:
-    """The directory with exactly these owners ((name, e-mail) pairs). A person already in the directory keeps their row and
-    becomes owner; an owner left out becomes a learner (a champion's families stay with them as champion). Returns the new
-    directory and the problems (nothing is changed when there are any)."""
+def practice_of(person: Person | None, first: str) -> str:
+    """The practice a person works in (``first`` = the id of the first practice, for an empty Practice)."""
+    return (person.practice if person and person.practice else first)
+
+
+def members(people: list[Person], practice: str, first: str) -> list[Person]:
+    """The people of one practice (global owners are of every practice and are not listed)."""
+    return [p for p in people if not p.global_owner and (p.practice or first) == practice]
+
+
+def replace_members(people: list[Person], practice: str, first: str, new: list[Person]) -> list[Person]:
+    """The directory with the people of ``practice`` replaced by ``new`` (the rest, and the global owners, kept)."""
+    keep = [p for p in people if p.global_owner or (p.practice or first) != practice]
+    from dataclasses import replace
+
+    # a practice's owners always carry the practice (an owner without one is global); the rest of the first practice, none
+    return keep + [replace(p, practice=practice if (p.role == OWNER or practice != first) else "") for p in new]
+
+
+def owners(people: list[Person], practice: str = "") -> list[Person]:
+    """The active owners of one kind: global ones (``practice`` empty) or those of a practice."""
+    return [p for p in people if p.role == OWNER and p.active and p.practice == practice]
+
+
+def set_owners(people: list[Person], new: list[tuple[str, str]], practice: str = "") -> tuple[list[Person], list[str]]:
+    """The directory with exactly these owners ((name, e-mail) pairs): global owners (``practice`` empty) or the owners of
+    a practice. A person already in the directory keeps their row and becomes owner; an owner of that kind left out
+    becomes a learner (a champion's families stay with them as champion). Returns the new directory and the problems
+    (nothing is changed when there are any)."""
     from dataclasses import replace
 
     new = [(n.strip(), e.strip()) for n, e in new if n.strip() or e.strip()]
     problems = []
-    if not new:
+    if not new and not practice:
         problems.append("At least one owner must remain.")
     if len(new) > max_owners():
         problems.append(f"At most {max_owners()} owners.")
@@ -158,12 +197,12 @@ def set_owners(people: list[Person], new: list[tuple[str, str]]) -> tuple[list[P
         if hit is not None:
             used.add(hit)
             n, e = new[hit]
-            out.append(replace(p, name=n, email=e, role=OWNER, active=True))
-        elif p.role == OWNER:
+            out.append(replace(p, name=n, email=e, role=OWNER, active=True, practice=practice))
+        elif p.role == OWNER and p.practice == practice:
             out.append(replace(p, role=CHAMPION if p.families else LEARNER))
         else:
             out.append(p)
-    out += [Person(n, e, OWNER) for i, (n, e) in enumerate(new) if i not in used]
+    out += [Person(n, e, OWNER, practice=practice) for i, (n, e) in enumerate(new) if i not in used]
     return out, []
 
 
