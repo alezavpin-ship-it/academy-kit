@@ -409,7 +409,7 @@ def analyze(rows: list[dict], practice: Practice, catalog=None, packs: list | No
             outside_roles.append(r)
 
     k = {"skill": "Skill", "scope": "Scope", "roles": "Roles", "primary": "As primary skill",
-         "family": "Skill family", "vendor": "Vendor", "catalog": "Catalog skill",
+         "family": "Role family", "vendor": "Vendor", "catalog": "Catalog skill",
          "lessons": "Lessons", "classes": "Learning path classes",
          "cover": "Content", "title": "Role title", "share": "Share",
          "pskill": "Primary skill", "client": "Client", "project": "Project",
@@ -453,7 +453,7 @@ def analyze(rows: list[dict], practice: Practice, catalog=None, packs: list | No
             return COVER["new"]
         return COVER["lessons"] if lessons_of.get(sid) else (COVER["path"] if materials.get(sid) else COVER["none"])
 
-    matrix_rows = [{"Skill family": fam, "Skill": skill, "Roles where it is a gap": c["gaps"], "Roles where it is aligned": c["aligned"],
+    matrix_rows = [{"Role family": fam, "Skill": skill, "Roles where it is a gap": c["gaps"], "Roles where it is aligned": c["aligned"],
                     "In the academy": in_academy(skill)} for (fam, skill), c in sorted(matrix.items(), key=lambda kv: (-kv[1]["gaps"], -kv[1]["aligned"], kv[0]))]
     return {"lang": lang, "keys": k, "rows": len(rows), "skills": skill_rows, "matrix": matrix_rows, "primary": primary_rows, "titles": title_rows, "combos": combo_rows,
             "outside_roles": outside_rows, "backlog": backlog, "scope_roles": dict(scope_roles),

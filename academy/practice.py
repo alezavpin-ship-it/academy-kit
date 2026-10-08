@@ -43,7 +43,7 @@ class Term:
     term: str
     aliases: tuple[str, ...] = ()
     skill_id: str = ""  # skill of the catalog it maps to ('' = not in the catalog yet)
-    family: str = ""  # skill family id
+    family: str = ""  # role family id
     vendor: str = ""
     scope: str = CORE
 

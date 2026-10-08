@@ -43,7 +43,7 @@ def rhythm_tab(conn, catalog, packs: list, exams: list, learner: str, owner: boo
     families = set(families or set())
     r = rh.Rhythm(conn)
     if not catalog:
-        st.info("The rhythm is organized by skill family: load the skills catalog first.")
+        st.info("The rhythm is organized by role family: load the skills catalog first.")
         return
     ctx = _ctx(conn, catalog, packs, exams)
     owners, champions, mails, people = ctx

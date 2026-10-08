@@ -1,4 +1,4 @@
-"""Notices to learners, with copy to the champion (owner) of the skill family.
+"""Notices to learners, with copy to the champion (owner) of the role family.
 
 Offline, the app only PREPARES each message (recipient, copy, subject, body): a person sends it from Outlook with one
 click, or downloads the queue as CSV. In Microsoft 365 the same rules and texts feed a Power Automate flow that sends
@@ -90,7 +90,7 @@ def _foot(champions: list[str], lang: str = "es") -> str:
     if not champions:
         return SIGN
     names = ", ".join(champions)
-    who = (f"Copied to {names}, champion of the skill family, who can support you.\n\n")
+    who = (f"Copied to {names}, champion of the role family, who can support you.\n\n")
     return f"{who}{SIGN}"
 
 
@@ -191,7 +191,7 @@ def queue_rows(notices: list[Notice]) -> list[dict]:
 
 # ---------------------------------------------------------------------------------------------- one family's people
 def family_team(conn: sqlite3.Connection, packs: list, exams: list, catalog, family_ids: set[str]) -> list[dict]:
-    """Who is working on these skill families and how far they are: one row per person, counting only the lessons and
+    """Who is working on these role families and how far they are: one row per person, counting only the lessons and
     certifications that belong to the families (what a champion is allowed to see)."""
     fam_of = {s.id: s.family for s in catalog.skills} if catalog else {}
     rows: dict[str, dict] = {}

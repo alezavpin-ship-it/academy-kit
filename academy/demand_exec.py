@@ -49,7 +49,7 @@ def brief(a: dict, tr: dict | None = None, bench: dict[str, int] | None = None, 
         e = r["_entry"]
         sid = e.skill_id if e is not None and e.skill_id else ""
         people = bench.get(sid) if bench is not None and sid else None
-        skills.append({"Skill": r[k["skill"]], "Skill family": r[k["family"]], "Roles": r[k["roles"]],
+        skills.append({"Skill": r[k["skill"]], "Role family": r[k["family"]], "Roles": r[k["roles"]],
                        "People at level 3+": "—" if people is None else people, "Content": r[k["cover"]], "Champion": champion(e, True), "_owner": champion(e),
                        "_gap": r[k["roles"]] - (people or 0), "_people": people, "_cover": r["_cover"], "_scope": r["_scope"]})
 
@@ -85,7 +85,7 @@ def brief(a: dict, tr: dict | None = None, bench: dict[str, int] | None = None, 
     matrix = [r for r in a.get("matrix", []) if r["Roles where it is a gap"]]
     if matrix:
         m = matrix[0]
-        messages.append(f"Most frequent gap in the practice matrix: {m['Skill']} ({m['Skill family']}), in {m['Roles where it is a gap']} roles.")
+        messages.append(f"Most frequent gap in the practice matrix: {m['Skill']} ({m['Role family']}), in {m['Roles where it is a gap']} roles.")
     this_month = f"{today.year}-{today.month:02d}"
     nxt = date(today.year + (today.month == 12), today.month % 12 + 1, 1)
     window = {this_month, f"{nxt.year}-{nxt.month:02d}"}
@@ -102,7 +102,7 @@ def brief(a: dict, tr: dict | None = None, bench: dict[str, int] | None = None, 
                         "Why": f"{r['Roles']} roles vs {people_word(r['_people'])} at level 3+", "Owner": r["_owner"]})
     for m in matrix[:2]:
         actions.append({"Action": f"Close the matrix gap {m['Skill']}", "Why": f"gap in {m['Roles where it is a gap']} roles · {m['In the academy']}",
-                        "Owner": "Owner + " + m["Skill family"] + " champion"})
+                        "Owner": "Owner + " + m["Role family"] + " champion"})
     out = [r for r in a["skills"] if r["_scope"] == OUTSIDE][:3]
     if out and out[0][k["roles"]] >= max(2, round(0.05 * total)):
         actions.append({"Action": "Decide on demand outside the practice: " + ", ".join(r[k["skill"]] for r in out),

@@ -39,7 +39,7 @@ SECTION_TABLES: dict[str, list[str]] = {
 }
 TABLE_NAME = {"Courses": "Courses", "Levels": "Levels", "Ranks": "Ranks", "Topics": "Topics", "Roles": "Course roles", "Lessons": "Lessons",
               "Questions": "Questions", "Resources": "Videos and links", "LessonResources": "Videos of each lesson", "Glossary": "Glossary",
-              "Families": "Skill families", "Skills": "Skills", "LearningPaths": "Learning paths (classes)", "Practice": "Practice",
+              "Families": "Role families", "Skills": "Skills", "LearningPaths": "Learning paths (classes)", "Practice": "Practice",
               "PracticeSkills": "Practice skills", "PracticeRoles": "Practice roles", "NewsSources": "News sources", "StudyMaterial": "Study material", "People": "People and roles"}
 ABOUT = {"Lessons": "One row per lesson: level, title, summary, key points and the skills it builds.",
          "Questions": "The 3 questions of each lesson: 4 options and the correct letter.",

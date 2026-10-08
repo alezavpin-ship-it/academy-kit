@@ -105,6 +105,11 @@ class Pack:
         skills = set(self.roles.get(role, []))
         return {les.id for les in self.lessons if skills & set(les.skills)}
 
+    def lessons_in_scope(self, role: str | None = None) -> list[Lesson]:
+        """The lessons a learner of ``role`` has to take, in pack order (every lesson without a role, or for a role with none)."""
+        ids = self.lessons_for_role(role) if role else set()
+        return [les for les in self.lessons if les.id in ids] if ids else list(self.lessons)
+
     def asset(self, name: str) -> Path | None:
         if not name or self.folder is None:
             return None

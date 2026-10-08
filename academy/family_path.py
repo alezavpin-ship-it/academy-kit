@@ -1,4 +1,4 @@
-"""Each skill family's career path as its own CSV file, run by the family's champion.
+"""Each role family's career path as its own CSV file, run by the family's champion.
 
     content/families/<family-id>.csv      (one per family; ACADEMY_FAMILIES names another folder)
 

@@ -23,6 +23,9 @@ def _family_files(tmp_path, monkeypatch):
     """The family CSV files of every test go to its own folder, never to content/families."""
     monkeypatch.setenv("ACADEMY_FAMILIES", str(tmp_path / "families"))
     monkeypatch.setenv("ACADEMY_FAMILIES_STATE", str(tmp_path / "families_state.json"))
+    from academy import english
+
+    monkeypatch.setattr(english, "practice_titles", lambda root=None: False)  # never rename the real course files in a test
 
 
 @pytest.fixture
@@ -709,12 +712,12 @@ def test_family_report_status_and_followup(tmp_path):
     conn, pack, cat, now, fam = _seed_family_activity(tmp_path)
     rep = report.build(conn, [pack], [], cat, "en", now=now)
     assert len(rep["status"]) == len(cat.families) and rep["summary"]["people"] == 2
-    people = {r["Person"]: r for r in rep["followup"] if r["Skill family"] == next(f.name for f in cat.families if f.id == fam)}
+    people = {r["Person"]: r for r in rep["followup"] if r["Role family"] == next(f.name for f in cat.families if f.id == fam)}
     assert people["carla"]["_late"] and people["carla"]["Days idle"] == 12 and not people["ana"]["_late"]
     assert rep["followup"][0]["Person"] == "carla"  # whoever needs follow-up comes first
     assert all(not k.startswith("_") for r in report.visible(rep["status"]) for k in r)
     only = report.build(conn, [pack], [], cat, "en", only={fam}, now=now)  # what a champion gets: their family only
-    assert len(only["status"]) == 1 and {r["Skill family"] for r in only["followup"]} == {only["status"][0]["Skill family"]}
+    assert len(only["status"]) == 1 and {r["Role family"] for r in only["followup"]} == {only["status"][0]["Role family"]}
 
 
 def test_family_report_exports(tmp_path):
@@ -728,7 +731,7 @@ def test_family_report_exports(tmp_path):
     rep = report.build(conn, [pack], [], cat, "en", now=now)
     wb = load_workbook(io.BytesIO(report.to_xlsx(rep)))
     assert wb.sheetnames[0] == "Status by family" and len(wb.sheetnames) == 4 and wb.worksheets[0].max_row == 4 + len(cat.families)
-    assert [c.value for c in wb["Follow-up by person"][4]][:3] == ["Skill family", "Champion", "Person"]
+    assert [c.value for c in wb["Follow-up by person"][4]][:3] == ["Role family", "Champion", "Person"]
     assert [c.value for c in wb["Progress by person"][4]][0] == "Person"
     from academy import report_pdf
 
@@ -869,7 +872,7 @@ def test_content_file_carries_the_skills_catalog(tmp_path, monkeypatch):
 
 
 def test_route_is_family_vendor_skill_classes():
-    """Structure: skill family -> technology / vendor -> skill -> class 1, class 2… from any source."""
+    """Structure: role family -> technology / vendor -> skill -> class 1, class 2… from any source."""
     from academy.catalog import Catalog, Family, Skill, vendor_of
     from academy.route import build_routes
 
@@ -938,7 +941,7 @@ def test_forum_tab_and_report_column(tmp_path, monkeypatch):
     assert any("Forum" in t.label for t in at.tabs) and any("Where do I start with Defender?" in e.label for e in at.expander)
     assert any("waiting for an expert" in w.value for w in at.warning)  # the owner is told at the top
     rep = report.build(connect(tmp_path / "app.db"), [load_pack("cloud-security")], [], cat, "en")
-    assert next(r for r in rep["status"] if r["Skill family"] == cat.families[0].name)["Forum: waiting"] == 1
+    assert next(r for r in rep["status"] if r["Role family"] == cat.families[0].name)["Forum: waiting"] == 1
 
 
 # ---------------------------------------------------------------------------------------------- career path and certifications
@@ -1482,7 +1485,7 @@ def test_demand_reads_the_organization_report_format(tmp_path, monkeypatch):
     a = demand.analyze(rows, load_practice(ROOT / "catalog" / "practice.json"), load_catalog(), [load_pack("cloud-security")], {}, "en")
     assert a["titles"][0]["Role title"] == "Security Architect" and a["months"] == [("2026-11", 1)]
     assert a["summary"]["in_practice"] == 1 and not any(name == "-" for name, _ in a["by"]["Industry Level 1"])
-    gaps = {(r["Skill family"], r["Skill"]): r for r in a["matrix"]}
+    gaps = {(r["Role family"], r["Skill"]): r for r in a["matrix"]}
     assert gaps[("Data Protection, Risk & Compliance", "Microsoft Purview")]["Roles where it is a gap"] == 1
     assert gaps[("Cyber Defense & Security Operations", "Microsoft Sentinel")]["Roles where it is aligned"] == 1
     # in the app: an uploaded file is read for the session only; nothing is written
@@ -1592,3 +1595,30 @@ def test_azure_owners_from_the_app_setting(tmp_path):
     assert next(p for p in d if p.email == "sam.calles@contoso.com").name == "Sam Calles" and next(p for p in d if p.email == "old@gmail.com").role == "learner"
     assert "ignored" in mod.apply_owners(ROOT, tmp_path, "a@x.com; b@x.com; c@x.com; d@x.com")  # more than 3: nothing changes
     assert len(people.owners(people.load(tmp_path / "catalog" / "people.csv"))) == 3
+
+
+def test_course_titles_say_practice_not_academy(tmp_path):
+    import shutil
+
+    from academy import english
+
+    shutil.copytree(ROOT / "packs" / "cloud-security", tmp_path / "packs" / "cloud-security")
+    import importlib
+
+    fresh = importlib.reload(english)  # the module's own function (the fixture replaced it for the app runs)
+    assert fresh.practice_titles(tmp_path) is True and fresh.practice_titles(tmp_path) is False
+    title = json.loads((tmp_path / "packs" / "cloud-security" / "pack.json").read_text(encoding="utf-8"))["meta"]["title"]
+    assert title == "Cloud Security Practice"
+
+
+def test_your_role_narrows_the_dashboard_and_the_course(tmp_path, monkeypatch, pack):
+    scope = pack.lessons_in_scope("Security analyst (SOC)")
+    assert 0 < len(scope) < len(pack.lessons) and pack.lessons_in_scope(None) == list(pack.lessons)
+    assert pack.lessons_in_scope("No such role") == list(pack.lessons)
+    at = _run(tmp_path, monkeypatch, ak_role="Security analyst (SOC)")
+    assert not at.exception
+    page = " ".join(m.value for m in at.markdown)
+    assert f"0 / {len(scope)}" in page and f"of {len(scope)} lessons completed" in page
+    assert f"Showing the **{len(scope)}** lessons" in " ".join(c.value for c in at.caption)
+    lessons = next(s for s in at.selectbox if s.label == "Lesson")
+    assert set(lessons.options) <= {f"○ {x.title}" for x in scope} | {f"✅ {x.title}" for x in scope}

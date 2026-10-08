@@ -57,7 +57,7 @@ def _widths(cols: list[str], rows: list[dict], width: float) -> list[float]:
 
 
 # the family status in the PDF: who leads it, the gap, the people and how far they are (the Excel has every column)
-BRIEF = ["Skill family", "Champion", "Gap volume", "People",
+BRIEF = ["Role family", "Champion", "Gap volume", "People",
          "Active", "Need follow-up", "Lesson progress",
          "Route progress", "Mock exams passed", "Forum: waiting",
          "Last activity", "Status"]

@@ -2,9 +2,9 @@
 
 Three kinds of series:
 
-* monthly  - review between the owner lead and the skill family champions: families in red, people behind, certifications
+* monthly  - review between the owner lead and the role family champions: families in red, people behind, certifications
              about to expire, and the demand against the bench (what roles ask for, who can take them, what has no course);
-* weekly   - one per skill family, led by its champion with the family's members: blockers, people to follow up, forum
+* weekly   - one per role family, led by its champion with the family's members: blockers, people to follow up, forum
              questions waiting, a short demo by a member (rotating), the certifications the family asks for;
 * study    - a study group for one certification with an exam date: a domain of the exam per session, the members' best
              mock exam against the pass mark, and the countdown to the exam.
@@ -322,8 +322,8 @@ def agenda(conn, s: Series, day: date, packs: list, exams: list, catalog, owners
         rep = report.build(conn, packs, exams, catalog, "en")
         sm = rep["summary"]
         red = [r for r in rep["status"] if r["_state"] != report.ON_TRACK]
-        out.append(("Skill families", [f"{sm['families']} families · {sm['on_track']} on track · {sm['no_champion']} without champion"]
-                    + [f"{r['Skill family']}: {r['Status']} (champion: {r['Champion']})" for r in red[:8]]))
+        out.append(("Role families", [f"{sm['families']} families · {sm['on_track']} on track · {sm['no_champion']} without champion"]
+                    + [f"{r['Role family']}: {r['Status']} (champion: {r['Champion']})" for r in red[:8]]))
         out.append(("People", [f"{sm.get('behind', 0)} behind or at risk · {sm.get('not_started', 0)} not started · {sm['people']} with activity"]))
         from academy.certs import Certs
 

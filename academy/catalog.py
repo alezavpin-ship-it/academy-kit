@@ -1,4 +1,4 @@
-"""Skills catalog: the team's skill families (with their gap numbers and champion) and the skills inside each one.
+"""Skills catalog: the team's role families (with their gap numbers and champion) and the skills inside each one.
 
 It lives in catalog/skills.json, outside the packs, because it is the one vocabulary every pack, role and profile shares.
 Lessons point to it with ``catalog_skills``; ``coverage`` answers "which lessons teach this skill?".
@@ -52,7 +52,7 @@ class Skill:
     category: str = ""  # optional grouping inside the vendor, e.g. "SIEM", "Identity"
 
 
-# Structure of the catalog: skill family -> technology / vendor -> skills (optionally by category) -> learning path (classes).
+# Structure of the catalog: role family -> technology / vendor -> skills (optionally by category) -> learning path (classes).
 NEUTRAL = "Vendor-neutral"
 VENDORS = ["Microsoft", "AWS", "GCP", "Cisco", "IBM", "Palo Alto Networks", "Fortinet", "CrowdStrike", "GitHub", "Anthropic", NEUTRAL]
 _VENDOR_WORDS = [("Microsoft", ("microsoft", "azure", "entra", "defender", "sentinel", "purview", "intune", "exchange", "m365", "office 365",
@@ -165,7 +165,7 @@ def validate_catalog(cat: Catalog) -> list[str]:
 #   1. the remediation table: Skill Family | Unaligned / Missing Skill | Gap Severity | Impacted Roles | Required Target | Champion
 #   2. the summary table (optional): Skill Family | Gap Volume | Role Impact Count
 # It never needs the rest of the workbook, and by default it keeps only HOW MANY roles are impacted, not which ones.
-_COLS = {"family": ("skill family",), "skill": ("missing skill", "unaligned", "skill"), "severity": ("severity", "priority"),
+_COLS = {"family": ("skill family", "role family"), "skill": ("missing skill", "unaligned", "skill"), "severity": ("severity", "priority"),
          "roles": ("impacted role",), "target": ("target proficiency", "required target", "proficiency"), "champion": ("champion", "owner")}
 
 
@@ -211,7 +211,7 @@ def parse_text(text: str) -> list[list]:
 def _find_header(rows: list[list]) -> tuple[int, dict[str, int]] | None:
     for i, row in enumerate(rows):
         cells = [_txt(c).lower() for c in row]
-        fam = next((j for j, c in enumerate(cells) if c.startswith("skill family")), None)
+        fam = next((j for j, c in enumerate(cells) if c.startswith(("skill family", "role family"))), None)
         if fam is None:
             continue
         cols = {"family": fam}
@@ -229,7 +229,7 @@ def _find_summary(rows: list[list]) -> dict[str, tuple[int | None, int | None]]:
     for i, row in enumerate(rows):
         cells = [_txt(c).lower() for c in row]
         for j, c in enumerate(cells):
-            if c.startswith("skill family") and j + 1 < len(cells) and cells[j + 1].startswith("gap vol"):
+            if c.startswith(("skill family", "role family")) and j + 1 < len(cells) and cells[j + 1].startswith("gap vol"):
                 out = {}
                 for r in rows[i + 1:]:
                     name = _txt(r[j]) if j < len(r) else ""
@@ -247,7 +247,7 @@ def parse_grid(rows: list[list], keep_roles: bool = False, previous: Catalog | N
     """
     found = _find_header(rows)
     if not found:
-        return None, {"error": 'I could not find a table with the columns "Skill Family" and "Unaligned / Missing Skill".'}
+        return None, {"error": 'I could not find a table with the columns "Skill Family" (or "Role Family") and "Unaligned / Missing Skill".'}
     hdr, cols = found
 
     def cell(r, key):

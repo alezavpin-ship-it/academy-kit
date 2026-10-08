@@ -3,7 +3,7 @@
 * End user: own course, glossary, videos, own progress, skills map (without the team's gap numbers) and certifications.
 * Owner (owners and leaders of the skills-development team): everything above plus the whole team's measurements, the
   notices queue, the gap numbers and the catalog administration.
-* Champion of a skill family: the end-user view plus the measurements, notices and gap numbers of THEIR families only.
+* Champion of a role family: the end-user view plus the measurements, notices and gap numbers of THEIR families only.
 
 Offline there is no real sign-in, so this is a separation of views with an optional PIN, not a security boundary: anyone
 with the files can read the local database. The real enforcement arrives with Microsoft 365, where ``is_leader`` becomes
@@ -61,7 +61,7 @@ class Access:
 
     @staticmethod
     def champion_families(learner: str, email: str = "", catalog=None) -> set[str]:
-        """Ids of the skill families this person champions (matched by name or e-mail): they see only those."""
+        """Ids of the role families this person champions (matched by name or e-mail): they see only those."""
         me = {_norm(learner), _norm(email)} - {""}
         if catalog is None or not me:
             return set()

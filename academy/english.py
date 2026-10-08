@@ -121,7 +121,7 @@ def migrate(root: Path | None = None) -> bool:
         if any(ch in json.dumps(meta, ensure_ascii=False) for ch in "áéíóúñ«»"):
             _backup(root, stamp, cat)
             data["meta"] = {"title": "Skills catalog", "updated": meta.get("updated", ""),
-                            "source": "Team gap report (skill families with Gap Volume and Role Impact Count).",
+                            "source": "Team gap report (role families with Gap Volume and Role Impact Count).",
                             "note": "'champion' = who leads the family's upskilling (empty = to be assigned). This file is replaced when the "
                                     "content workbook is imported or the catalog is edited in the app."}
             cat.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -136,5 +136,26 @@ def migrate(root: Path | None = None) -> bool:
         o, n = root / old, root / new
         if o.exists() and not n.exists():
             o.replace(n)
+            changed = True
+    return changed
+
+
+def practice_titles(root: Path | None = None) -> bool:
+    """Courses are named after the practice, not an «Academy»: "Cloud Security Academy" -> "Cloud Security Practice".
+    Only the course title changes (provider names such as Cisco Networking Academy stay). Returns True when a title changed."""
+    import re
+
+    root = root or ROOT
+    changed = False
+    top = root / "packs"
+    for f in sorted(top.glob("*/pack.json")) if top.is_dir() else []:
+        raw = f.read_text(encoding="utf-8")
+        data = json.loads(raw)
+        meta = data.get("meta", {})
+        title = meta.get("title", "")
+        new = re.sub(r"\bAcademy\b", "Practice", title)
+        if new != title:
+            meta["title"] = new
+            f.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
             changed = True
     return changed

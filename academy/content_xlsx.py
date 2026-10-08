@@ -3,7 +3,7 @@
 One workbook holds every course (pack), the skills catalog with its learning paths, and the practice definition. Everything
 is in English: one row per thing, no language columns.
 
-    Families         the main skill families (editable): gap, roles affected, champion
+    Families         the main role families (editable): gap, roles affected, champion
     Skills           the skills of each family, each with its technology / vendor and category
     LearningPaths    the career path of each skill: class 1, class 2… from any source (Microsoft Learn, the vendor's free
                      training, the company's own portal such as Workday Learning)
@@ -75,7 +75,7 @@ SHEETS: dict[str, list[str]] = {
 # The workbook groups the tables by what they manage; each group has its tab color (the order of the tabs follows it).
 SECTIONS = [
     ("Skills catalog", "FF5800", ["Families", "Skills", "LearningPaths"],
-     "Skill families, their skills (with vendor) and each skill's career path (class 1, 2, 3…)."),
+     "Role families, their skills (with vendor) and each skill's career path (class 1, 2, 3…)."),
     ("Practice", "2A78D6", ["Practice", "PracticeSkills", "PracticeRoles", "NewsSources", "People"],
      "What the practice is, the skills and roles it covers (demand analysis), the news it follows and who is who (owners, champions, SMEs)."),
     ("Courses", "6B6762", ["Courses", "Levels", "Ranks", "Topics", "Roles"],
@@ -111,7 +111,7 @@ CSV_COLUMNS = [TABLE] + _KEYS + [c for c in dict.fromkeys(c for cols in SHEETS.v
 README = [
     "Academia - Cloud · academy content",
     "",
-    "Edit the sheets and import the file back in the app (Team tab → Academy content), use the app's ✏️ Edit mode, or run",
+    "Edit the sheets and import the file back in the app (Team tab → Practice content), use the app's ✏️ Edit mode, or run",
     "     python tools/content.py import <file.xlsx | file.csv>",
     "",
     "Rules",

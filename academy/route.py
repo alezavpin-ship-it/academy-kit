@@ -1,7 +1,7 @@
 """Learning route based on the vendor's own training.
 
 Rule of the academy: a Microsoft skill follows Microsoft Learn; a skill of another vendor follows that vendor's official
-learning/career path (for example Anthropic Academy for Claude Code). For every skill family, the route is the ordered
+learning/career path (for example Anthropic Academy for Claude Code). For every role family, the route is the ordered
 list of those items (learning paths, modules, courses, labs) attached to its skills in catalog/materials.json. The
 learner opens each one on the vendor's site, comes back and marks it done (optionally pasting the link of the
 achievement from their profile as evidence). Reference material (docs, guides, videos) is shown as a complement and

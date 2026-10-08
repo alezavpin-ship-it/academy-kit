@@ -1,6 +1,6 @@
-"""Certification register: what each person holds today and what they are aiming for, and what each skill family asks for.
+"""Certification register: what each person holds today and what they are aiming for, and what each role family asks for.
 
-* requirements - per skill family, the certifications it requires or finds desirable (run by the family's champion / owners).
+* requirements - per role family, the certifications it requires or finds desirable (run by the family's champion / owners).
 * records      - per person, their certifications: ``current`` (held, with dates and the credential link) or ``desired``.
                  Each learner keeps their own; owners and champions can correct them or set someone's desired ones.
 
@@ -232,7 +232,7 @@ class Certs:
         wanting: dict[str, list[str]] = {}
         for r in recs:
             (holders if r["Status"] == CURRENT else wanting).setdefault(r["Code"], []).append(r["Learner"])
-        k = {"family": "Skill family", "cert": "Certification",
+        k = {"family": "Role family", "cert": "Certification",
              "level": "Level", "have": "Hold it", "want": "Aiming for it",
              "who": "Who holds it", "person": "Person",
              "current": "Current certifications", "n": "Current",

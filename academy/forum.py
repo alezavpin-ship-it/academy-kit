@@ -1,6 +1,6 @@
-"""Discussion forum: learners ask, the subject-matter experts (SMEs) of the skill family answer.
+"""Discussion forum: learners ask, the subject-matter experts (SMEs) of the role family answer.
 
-* Every question belongs to a skill family (and optionally to one of its skills).
+* Every question belongs to a role family (and optionally to one of its skills).
 * Anyone can reply. A reply from an SME, the family's champion or an owner carries that badge, and the question counts
   as answered once it has one of those (or once an answer is marked as accepted).
 * The forum is run by owners (every family) and by each champion (their own families): they name the SMEs of the
@@ -119,7 +119,7 @@ class Forum:
     def ask(self, author: str, family: str, title: str, body: str = "", skill: str = "") -> int:
         title, body = " ".join(title.split())[:MAX_TITLE], body.strip()[:MAX_BODY]
         if not title or not family or not author.strip():
-            raise ValueError("A question needs an author, a skill family and a title.")
+            raise ValueError("A question needs an author, a role family and a title.")
         with self.conn:
             cur = self.conn.execute("INSERT INTO forum_questions(time, author, family, skill, title, body) VALUES (?,?,?,?,?,?)",
                                     (_now(), author.strip(), family, skill, title, body))

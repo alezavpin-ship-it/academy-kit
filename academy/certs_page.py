@@ -61,7 +61,7 @@ def my_certs(conn, catalog, learner: str, lang: str) -> None:
         level = _level_names(lang)
         options = {r["Code"]: f"{r['Code']} · {r['Name']} — {fams.get(r['FamilyId'], r['FamilyId'])} ({level[r['Level']]})" for r in reqs if r["Code"] not in have}
         if options:
-            pick = st.multiselect("Certifications the skill families ask for: add them as desired", list(options), format_func=lambda k: options[k],
+            pick = st.multiselect("Certifications the role families ask for: add them as desired", list(options), format_func=lambda k: options[k],
                                   key="ce_pick")
             if st.button("Add to my desired ones", key="ce_pick_add", disabled=not pick):
                 by_code = {r["Code"]: r for r in reqs}
@@ -100,12 +100,12 @@ def certs_admin(conn, catalog, lang: str, admin_fams: set[str], who: str, roster
     c = Certs(conn)
     fams = {f.id: f.name for f in catalog.families if f.id in admin_fams}
     level = _level_names(lang)
-    st.markdown("##### Certifications each skill family asks for")
+    st.markdown("##### Certifications each role family asks for")
     if not c.requirements() and st.button("Load suggested Microsoft certifications (as desirable, editable)", key="ce_sug"):
         n = c.load_suggested(set(fams))
         st.toast(f"{n} suggested certifications added.")
         st.rerun()
-    fam = st.selectbox("Skill family", list(fams), format_func=lambda k: fams[k], key="ce_fam")
+    fam = st.selectbox("Role family", list(fams), format_func=lambda k: fams[k], key="ce_fam")
     if fam:
         cur = c.requirements({fam})
         df = pd.DataFrame([{"Code": r["Code"], "Name": r["Name"], "Vendor": r["Vendor"], "Level": level[r["Level"]], "Url": r["Url"]} for r in cur],

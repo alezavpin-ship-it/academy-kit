@@ -274,7 +274,7 @@ def exams_tab(exams: list[Exam], conn, learner: str, lang: str, catalog=None, le
     st.markdown(f"### {exam.name}")
     fam = next((f for f in catalog.families if f.id == exam.family), None) if catalog else None
     if fam:
-        st.caption("Skill family: " + fam.name + (f" · Champion: {fam.champion}" if fam.champion else ""))
+        st.caption("Role family: " + fam.name + (f" · Champion: {fam.champion}" if fam.champion else ""))
     at = tr.attempts()
     weak = tr.weak_modules()
     c = st.columns(4)

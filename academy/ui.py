@@ -175,13 +175,9 @@ def tab_rows(learner_tabs: int, label: str = "Owner tools") -> None:
 
 
 def next_lesson(pack: Pack, tr: Tracker, role: str | None = None) -> Lesson | None:
-    """The first lesson still open, in pack order; the ones recommended for the chosen role go first."""
+    """The first lesson still open, in pack order, among the lessons of the chosen role (all lessons without a role)."""
     done = tr.completed_lessons()
-    todo = [x for x in pack.lessons if x.id not in done]
-    if not todo:
-        return None
-    rec = pack.lessons_for_role(role) if role else set()
-    return next((x for x in todo if x.id in rec), todo[0])
+    return next((x for x in pack.lessons_in_scope(role) if x.id not in done), None)
 
 
 def bar_html(pct: float, title: str, right: str, foot: str = "", label: str | None = None) -> str:
@@ -202,20 +198,24 @@ def _go_to(level: str, lesson_id: str) -> None:
 
 
 def hero(pack: Pack, tr: Tracker, lang: str, role: str | None = None) -> None:
-    """The first thing on the page: what to study next, one button to get there, and the overall progress."""
-    done, total = len(tr.completed_lessons()), len(pack.lessons)
+    """The first thing on the page: what to study next, one button to get there, and the progress — of the chosen role's
+    lessons when a role is picked in the sidebar, of every lesson otherwise."""
+    scope = pack.lessons_in_scope(role)
+    ids = {x.id for x in scope}
+    done, total = len(tr.completed_lessons() & ids), len(scope)
     les = next_lesson(pack, tr, role)
     pct = 100 * done / total if total else 0
     left = total - done
-    foot = (f"{left} lessons left to finish the route" if left
-            else "Route complete")
-    progress = bar_html(pct, "Your overall progress",
+    who = f"the {role} route" if role and len(scope) < len(pack.lessons) else "the route"
+    foot = f"{left} lessons left to finish {who}" if left else ("Route complete" if who == "the route" else f"{role} route complete")
+    progress = bar_html(pct, f"Your progress as {role}" if role else "Your overall progress",
                         f"· {done} of {total} lessons completed", foot)
     pts = tr.total_points()
     cur, need = tr.rank(pts)
     to_next = (f"{need} to reach {pack.ranks[cur + 1].name}" if need is not None
                else "top rank")
-    right_q, total_q = len(tr.correct_items()), sum(len(x.quiz) for x in pack.lessons)
+    right_q = len({i for i in tr.correct_items() if i.rsplit(":", 1)[0] in ids})
+    total_q = sum(len(x.quiz) for x in scope)
     tiles = "".join(f'<div class="ak-tile"><b>{html.escape(str(v))}</b><span>{html.escape(k)}</span><small>{html.escape(note)}</small></div>'
                     for k, v, note in (("Lessons completed", f"{done} / {total}", ""),
                                        ("Questions answered right", f"{right_q} / {total_q}", ""),
@@ -228,11 +228,11 @@ def hero(pack: Pack, tr: Tracker, lang: str, role: str | None = None) -> None:
         with left:
             if les is None:
                 st.markdown(f'<div class="ak-eyebrow"><b class="ak-pill">{"Route complete"}</b></div>'
-                            f'<h2 class="ak-hero-title">{"You completed every lesson."}</h2>'
+                            f'<h2 class="ak-hero-title">{"You completed every lesson of your role." if role else "You completed every lesson."}</h2>'
                             f'<p class="ak-hero-sum">{"Review the glossary or prepare a certification."}</p>',
                             unsafe_allow_html=True)
             else:
-                n = [x.id for x in pack.lessons].index(les.id) + 1
+                n = [x.id for x in scope].index(les.id) + 1
                 started = bool(tr.correct_items(les.id))
                 st.markdown(f'<div class="ak-eyebrow"><b class="ak-pill">{"Your next step"}</b>'
                             f'<span>{html.escape(les.level)} · {"Lesson"} {n} {"of"} {total}</span></div>'

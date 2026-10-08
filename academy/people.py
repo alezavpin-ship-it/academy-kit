@@ -5,7 +5,7 @@ workbook (tab People) or in the app's edit mode:
 
     Person, Email, Role, Families, Active
 
-* Role = owner (sees and runs everything; at most 3 active owners, ACADEMY_MAX_OWNERS changes it) | champion (runs the skill families listed in Families) | sme (answers in the
+* Role = owner (sees and runs everything; at most 3 active owners, ACADEMY_MAX_OWNERS changes it) | champion (runs the role families listed in Families) | sme (answers in the
   forum as the expert of the families listed) | learner.
 * Families = family ids separated by ";" (for champions and SMEs).
 * Active = no keeps the person in the file without showing them in the list of names.

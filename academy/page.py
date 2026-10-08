@@ -113,18 +113,27 @@ def lesson_panel(pack: Pack, lesson_id: str, lang: str) -> None:
 
 def course(pack: Pack, tr: Tracker, lang: str, role: str | None) -> None:
     done = tr.completed_lessons()
-    by_level = pack.by_level()
-    rec = pack.lessons_for_role(role) if role else set()
-    level = st.radio(T("level", lang), pack.levels, horizontal=True, key="ak_level",
-                     format_func=lambda lv: f"{lv} ({sum(1 for x in by_level[lv] if x.id in done)}/{len(by_level[lv])})")
-    items = by_level[level]
+    scope = {x.id for x in pack.lessons_in_scope(role)}
+    narrowed = len(scope) < len(pack.lessons)
+    if narrowed:  # a role is chosen in the sidebar: its lessons only, unless the learner asks for every lesson
+        c = st.columns([3, 2])
+        c[0].caption(f"Showing the **{len(scope)}** lessons of the **{role}** role. Choose «(all)» in *Your role* to see every lesson.")
+        if c[1].toggle("Show every lesson", key="ak_all_lessons"):
+            scope = {x.id for x in pack.lessons}
+    by_level = {lv: [x for x in items if x.id in scope] for lv, items in pack.by_level().items()}
+    levels = [lv for lv in pack.levels if by_level.get(lv)] or list(pack.levels)
+    if st.session_state.get("ak_level") not in levels:
+        st.session_state.pop("ak_level", None)
+    level = st.radio(T("level", lang), levels, horizontal=True, key="ak_level",
+                     format_func=lambda lv: f"{lv} ({sum(1 for x in by_level.get(lv, []) if x.id in done)}/{len(by_level.get(lv, []))})")
+    items = by_level.get(level, [])
     if not items:
         return
-    lid = st.selectbox(T("lesson", lang), [x.id for x in items], key=f"ak_lesson_{level}",
-                       format_func=lambda i: ("✅ " if i in done else "○ ") + ("⭐ " if i in rec else "")
-                       + next(x.title for x in items if x.id == i))
-    if rec:
-        st.caption(T("for_role", lang))
+    ids = [x.id for x in items]
+    if st.session_state.get(f"ak_lesson_{level}") not in ids:
+        st.session_state.pop(f"ak_lesson_{level}", None)
+    lid = st.selectbox(T("lesson", lang), ids, key=f"ak_lesson_{level}",
+                       format_func=lambda i: ("✅ " if i in done else "○ ") + next(x.title for x in items if x.id == i))
     les = pack.lesson(lid)
     ui.lesson_progress(tr, les, lang)
     main, side = st.columns([3, 2], gap="large")
@@ -255,7 +264,7 @@ def champion_team(conn, packs: list[Pack], exams: list, catalog, families: set[s
     """What a champion sees: only the people working on their families, counted on those families' lessons and exams."""
     names = [f.name for f in catalog.families if f.id in families]
     st.markdown("#### My family: " + ", ".join(names))
-    st.caption("You only see people taking lessons or certifications of your skill family.")
+    st.caption("You only see people taking lessons or certifications of your role family.")
     st.caption("Run your family's career path (classes on / off, your own decks, the family's CSV) in **Learning route → 🧭 Manage the career path**.")
     rows = notify.family_team(conn, packs, exams, catalog, families)
     if not rows:
@@ -305,7 +314,7 @@ def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: s
     Families (status), people (who is keeping up with the career path and who is not), certifications (held, desired,
     about to expire) and the administration of the certification register."""
     if not catalog:
-        st.info("Reports are organized by skill family: load the catalog in the Skills map first.")
+        st.info("Reports are organized by role family: load the catalog in the Skills map first.")
         return
     rep = report.build(conn, packs, exams, catalog, lang, only)
     people_names = report.roster(conn)
@@ -329,7 +338,7 @@ def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: s
     else:
         b.button("Download the report as PDF", disabled=True, key="ak_rep_pdf_off", width="stretch",
                  help="The PDF component is missing: close the app, double-click «Install components.bat» and open it again.")
-    tabs = st.tabs(["Skill families", "People and career path",
+    tabs = st.tabs(["Role families", "People and career path",
                     "Certifications", "Manage certifications", "Skills matrix"])
     with tabs[0]:
         st.markdown(f"#### {t['report']}")
@@ -345,7 +354,7 @@ def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: s
         names = dict(report.PATH)
         fam_names = sorted({r[next(iter(r))] for r in rep["paths"]})
         f1, f2 = st.columns([2, 3])
-        fam = f1.selectbox("Skill family", [""] + fam_names, key="ak_rep_fam",
+        fam = f1.selectbox("Role family", [""] + fam_names, key="ak_rep_fam",
                            format_func=lambda k: k or "All")
         states = f2.multiselect("Status on the path", report.PATH_ORDER, format_func=lambda k: names[k],
                                 default=[report.BEHIND, report.AT_RISK, report.GOING, report.DONE], key="ak_rep_states")
@@ -404,7 +413,7 @@ def notices_section(conn, packs: list[Pack], exams: list, catalog, lang: str, on
     """Notices ready to send (with copy to the family champion). Offline they open in Outlook; in M365 a flow sends them."""
     st.markdown("#### Notices to send")
     st.caption((f"Rules: course finished · mock passed · {notify.INACTIVE_DAYS} days inactive · {notify.STALLED_DAYS} days without progress. "
-                 "Each notice is copied to the skill family champion."))
+                 "Each notice is copied to the role family champion."))
     todo = [n for n in notify.pending(conn, packs, exams, catalog, lang=lang) if only is None or n.learner in only]
     if not todo:
         st.info("No pending notices.")
@@ -557,7 +566,7 @@ def _content_signature() -> tuple:
 
 def content_section(lang: str) -> None:
     """Owners: the whole content (courses, lessons, questions, videos, learning paths, skills catalog) as one file."""
-    st.markdown("#### Academy content")
+    st.markdown("#### Practice content")
     path = content_sync.content_path()
     st.markdown((f"All the content lives in **one Excel workbook**: `{path}`, with **one tab per section** (the tab color shows the section; "
                   "the LEEME tab has the index). Edit, save, close Excel and reopen the app: it is checked in full and applied only if it is "
@@ -652,7 +661,7 @@ def access_section(lang: str, me: str = "", email: str = "") -> None:
 
 
 def route_tab(catalog: Catalog | None, conn, learner: str, lang: str, manage: set[str] | None = None) -> None:
-    """The learning route: per skill family, the vendor's own training (Microsoft Learn for Microsoft skills) as steps."""
+    """The learning route: per role family, the vendor's own training (Microsoft Learn for Microsoft skills) as steps."""
     if not catalog:
         st.info("The skills catalog is not loaded yet.")
         return
@@ -661,7 +670,7 @@ def route_tab(catalog: Catalog | None, conn, learner: str, lang: str, manage: se
     st.markdown(("Your route follows the vendor's official training: **Microsoft Learn** for Microsoft skills and the vendor's own "
                   "career path for the rest. Open each step, complete it on its site and mark it here."))
     labels = {r.family_id: f"{r.family} ({len(r.steps)} {'steps'})" for r in routes}
-    fid = st.selectbox("Skill family", list(labels), key="rt_family", format_func=lambda k: labels[k])
+    fid = st.selectbox("Role family", list(labels), key="rt_family", format_func=lambda k: labels[k])
     if fid in (manage or set()):  # the family's champion (or an owner) runs its path here
         from academy.family_page import manage_family
 
@@ -754,7 +763,7 @@ def assistant_section(lang: str) -> None:
 
 
 def skills_tab(catalog: Catalog | None, packs: list[Pack], lang: str, owner: bool = True, families: set[str] | None = None) -> None:
-    """Skill families by gap, their champion and lesson coverage, plus (owners only) the three ways to load the catalog."""
+    """Role families by gap, their champion and lesson coverage, plus (owners only) the three ways to load the catalog."""
     st.markdown(T("skills_intro", lang))
     if not owner:
         if catalog:
@@ -810,7 +819,7 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
            packs: list[Pack] | None = None, exams: list | None = None, owner: bool = False, families: set[str] | None = None,
            email: str = "") -> None:
     """``owner``: the owner view (whole team's measurements, notices, gap numbers, catalog administration).
-    ``families``: for a champion who is not an owner, the skill families they lead; they see only those people and numbers."""
+    ``families``: for a champion who is not an owner, the role families they lead; they see only those people and numbers."""
     families = set() if owner else (families or set())
     packs, exams = packs or [pack], exams or []
     tr = Tracker(conn, pack, learner)
@@ -827,7 +836,7 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
         mine = ({f.id for f in catalog.families} if owner else set(families)) | forum.sme_families(learner.strip() or "me", email)
         pending = len(forum.waiting(mine)) if mine else 0
         if pending:
-            st.warning(f"**Forum:** {pending} question(s) in your skill families are waiting for an expert's answer. Open them in the Forum tab.")
+            st.warning(f"**Forum:** {pending} question(s) in your role families are waiting for an expert's answer. Open them in the Forum tab.")
     sections = [("tab_route", lambda: route_tab(catalog, conn, learner, lang, ({f.id for f in catalog.families} if owner else families) if catalog else set())), ("tab_course", lambda: course(pack, tr, lang, role)), ("tab_glossary", lambda: glossary(pack, tr, lang)),
                 ("tab_library", lambda: library(pack, lang)), ("tab_progress", lambda: progress_tab(pack, tr, lang, role)),
                 ("tab_skills", lambda: skills_tab(catalog, packs, lang, owner, families)),

@@ -21,7 +21,7 @@ If the PDF buttons are greyed out, close the app and run **`Install components.b
 ## What learners see
 | Tab | What it does |
 |---|---|
-| Learning route | Per skill family: vendor → skill → class 1, 2, 3… (Microsoft Learn first, then the vendor's own path or Workday Learning). Mark each step done. |
+| Learning route | Per role family: vendor → skill → class 1, 2, 3… (Microsoft Learn first, then the vendor's own path or Workday Learning). Mark each step done. |
 | Course | Lesson (summary, key points, practice) + 3 check questions + a compact video panel that stays in view. |
 | Glossary | Term ↔ definition quiz and search. |
 | Video library | Every video by topic and the lessons that use it. |

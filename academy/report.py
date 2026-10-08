@@ -1,4 +1,4 @@
-"""Status and follow-up reports by skill family, for owners (every family) and champions (their own families).
+"""Status and follow-up reports by role family, for owners (every family) and champions (their own families).
 
 * status    - one row per family: who leads it, the gap it must close, how much content it has, how many people are
               working on it and how far they are, and a one-word state.
@@ -76,7 +76,7 @@ def build(conn: sqlite3.Connection, packs: list, exams: list, catalog, lang: str
     fam_of = {s.id: s.family for s in catalog.skills}
     routes = {r.family_id: r for r in build_routes(catalog, load_materials())}
     c = {
-        "family": "Skill family", "champion": "Champion", "gap": "Gap volume",
+        "family": "Role family", "champion": "Champion", "gap": "Gap volume",
         "roles": "Roles affected", "skills": "Skills",
         "uncovered": "Skills without official training", "lessons": "Lessons",
         "steps": "Route steps", "certs": "Certifications", "people": "People",
@@ -185,7 +185,7 @@ def visible(rows: list[dict]) -> list[dict]:
 
 
 def titles(lang: str) -> dict[str, str]:
-    return {"report": "Status and follow-up report by skill family",
+    return {"report": "Status and follow-up report by role family",
             "status": "Status by family",
             "followup": "Follow-up by person",
             "people": "Progress by person",

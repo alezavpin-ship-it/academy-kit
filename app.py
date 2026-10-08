@@ -62,6 +62,9 @@ if _sync["status"] == "none":  # first run: write the file from what the app alr
 st.session_state["ak_content_sync"] = _sync
 if _sync["status"] == "applied":
     st.cache_data.clear()
+if english.practice_titles():  # courses are named after the practice («… Practice», not «… Academy»)
+    content_sync.refresh()
+    st.cache_data.clear()
 # Each family's career path is also a CSV (content/families/<family>.csv) its champion may edit in Excel.
 _fam = family_path.sync(load_catalog())
 st.session_state["ak_family_sync"] = _fam

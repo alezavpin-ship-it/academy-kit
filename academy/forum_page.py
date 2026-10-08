@@ -1,4 +1,4 @@
-"""The «Foro» tab: ask a question to the experts of a skill family, read and answer, and (owners / champions) run it."""
+"""The «Foro» tab: ask a question to the experts of a role family, read and answer, and (owners / champions) run it."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def _ask_box(f: Forum, catalog, me: str, lang: str) -> None:
     with st.expander("✍️ Ask a question", expanded=st.session_state.get("fo_asking", False)):
         fams = {x.id: x.name for x in catalog.families}
         c = st.columns(2)
-        fam = c[0].selectbox("Skill family", list(fams), format_func=lambda k: fams[k], key=f"fo_fam_{n}",
+        fam = c[0].selectbox("Role family", list(fams), format_func=lambda k: fams[k], key=f"fo_fam_{n}",
                              help="The experts (SMEs) of this family get your question.")
         skills = {"": "(the family in general)"} | {x.id: x.name for x in catalog.in_family(fam)}
         skill = c[1].selectbox("Skill", list(skills), format_func=lambda k: skills[k], key=f"fo_skill_{n}_{fam}")
@@ -122,14 +122,14 @@ def _admin(f: Forum, catalog, admin_fams: set[str], lang: str) -> None:
 def forum_tab(conn, catalog, learner: str, email: str, lang: str, owner: bool = False, champion_of: set[str] | None = None) -> None:
     """``owner`` / ``champion_of``: who runs the forum (every family / these families), as switched on in the sidebar."""
     if not catalog:
-        st.info("The forum is organized by skill family: load the catalog in the Skills map first.")
+        st.info("The forum is organized by role family: load the catalog in the Skills map first.")
         return
     f = Forum(conn)
     me = learner.strip() or "me"
     champion_of = champion_of or set()
     admin_fams = {x.id for x in catalog.families} if owner else set(champion_of)
     expert_fams = admin_fams | f.sme_families(me, email)
-    st.markdown("Ask what was not clear: the experts (SMEs) of each skill family answer, and any colleague can add to it.")
+    st.markdown("Ask what was not clear: the experts (SMEs) of each role family answer, and any colleague can add to it.")
     everything = f.questions(include_hidden=bool(admin_fams))
     everything = [q for q in everything if not q.hidden or q.family in admin_fams]
     waiting = [q for q in everything if not q.answered and not q.closed and not q.hidden]
