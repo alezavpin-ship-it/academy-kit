@@ -42,8 +42,8 @@ def main(target: str, fix: bool = False) -> int:
             r["title"], r["channel"], r["verified"] = info["title"], info["channel"], date.today().isoformat()
     if fix:
         p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-        print("\nPaquete actualizado con los títulos y canales actuales (los CAÍDOS hay que reemplazarlos a mano).")
-    print(f"\n{bad} video(s) por revisar." if bad else "\nTodos los videos verificados.")
+        print("\nCourse updated with the current titles and channels (videos that are DOWN must be replaced by hand).")
+    print(f"\n{bad} video(s) to review." if bad else "\nEvery video verified.")
     return 1 if bad else 0
 
 

@@ -4,13 +4,12 @@
               working on it and how far they are, and a one-word state.
 * follow-up - one row per person and family: last activity, days idle, progress and the suggested action.
 
-Pure logic plus two exports (Excel and a printable HTML page). Numbers come from the same sources as the Team tab
+Pure logic plus two exports (Excel and PDF, see academy/report_pdf.py). Numbers come from the same sources as the Team tab
 (notify.family_team), so a champion never sees people outside their families.
 """
 
 from __future__ import annotations
 
-import html
 import io
 import sqlite3
 from datetime import date, datetime, timezone
@@ -21,22 +20,23 @@ from academy.route import build_routes
 
 # state of a family, worst first (also the order of the report)
 NO_CHAMPION, NO_CONTENT, NOT_STARTED, FOLLOW_UP, ON_TRACK = "no_champion", "no_content", "not_started", "follow_up", "on_track"
-STATE = {NO_CHAMPION: ("Sin champion", "No champion"), NO_CONTENT: ("Sin contenido", "No content"),
-         NOT_STARTED: ("Sin iniciar", "Not started"), FOLLOW_UP: ("Requiere seguimiento", "Needs follow-up"),
-         ON_TRACK: ("En marcha", "On track")}
+STATE = {NO_CHAMPION: "No champion", NO_CONTENT: "No content",
+         NOT_STARTED: "Not started", FOLLOW_UP: "Needs follow-up",
+         ON_TRACK: "On track"}
 
 
 # how a person stands on a family's career path, worst first
 BEHIND, AT_RISK, NOT_STARTED, GOING, DONE = "behind", "at_risk", "not_started", "going", "done"
 PATH_ORDER = [BEHIND, AT_RISK, NOT_STARTED, GOING, DONE]
-PATH = {BEHIND: ("No está cumpliendo", "Not keeping up"), AT_RISK: ("En riesgo", "At risk"), NOT_STARTED: ("Sin iniciar", "Not started"),
-        GOING: ("Al corriente", "On track"), DONE: ("Cumplido", "Completed")}
+PATH = {BEHIND: "Not keeping up", AT_RISK: "At risk", NOT_STARTED: "Not started",
+        GOING: "On track", DONE: "Completed"}
 
 
 def roster(conn: sqlite3.Connection) -> list[str]:
     """Everyone the academy knows: whoever did something, registered an e-mail or registered a certification."""
     names: dict[str, str] = {}
-    queries = ["SELECT DISTINCT learner FROM events", "SELECT learner FROM people", "SELECT DISTINCT learner FROM cert_records"]
+    queries = ["SELECT DISTINCT learner FROM events", "SELECT learner FROM people", "SELECT DISTINCT learner FROM cert_records",
+               "SELECT DISTINCT learner FROM skill_records"]
     for q in queries:
         try:
             for r in conn.execute(q):
@@ -44,10 +44,6 @@ def roster(conn: sqlite3.Connection) -> list[str]:
         except sqlite3.OperationalError:  # that table does not exist yet
             pass
     return sorted((n for n in names.values() if n), key=str.lower)
-
-
-def _l(lang: str, es: str, en: str) -> str:
-    return en if lang == "en" else es
 
 
 def _frac(text: str) -> tuple[int, int]:
@@ -79,25 +75,25 @@ def build(conn: sqlite3.Connection, packs: list, exams: list, catalog, lang: str
     today = now.date()
     fam_of = {s.id: s.family for s in catalog.skills}
     routes = {r.family_id: r for r in build_routes(catalog, load_materials())}
-    c = {k: _l(lang, es, en) for k, (es, en) in {
-        "family": ("Familia de skills", "Skill family"), "champion": ("Champion", "Champion"), "gap": ("Brecha", "Gap volume"),
-        "roles": ("Roles afectados", "Roles affected"), "skills": ("Skills", "Skills"),
-        "uncovered": ("Skills sin formación oficial", "Skills without official training"), "lessons": ("Lecciones", "Lessons"),
-        "steps": ("Pasos de ruta", "Route steps"), "certs": ("Certificaciones", "Certifications"), "people": ("Personas", "People"),
-        "active": ("Activas", "Active"), "follow": ("Por dar seguimiento", "Need follow-up"),
-        "lessons_pct": ("Avance en lecciones", "Lesson progress"), "steps_pct": ("Avance en ruta", "Route progress"),
-        "passed": ("Simulacros aprobados", "Mock exams passed"), "last": ("Última actividad", "Last activity"),
-        "state": ("Estado", "Status"), "person": ("Persona", "Person"), "idle": ("Días sin actividad", "Days idle"),
-        "route": ("Ruta", "Route"), "vbds": ("VBDs", "VBDs"), "best": ("Mejor simulacro", "Best mock exam"),
-        "action": ("Acción sugerida", "Suggested action"), "forum": ("Foro: sin contestar", "Forum: waiting")}.items()}
+    c = {
+        "family": "Skill family", "champion": "Champion", "gap": "Gap volume",
+        "roles": "Roles affected", "skills": "Skills",
+        "uncovered": "Skills without official training", "lessons": "Lessons",
+        "steps": "Route steps", "certs": "Certifications", "people": "People",
+        "active": "Active", "follow": "Need follow-up",
+        "lessons_pct": "Lesson progress", "steps_pct": "Route progress",
+        "passed": "Mock exams passed", "last": "Last activity",
+        "state": "Status", "person": "Person", "idle": "Days idle",
+        "route": "Route", "best": "Best mock exam",
+        "action": "Suggested action", "forum": "Forum: waiting"}
     from academy.forum import Forum
 
     forum = Forum(conn).counts()  # questions of each family still waiting for an expert
     status, followup, paths = [], [], []
     everyone = roster(conn)
-    path_name = {k: _l(lang, *v) for k, v in PATH.items()}
-    c.update(path=_l(lang, "Ruta de carrera", "Career path"), fams_open=_l(lang, "Familias en curso", "Families in progress"),
-             fams_done=_l(lang, "Familias completadas", "Families completed"), classes=_l(lang, "Clases de ruta", "Route classes"))
+    path_name = dict(PATH)
+    c.update(path="Career path", fams_open="Families in progress",
+             fams_done="Families completed", classes="Route classes")
     per_person: dict[str, dict] = {w: {"open": 0, "done": 0, "s": 0, "st": 0, "l": 0, "lt": 0, "last": "", "worst": NOT_STARTED} for w in everyone}
     totals = {"families": 0, "people": set(), "follow": 0, "on_track": 0, "no_champion": 0}
     for fam in catalog.by_gap():
@@ -114,40 +110,40 @@ def build(conn: sqlite3.Connection, packs: list, exams: list, catalog, lang: str
         l_done = l_total = s_done = s_total = 0
         last_seen = ""
         for r in rows:
-            last = r["Última actividad"] or ""
+            last = r["Last activity"] or ""
             idle = _idle(last, today)
-            ld, lt = _frac(r["Lecciones de la familia"])
-            sd, st = _frac(r["Ruta (pasos del proveedor)"])
+            ld, lt = _frac(r["Family lessons"])
+            sd, st = _frac(r["Route (provider steps)"])
             l_done, l_total, s_done, s_total = l_done + ld, l_total + lt, s_done + sd, s_total + st
-            best = r["Mejor simulacro"]
+            best = r["Best mock exam"]
             ok_exam = pass_mark is not None and best is not None and best >= pass_mark
             passed += ok_exam
             last_seen = max(last_seen, last)
             finished = (lt == 0 or ld == lt) and (st == 0 or sd == st) and (pass_mark is None or ok_exam)
             if finished:
-                action, late, pstate = _l(lang, "Completó el contenido disponible: validar el siguiente paso con el champion", "Completed the available content: agree on the next step with the champion"), False, DONE
+                action, late, pstate = "Completed the available content: agree on the next step with the champion", False, DONE
             elif idle is None or idle >= notify.STALLED_DAYS:
-                action, late, pstate = _l(lang, "Contactar hoy: acordar el siguiente paso y una fecha", "Contact today: agree on the next step and a date"), True, BEHIND
+                action, late, pstate = "Contact today: agree on the next step and a date", True, BEHIND
             elif idle >= notify.INACTIVE_DAYS:
-                action, late, pstate = _l(lang, "Enviar recordatorio", "Send a reminder"), True, AT_RISK
+                action, late, pstate = "Send a reminder", True, AT_RISK
             else:
-                action, late, pstate = _l(lang, "Sin acción: va avanzando", "No action: making progress"), False, GOING
-            paths.append({c["family"]: fam.name, c["person"]: r["Persona"], c["classes"]: r["Ruta (pasos del proveedor)"] if st else "—",
-                          c["lessons"]: r["Lecciones de la familia"], c["vbds"]: r["VBDs"], c["best"]: best, c["last"]: last or "—",
+                action, late, pstate = "No action: making progress", False, GOING
+            paths.append({c["family"]: fam.name, c["person"]: r["Person"], c["classes"]: r["Route (provider steps)"] if st else "—",
+                          c["lessons"]: r["Family lessons"], c["best"]: best, c["last"]: last or "—",
                           c["idle"]: idle, c["path"]: path_name[pstate], "_path": pstate})
-            me = per_person.setdefault(r["Persona"], {"open": 0, "done": 0, "s": 0, "st": 0, "l": 0, "lt": 0, "last": "", "worst": NOT_STARTED})
+            me = per_person.setdefault(r["Person"], {"open": 0, "done": 0, "s": 0, "st": 0, "l": 0, "lt": 0, "last": "", "worst": NOT_STARTED})
             me["done" if pstate == DONE else "open"] += 1
             me.update(s=me["s"] + sd, st=me["st"] + st, l=me["l"] + ld, lt=me["lt"] + lt, last=max(me["last"], last))
             me["worst"] = pstate if me["worst"] == NOT_STARTED else min(me["worst"], pstate, key=PATH_ORDER.index)
             active, need = active + (not late), need + late
-            followup.append({c["family"]: fam.name, c["champion"]: fam.champion or "—", c["person"]: r["Persona"], c["last"]: last or "—",
-                             c["idle"]: idle, c["route"]: r["Ruta (pasos del proveedor)"] if st else "—", c["lessons"]: r["Lecciones de la familia"],
-                             c["vbds"]: r["VBDs"], c["best"]: best, c["action"]: action, "_late": late})
-            totals["people"].add(r["Persona"])
+            followup.append({c["family"]: fam.name, c["champion"]: fam.champion or "—", c["person"]: r["Person"], c["last"]: last or "—",
+                             c["idle"]: idle, c["route"]: r["Route (provider steps)"] if st else "—", c["lessons"]: r["Family lessons"],
+                             c["best"]: best, c["action"]: action, "_late": late})
+            totals["people"].add(r["Person"])
         if lessons or steps or fam_exams:  # people of the academy who have not touched this family's path
-            started = {r["Persona"].lower() for r in rows}
+            started = {r["Person"].lower() for r in rows}
             paths += [{c["family"]: fam.name, c["person"]: w, c["classes"]: f"0/{steps}" if steps else "—",
-                       c["lessons"]: f"0/{lessons}" if lessons else "—", c["vbds"]: 0, c["best"]: None, c["last"]: "—", c["idle"]: None,
+                       c["lessons"]: f"0/{lessons}" if lessons else "—", c["best"]: None, c["last"]: "—", c["idle"]: None,
                        c["path"]: path_name[NOT_STARTED], "_path": NOT_STARTED} for w in everyone if w.lower() not in started]
         if not fam.champion:
             state = NO_CHAMPION
@@ -164,7 +160,7 @@ def build(conn: sqlite3.Connection, packs: list, exams: list, catalog, lang: str
                        c["steps"]: steps, c["certs"]: len(fam_exams), c["people"]: len(rows), c["active"]: active, c["follow"]: need,
                        c["lessons_pct"]: _pct(l_done, l_total), c["steps_pct"]: _pct(s_done, s_total), c["passed"]: passed,
                        c["forum"]: forum.get(fam.id, {}).get("waiting", 0),
-                       c["last"]: last_seen or "—", c["state"]: _l(lang, *STATE[state]), "_state": state})
+                       c["last"]: last_seen or "—", c["state"]: STATE[state], "_state": state})
         totals["families"] += 1
         totals["follow"] += need
         totals["on_track"] += state == ON_TRACK
@@ -189,23 +185,22 @@ def visible(rows: list[dict]) -> list[dict]:
 
 
 def titles(lang: str) -> dict[str, str]:
-    return {"report": _l(lang, "Reporte de estado y seguimiento por familia de skills", "Status and follow-up report by skill family"),
-            "status": _l(lang, "Estado por familia", "Status by family"),
-            "followup": _l(lang, "Seguimiento por persona", "Follow-up by person"),
-            "people": _l(lang, "Avance por persona", "Progress by person"),
-            "paths": _l(lang, "Ruta de carrera por familia y persona", "Career path by family and person"),
-            "behind": _l(lang, "Personas atrasadas o en riesgo", "People behind or at risk"),
-            "not_started": _l(lang, "Personas sin iniciar", "People who have not started"),
-            "certs_fam": _l(lang, "Certificaciones por familia", "Certifications by family"),
-            "certs_people": _l(lang, "Certificaciones por persona", "Certifications by person"),
-            "certs_exp": _l(lang, "Certificaciones por vencer", "Certifications about to expire"),
-            "generated": _l(lang, "Generado", "Generated"),
-            "families": _l(lang, "Familias", "Families"), "active_people": _l(lang, "Personas con actividad", "People with activity"),
-            "follow": _l(lang, "Por dar seguimiento", "Need follow-up"), "on_track": _l(lang, "Familias en marcha", "Families on track"),
-            "no_champion": _l(lang, "Familias sin champion", "Families without champion"),
-            "empty": _l(lang, "Todavía nadie ha empezado contenido de estas familias.", "Nobody has started content of these families yet."),
-            "rules": _l(lang, f"Recordatorio a los {notify.INACTIVE_DAYS} días sin actividad; contacto directo a los {notify.STALLED_DAYS}.",
-                        f"Reminder after {notify.INACTIVE_DAYS} days without activity; direct contact after {notify.STALLED_DAYS}.")}
+    return {"report": "Status and follow-up report by skill family",
+            "status": "Status by family",
+            "followup": "Follow-up by person",
+            "people": "Progress by person",
+            "paths": "Career path by family and person",
+            "behind": "People behind or at risk",
+            "not_started": "People who have not started",
+            "certs_fam": "Certifications by family",
+            "certs_people": "Certifications by person",
+            "certs_exp": "Certifications about to expire",
+            "generated": "Generated",
+            "families": "Families", "active_people": "People with activity",
+            "follow": "Need follow-up", "on_track": "Families on track",
+            "no_champion": "Families without champion",
+            "empty": "Nobody has started content of these families yet.",
+            "rules": f"Reminder after {notify.INACTIVE_DAYS} days without activity; direct contact after {notify.STALLED_DAYS}."}
 
 
 def to_xlsx(rep: dict) -> bytes:
@@ -242,61 +237,3 @@ def to_xlsx(rep: dict) -> bytes:
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
-
-
-def _table(rows: list[dict], flag: str | None = None) -> str:
-    if not rows:
-        return ""
-    cols = [k for k in rows[0] if not k.startswith("_")]
-    head = "".join(f"<th>{html.escape(str(k))}</th>" for k in cols)
-    body = []
-    for r in rows:
-        cls = ""
-        if flag == "_state":
-            cls = {ON_TRACK: "ok", FOLLOW_UP: "warn", NOT_STARTED: "idle"}.get(r["_state"], "bad")
-        elif flag == "_late":
-            cls = "warn" if r["_late"] else "ok"
-        elif flag == "_path":
-            cls = "warn" if r["_path"] in (BEHIND, AT_RISK) else ("idle" if r["_path"] == NOT_STARTED else "ok")
-        cells = "".join(f"<td>{html.escape('—' if r[k] is None else str(r[k]))}</td>" for k in cols)
-        body.append(f'<tr class="{cls}">{cells}</tr>')
-    return f"<table><thead><tr>{head}</tr></thead><tbody>{''.join(body)}</tbody></table>"
-
-
-def to_html(rep: dict) -> str:
-    """A standalone page: open it in the browser and print it (or save it as PDF) for the follow-up meeting."""
-    t, s = titles(rep["lang"]), rep["summary"]
-    kpis = "".join(f'<div class="kpi"><b>{v}</b><span>{html.escape(k)}</span></div>' for k, v in (
-        (t["families"], s["families"]), (t["on_track"], s["on_track"]), (t["no_champion"], s["no_champion"]),
-        (t["active_people"], s["people"]), (t["follow"], s["follow"]), (t["behind"], s.get("behind", 0)),
-        (t["not_started"], s.get("not_started", 0))))
-    certs = rep.get("certs") or {}
-    extra = "".join(f'<h2>{html.escape(t[k])}</h2><div class="scroll">{_table(certs[c])}</div>'
-                    for k, c in (("certs_fam", "families"), ("certs_people", "people"), ("certs_exp", "expiring")) if certs.get(c))
-    follow = _table(rep["followup"], "_late") or f"<p>{html.escape(t['empty'])}</p>"
-    return f"""<!doctype html>
-<html lang="{rep['lang']}"><head><meta charset="utf-8"><title>{html.escape(t['report'])}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-body{{font-family:'Segoe UI',system-ui,sans-serif;color:#1C1C1E;margin:32px;line-height:1.45}}
-h1{{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}}h2{{font-size:18px;margin:32px 0 10px}}
-.meta{{color:#55524E;font-size:13px}}.bar{{height:6px;width:72px;background:#FF5800;border-radius:3px;margin-bottom:14px}}
-.kpis{{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0 4px}}
-.kpi{{border:1px solid #E4E0DB;border-radius:10px;padding:12px 16px;min-width:150px}}
-.kpi b{{display:block;font-size:26px}}.kpi span{{font-size:13px;color:#55524E}}
-.scroll{{overflow-x:auto}}table{{border-collapse:collapse;width:100%;font-size:12.5px}}
-th{{background:#1C1C1E;color:#FFFFFF;text-align:left;padding:8px 10px;vertical-align:bottom}}
-td{{padding:7px 10px;border-bottom:1px solid #E4E0DB;vertical-align:top}}
-tr.warn td:first-child{{box-shadow:inset 4px 0 0 #FF5800}}tr.bad td:first-child{{box-shadow:inset 4px 0 0 #1C1C1E}}
-tr.warn td:last-child,tr.bad td:last-child{{font-weight:700}}
-@media print{{body{{margin:12mm}}th{{-webkit-print-color-adjust:exact;print-color-adjust:exact}}}}
-</style></head><body>
-<div class="bar"></div><h1>{html.escape(t['report'])}</h1>
-<div class="meta">Academia - Cloud · {html.escape(t['generated'])}: {rep['generated']} · {html.escape(t['rules'])}</div>
-<div class="kpis">{kpis}</div>
-<h2>{html.escape(t['status'])}</h2><div class="scroll">{_table(rep['status'], '_state')}</div>
-<h2>{html.escape(t['people'])}</h2><div class="scroll">{_table(rep.get('people', []), '_path')}</div>
-<h2>{html.escape(t['paths'])}</h2><div class="scroll">{_table(rep.get('paths', []), '_path')}</div>
-<h2>{html.escape(t['followup'])}</h2><div class="scroll">{follow}</div>
-{extra}
-</body></html>"""

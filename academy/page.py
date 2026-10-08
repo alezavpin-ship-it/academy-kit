@@ -1,4 +1,4 @@
-"""The Academy page: course (lesson + quiz + compact video panel + VBD), glossary quiz, video library, progress, team."""
+"""The Academy page: course (lesson + quiz + compact video panel), glossary quiz, video library, progress, team."""
 
 from __future__ import annotations
 
@@ -9,11 +9,11 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from academy import content_sync, notify, quiz, report, track, ui
+from academy import content_sync, editor, notify, quiz, report, report_pdf, track, ui
 from academy import content_xlsx as content
 from academy.access import load_access, save_access
-from academy.catalog import (DEFAULT_SHEET, SEVERITIES, VENDORS, Catalog, vendor_of, catalog_from_tables, load_materials, parse_grid, parse_text, read_xlsx,
-                             save_catalog, save_materials, sheet_names, slug, validate_catalog, validate_materials)
+from academy.catalog import (DEFAULT_SHEET, Catalog, vendor_of, load_materials, parse_grid, parse_text, read_xlsx,
+                             save_catalog, save_materials, sheet_names, validate_catalog, validate_materials)
 from academy import assistant as ai
 from academy.exam_page import assistant_box, exams_tab, material_links
 from academy.certs import Certs
@@ -21,24 +21,24 @@ from academy.certs_page import certs_admin, my_certs
 from academy.demand_page import demand_tab
 from academy.forum import Forum
 from academy.forum_page import forum_tab
-from academy.i18n import L, T, columns, message
+from academy import inventory_page, news_page, rhythm_page
+from academy.i18n import T
 from academy.pack import Pack, Resource
 from academy.route import ITEM_POINTS, RouteTracker, build_routes, is_learn
-from academy.progress import VBD_POINTS, Tracker, team
+from academy.progress import Tracker, team
 from academy.videos import DEFAULT_SIZE, SIZES, embed_src
 
-LEVEL_EN = {"básico": "basic", "intermedio": "intermediate", "avanzado": "advanced"}
 
 
 # ---------------------------------------------------------------------------------------------- small pieces
 def _label(r: Resource) -> str:
     icon = {"video": "▶", "playlist": "☰", "link": "↗"}.get(r.kind, "▶")
-    return f"{icon} [{r.lang.upper()}] {r.title} — {r.channel}"
+    return f"{icon} {r.title} — {r.channel}"
 
 
 def _size_picker(lang: str, key: str) -> None:
-    names = {"XS": "Mini", "S": "Chico" if lang == "es" else "Small", "M": "Mediano" if lang == "es" else "Medium",
-             "L": "Grande" if lang == "es" else "Large"}
+    names = {"XS": "Mini", "S": "Small", "M": "Medium",
+             "L": "Large"}
     if st.session_state.get(key) not in SIZES:
         st.session_state[key] = DEFAULT_SIZE
     st.segmented_control(T("video_size", lang), list(SIZES), key=key, format_func=lambda k: names[k], label_visibility="collapsed")
@@ -59,10 +59,10 @@ def play(r: Resource, lang: str, key: str, size_key: str) -> None:
 
 
 def details(r: Resource, why: str, lang: str) -> None:
-    level = LEVEL_EN.get(r.level, r.level) if lang == "en" else r.level
+    level = r.level
     who = f" · {r.who}" if r.who else ""
     st.markdown(f"**{r.title}**")
-    st.caption(f"{r.channel}{who} · {r.lang.upper()} · {level}")
+    st.caption(f"{r.channel}{who} · {level}")
     st.markdown(T("why_here", lang) + why)
 
 
@@ -88,13 +88,12 @@ def header(pack: Pack, tr: Tracker, lang: str) -> None:
     c[1].metric(T("rank", lang), pack.ranks[cur].name, delta=T("to_next", lang, n=need, lvl=nxt) if nxt else T("top", lang),
                 delta_color="off", border=True)
     c[2].metric(T("lessons_done", lang), f"{len(tr.completed_lessons())} / {len(pack.lessons)}", border=True)
-    c[3].metric(T("vbds_done", lang), f"{len(tr.vbds_done())} / {sum(1 for x in pack.lessons if x.vbd)}", border=True)
+    c[3].metric("Questions answered right",
+                f"{len(tr.correct_items())} / {sum(len(x.quiz) for x in pack.lessons)}", border=True)
 
 
 def lesson_panel(pack: Pack, lesson_id: str, lang: str) -> None:
     items = pack.for_lesson(lesson_id)
-    if lang == "en":  # English view: only the English resources, unless the lesson has none
-        items = [it for it in items if it[0].lang == "en"] or items
     if not items:
         return
     st.markdown(T("videos_for", lang, n=sum(r.kind != "link" for r, _ in items)))
@@ -109,38 +108,6 @@ def lesson_panel(pack: Pack, lesson_id: str, lang: str) -> None:
             st.markdown(f"{i + 1}. **{res.title}** — {res.channel}  \n{w}")
             st.link_button(T("open_source", lang), res.url)
     st.caption(T("third_party", lang))
-
-
-def vbd_box(pack: Pack, tr: Tracker, lesson_id: str, lang: str) -> None:
-    les = pack.lesson(lesson_id)
-    v = les.vbd
-    if v is None:
-        return
-    done = lesson_id in tr.vbds_done()
-    with st.container(border=True):
-        st.markdown(T("vbd_title", lang))
-        st.markdown(f"**{v.deliverable}**")
-        st.markdown(T("done_when", lang))
-        checks = tr.checks(lesson_id)
-        for i, crit in enumerate(v.done_when):
-            val = st.checkbox(crit, value=checks.get(i, False), key=f"ak_vbd_{tr.learner}_{lesson_id}_{i}")
-            if val != checks.get(i, False):
-                tr.set_check(lesson_id, i, val)
-        st.caption(T("value", lang) + v.value)
-        link(v.where, T("where", lang))
-        if done:
-            st.success(T("vbd_already", lang))
-        else:
-            all_ticked = all(st.session_state.get(f"ak_vbd_{tr.learner}_{lesson_id}_{i}") for i in range(len(v.done_when)))
-            ev = st.text_input(T("evidence", lang), key=f"ak_vbd_ev_{lesson_id}")
-            if st.button(T("mark_vbd", lang), key=f"ak_vbd_btn_{lesson_id}", disabled=not all_ticked, type="primary"):
-                pts = tr.complete_vbd(lesson_id, ev)
-                ui.fx("win")
-                st.session_state[f"ak_vbd_fb_{lesson_id}"] = pts
-                st.rerun()
-        fb = st.session_state.pop(f"ak_vbd_fb_{lesson_id}", None)
-        if fb is not None:
-            st.toast(T("vbd_ok", lang, pts=T("plus_pts", lang, p=fb) if fb else ""))
 
 
 def course(pack: Pack, tr: Tracker, lang: str, role: str | None) -> None:
@@ -191,7 +158,6 @@ def course(pack: Pack, tr: Tracker, lang: str, role: str | None) -> None:
                         st.error(T("wrong", lang))
         if lid in tr.completed_lessons():
             st.success(T("lesson_done", lang))
-        vbd_box(pack, tr, lid, lang)
 
 
 def glossary(pack: Pack, tr: Tracker, lang: str) -> None:
@@ -227,22 +193,15 @@ def glossary(pack: Pack, tr: Tracker, lang: str) -> None:
 
 def library(pack: Pack, lang: str) -> None:
     st.markdown(T("library_intro", lang))
-    def by_topic(k: str) -> list[Resource]:  # English view: only the English resources
-        return [r for r in pack.by_topic(k) if lang != "en" or r.lang == "en"]
-
-    topics = [k for k in pack.topics if by_topic(k)]
+    topics = [k for k in pack.topics if pack.by_topic(k)]
     if not topics:
         return
     c = st.columns([2, 1])
-    topic = c[0].selectbox(T("topic", lang), topics, key="ak_lib_topic", format_func=lambda k: f"{pack.topics[k]} ({len(by_topic(k))})")
-    only_es = lang != "en" and c[1].toggle(T("only_es", lang), key="ak_lib_es")
-    items = [r for r in by_topic(topic) if not only_es or r.lang == "es"]
-    if not items:
-        st.info(T("no_es", lang))
-        return
+    topic = c[0].selectbox(T("topic", lang), topics, key="ak_lib_topic", format_func=lambda k: f"{pack.topics[k]} ({len(pack.by_topic(k))})")
+    items = pack.by_topic(topic)
     left, right = st.columns([1, 1], gap="large")
     with left:
-        idx = st.radio(T("resources", lang), list(range(len(items))), key=f"ak_lib_pick_{topic}_{only_es}", format_func=lambda i: _label(items[i]))
+        idx = st.radio(T("resources", lang), list(range(len(items))), key=f"ak_lib_pick_{topic}", format_func=lambda i: _label(items[i]))
     r = items[idx]
     with right:
         _size_picker(lang, "ak_lib_size")
@@ -264,11 +223,12 @@ def progress_tab(pack: Pack, tr: Tracker, lang: str, role: str | None) -> None:
     st.caption(" → ".join(f"{r.emoji} {r.name} ({r.points}+)" for r in pack.ranks))
     if role:
         st.markdown(T("role_path", lang, r=role))
-        done, vbds, rec = tr.completed_lessons(), tr.vbds_done(), pack.lessons_for_role(role)
+        done, rec = tr.completed_lessons(), pack.lessons_for_role(role)
         st.dataframe(pd.DataFrame([{"ID": les.id, T("level", lang): les.level, T("lesson", lang): les.title,
-                                    "✅": "✅" if les.id in done else "", "🎯": "🎯" if les.id in vbds else ""}
+                                    "✅": "✅" if les.id in done else ""}
                                    for les in pack.lessons if les.id in rec]), hide_index=True, width="stretch")
     ev = tr.events()
+    ev = ev[ev["kind"] != "vbd"] if len(ev) else ev  # value deliverables were retired; older rows stay out of view
     if len(ev):
         st.markdown(T("recent", lang))
         st.dataframe(ev.sort_values("id", ascending=False).head(30)[["time", "kind", "item", "points", "correct"]],
@@ -277,32 +237,31 @@ def progress_tab(pack: Pack, tr: Tracker, lang: str, role: str | None) -> None:
 
 def team_tab(conn, pack: Pack, lang: str) -> None:
     st.markdown(T("team_intro", lang))
-    df = columns(team(conn, pack), lang)
+    df = team(conn, pack)
     if df.empty:
         st.info(T("no_team", lang))
         return
     st.dataframe(df, hide_index=True, width="stretch")
-    st.download_button(T("download", lang), df.to_csv(index=False).encode("utf-8-sig"), file_name=L(lang, f"progreso_{pack.id}.csv", f"progress_{pack.id}.csv"),
+    st.download_button(T("download", lang), df.to_csv(index=False).encode("utf-8-sig"), file_name=f"progress_{pack.id}.csv",
                        mime="text/csv")
 
 
 def champion_team(conn, packs: list[Pack], exams: list, catalog, families: set[str], lang: str) -> set[str]:
     """What a champion sees: only the people working on their families, counted on those families' lessons and exams."""
     names = [f.name for f in catalog.families if f.id in families]
-    st.markdown(L(lang, "#### Mi familia: ", "#### My family: ") + ", ".join(names))
-    st.caption(L(lang, "Ves solo a quienes cursan lecciones o certificaciones de tu familia de skills.",
-                 "You only see people taking lessons or certifications of your skill family."))
+    st.markdown("#### My family: " + ", ".join(names))
+    st.caption("You only see people taking lessons or certifications of your skill family.")
     family_courses_editor(catalog, families, lang)
     rows = notify.family_team(conn, packs, exams, catalog, families)
     if not rows:
-        st.info(L(lang, "Todavía nadie ha empezado contenido de tu familia.", "Nobody has started your family's content yet."))
+        st.info("Nobody has started your family's content yet.")
         return set()
-    df = columns(pd.DataFrame(rows), lang)
+    df = pd.DataFrame(rows)
     st.dataframe(df, hide_index=True, width="stretch")
     st.download_button(T("download", lang), df.to_csv(index=False).encode("utf-8-sig"),
-                       file_name=L(lang, "progreso_mi_familia.csv", "my_family_progress.csv"), mime="text/csv",
+                       file_name="my_family_progress.csv", mime="text/csv",
                        key="ak_fam_csv")
-    return {r["Persona"] for r in rows}
+    return {r["Person"] for r in rows}
 
 
 PROVIDERS = ["Microsoft Learn", "Workday Learning", "AWS Skill Builder", "Google Cloud Skills Boost", "Cisco Networking Academy", "IBM SkillsBuild",
@@ -324,8 +283,8 @@ def _materials_table(groups: list[tuple[str, list[dict]]], default_kind: str) ->
 
 
 def _class_column(lang: str):
-    return st.column_config.NumberColumn(L(lang, "Clase", "Class"), min_value=1, step=1,
-                                         help=L(lang, "Orden en la ruta de la skill: clase 1, clase 2…", "Order in the skill's path: class 1, class 2…"))
+    return st.column_config.NumberColumn("Class", min_value=1, step=1,
+                                         help="Order in the skill's path: class 1, class 2…")
 
 
 def _material_item(r: dict) -> dict:
@@ -341,22 +300,20 @@ def family_courses_editor(catalog, families: set[str], lang: str) -> None:
     skills = [s for s in catalog.skills if s.family in families]
     by_name = {s.name: s.id for s in skills}
     mats = load_materials()
-    with st.expander(L(lang, "Cursos de mi familia: agregar o quitar pasos de la ruta", "My family's courses: add or remove route steps")):
-        st.caption(L(lang, "Pega el enlace del curso (Microsoft Learn, la ruta del fabricante o Workday Learning). Lo que tenga tipo "
-                           "módulo, ruta, curso o laboratorio cuenta como paso de la ruta; guía, documento y video son material de consulta.",
-                     "Paste the course link (Microsoft Learn, the vendor's path or Workday Learning). Module, path, course and lab "
+    with st.expander("My family's courses: add or remove route steps"):
+        st.caption(("Paste the course link (Microsoft Learn, the vendor's path or Workday Learning). Module, path, course and lab "
                      "count as route steps; guide, doc and video are reference material."))
         df = _materials_table([(s.name, mats.get(s.id, [])) for s in skills], "course")
         ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key="ak_fam_courses", column_config={
             "skill": st.column_config.SelectboxColumn(T("sk_col_skill", lang), options=list(by_name), required=True),
             "order": _class_column(lang),
-            "title": st.column_config.TextColumn(L(lang, "Título del curso", "Course title"), required=True),
+            "title": st.column_config.TextColumn("Course title", required=True),
             "url": st.column_config.LinkColumn("URL", required=True, validate=r"^https://.+"),
-            "provider": st.column_config.SelectboxColumn(L(lang, "Proveedor", "Provider"), options=PROVIDERS, required=True),
-            "kind": st.column_config.SelectboxColumn(L(lang, "Tipo", "Kind"), options=["course", "path", "module", "lab", "video", "guide", "doc"],
+            "provider": st.column_config.SelectboxColumn("Provider", options=PROVIDERS, required=True),
+            "kind": st.column_config.SelectboxColumn("Kind", options=["course", "path", "module", "lab", "video", "guide", "doc"],
                                                      required=True),
-            "verified": st.column_config.TextColumn(L(lang, "Verificado (fecha)", "Verified (date)"))})
-        if st.button(L(lang, "Guardar cursos de mi familia", "Save my family's courses"), key="ak_fam_courses_save", type="primary"):
+            "verified": st.column_config.TextColumn("Verified (date)")})
+        if st.button("Save my family's courses", key="ak_fam_courses_save", type="primary"):
             new: dict[str, list[dict]] = {}
             for r in ed.to_dict("records"):
                 if pd.notna(r.get("skill")) and pd.notna(r.get("title")) and pd.notna(r.get("url")) and r["skill"] in by_name:
@@ -366,13 +323,13 @@ def family_courses_editor(catalog, families: set[str], lang: str) -> None:
             errs = validate_materials(new, catalog)
             if errs:
                 for e in errs:
-                    st.error(message(e, lang))
+                    st.error(e)
             else:
                 merged = {k: v for k, v in mats.items() if k not in by_name.values()}  # other families' material is untouched
                 merged.update(new)
                 save_materials(merged)
                 content_sync.refresh()  # the content file always mirrors what the app holds
-                st.toast(L(lang, "Cursos guardados.", "Courses saved."))
+                st.toast("Courses saved.")
 
 
 def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: str, only: set[str] | None = None) -> None:
@@ -381,8 +338,7 @@ def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: s
     Families (status), people (who is keeping up with the career path and who is not), certifications (held, desired,
     about to expire) and the administration of the certification register."""
     if not catalog:
-        st.info(L(lang, "Los reportes se organizan por familia de skills: primero carga el catálogo en «Mapa de skills».",
-                  "Reports are organized by skill family: load the catalog in the Skills map first."))
+        st.info("Reports are organized by skill family: load the catalog in the Skills map first.")
         return
     rep = report.build(conn, packs, exams, catalog, lang, only)
     people_names = report.roster(conn)
@@ -392,60 +348,62 @@ def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: s
     c = st.columns(6)
     for col, (label, value) in zip(c, ((t["families"], s["families"]), (t["on_track"], s["on_track"]), (t["active_people"], s["people"]),
                                         (t["behind"], s["behind"]), (t["not_started"], s["not_started"]),
-                                        (L(lang, "Certificaciones actuales", "Current certifications"), cs["current"]))):
+                                        ("Current certifications", cs["current"]))):
         col.metric(label, value, border=True)
     stamp = rep["generated"][:10]
     a, b = st.columns(2)
-    a.download_button(L(lang, "Descargar todo el reporte en Excel", "Download the whole report as Excel"), report.to_xlsx(rep),
-                      file_name=L(lang, f"reporte_academia_{stamp}.xlsx", f"academy_report_{stamp}.xlsx"),
+    a.download_button("Download the whole report as Excel", report.to_xlsx(rep),
+                      file_name=f"academy_report_{stamp}.xlsx",
                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="ak_rep_xlsx", width="stretch")
-    b.download_button(L(lang, "Descargar reporte para imprimir (HTML)", "Download printable report (HTML)"), report.to_html(rep).encode("utf-8"),
-                      file_name=L(lang, f"reporte_academia_{stamp}.html", f"academy_report_{stamp}.html"), mime="text/html",
-                      key="ak_rep_html", width="stretch")
-    tabs = st.tabs([L(lang, "Familias de skills", "Skill families"), L(lang, "Personas y ruta de carrera", "People and career path"),
-                    L(lang, "Certificaciones", "Certifications"), L(lang, "Administrar certificaciones", "Manage certifications")])
+    if report_pdf.available():
+        b.download_button("Download the report as PDF", report_pdf.to_pdf(rep),
+                          file_name=f"academy_report_{stamp}.pdf", mime="application/pdf",
+                          key="ak_rep_pdf", width="stretch", type="primary")
+    else:
+        b.button("Download the report as PDF", disabled=True, key="ak_rep_pdf_off", width="stretch",
+                 help="The PDF component is missing: close the app, double-click «Install components.bat» and open it again.")
+    tabs = st.tabs(["Skill families", "People and career path",
+                    "Certifications", "Manage certifications", "Skills matrix"])
     with tabs[0]:
         st.markdown(f"#### {t['report']}")
         st.dataframe(pd.DataFrame(report.visible(rep["status"])), hide_index=True, width="stretch")
     with tabs[1]:
         st.markdown(f"#### {t['people']}")
-        st.caption(L(lang, "Una fila por persona, primero quien no está cumpliendo. El estado es el peor de sus familias.",
-                     "One row per person, whoever is not keeping up first. The status is the worst across their families."))
+        st.caption("One row per person, whoever is not keeping up first. The status is the worst across their families.")
         if rep["people"]:
             st.dataframe(pd.DataFrame(report.visible(rep["people"])), hide_index=True, width="stretch")
         else:
             st.info(t["empty"])
         st.markdown(f"#### {t['paths']}")
-        names = {k: L(lang, *v) for k, v in report.PATH.items()}
+        names = dict(report.PATH)
         fam_names = sorted({r[next(iter(r))] for r in rep["paths"]})
         f1, f2 = st.columns([2, 3])
-        fam = f1.selectbox(L(lang, "Familia de skills", "Skill family"), [""] + fam_names, key="ak_rep_fam",
-                           format_func=lambda k: k or L(lang, "Todas", "All"))
-        states = f2.multiselect(L(lang, "Estado en la ruta", "Status on the path"), report.PATH_ORDER, format_func=lambda k: names[k],
+        fam = f1.selectbox("Skill family", [""] + fam_names, key="ak_rep_fam",
+                           format_func=lambda k: k or "All")
+        states = f2.multiselect("Status on the path", report.PATH_ORDER, format_func=lambda k: names[k],
                                 default=[report.BEHIND, report.AT_RISK, report.GOING, report.DONE], key="ak_rep_states")
         rows = [r for r in rep["paths"] if (not fam or r[next(iter(r))] == fam) and r["_path"] in states]
         if rows:
             st.dataframe(pd.DataFrame(report.visible(rows)), hide_index=True, width="stretch")
         else:
-            st.info(L(lang, "Nadie con ese filtro.", "Nobody matches that filter."))
+            st.info("Nobody matches that filter.")
         st.markdown(f"#### {t['followup']}")
         late = [r for r in rep["followup"] if r["_late"]]
         if late:
             st.dataframe(pd.DataFrame(report.visible(late)), hide_index=True, width="stretch")
         else:
-            st.success(L(lang, "Nadie requiere seguimiento hoy.", "Nobody needs follow-up today."))
+            st.success("Nobody needs follow-up today.")
     with tabs[2]:
         m = st.columns(4)
-        m[0].metric(L(lang, "Personas con alguna certificación", "People with a certification"), f"{cs['people_with']} / {cs['people']}", border=True)
-        m[1].metric(L(lang, "Certificaciones actuales", "Current certifications"), cs["current"], border=True)
-        m[2].metric(L(lang, "Certificaciones deseables", "Desired certifications"), cs["desired"], border=True)
-        m[3].metric(L(lang, "Vencen en 90 días o ya vencieron", "Expire within 90 days or already did"), cs["expiring"], border=True)
+        m[0].metric("People with a certification", f"{cs['people_with']} / {cs['people']}", border=True)
+        m[1].metric("Current certifications", cs["current"], border=True)
+        m[2].metric("Desired certifications", cs["desired"], border=True)
+        m[3].metric("Expire within 90 days or already did", cs["expiring"], border=True)
         st.markdown(f"#### {t['certs_fam']}")
         if rep["certs"]["families"]:
             st.dataframe(pd.DataFrame(rep["certs"]["families"]), hide_index=True, width="stretch")
         else:
-            st.info(L(lang, "Ninguna familia tiene certificaciones definidas todavía: agrégalas en «Administrar certificaciones».",
-                      "No family has certifications defined yet: add them under Manage certifications."))
+            st.info("No family has certifications defined yet: add them under Manage certifications.")
         st.markdown(f"#### {t['certs_people']}")
         if rep["certs"]["people"]:
             st.dataframe(pd.DataFrame(rep["certs"]["people"]), hide_index=True, width="stretch")
@@ -453,51 +411,57 @@ def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: s
             st.markdown(f"#### {t['certs_exp']}")
             st.dataframe(pd.DataFrame(rep["certs"]["expiring"]), hide_index=True, width="stretch")
     with tabs[3]:
-        certs_admin(conn, catalog, lang, {f.id for f in catalog.families} if only is None else set(only), who, people_names)
+        if st.session_state.get("ed_on_tab_certs") and only is None:  # the same editor is open in the Certifications tab
+            st.info("Certification management is open in the Certifications tab (✏️ Edit mode).")
+        else:
+            certs_admin(conn, catalog, lang, {f.id for f in catalog.families} if only is None else set(only), who, people_names)
+    with tabs[4]:
+        inventory_page.skills_matrix(conn, catalog, who, owner=only is None,
+                                     people=None if only is None else {r[next(iter(r))] for r in rep["people"]})
 
 
 def certifications_tab(exams: list, conn, learner: str, lang: str, catalog, leader: bool) -> None:
     """My certifications (what I hold and what I aim for) and the preparation for an exam."""
-    views = {"mine": L(lang, "Mis certificaciones", "My certifications"), "prep": L(lang, "Preparar un examen", "Prepare for an exam")}
+    views = {"mine": "My certifications", "skills": "My skills", "prep": "Prepare for an exam"}
     view = st.segmented_control("certs_view", list(views), default="mine", format_func=lambda k: views[k], key="ak_cert_view",
                                 label_visibility="collapsed") or "mine"
     if view == "mine":
         my_certs(conn, catalog, learner, lang)
+    elif view == "skills":
+        inventory_page.my_skills(conn, catalog, learner)
     else:
         exams_tab(exams, conn, learner, lang, catalog, leader=leader)
 
 
 def notices_section(conn, packs: list[Pack], exams: list, catalog, lang: str, only: set[str] | None = None) -> None:
     """Notices ready to send (with copy to the family champion). Offline they open in Outlook; in M365 a flow sends them."""
-    st.markdown(L(lang, "#### Avisos por enviar", "#### Notices to send"))
-    st.caption(L(lang, f"Reglas: curso terminado · simulacro aprobado · {notify.INACTIVE_DAYS} días sin actividad · {notify.STALLED_DAYS} días sin avance. "
-                       "Cada aviso va con copia al champion de la familia de skills.",
-                 f"Rules: course finished · mock passed · {notify.INACTIVE_DAYS} days inactive · {notify.STALLED_DAYS} days without progress. "
+    st.markdown("#### Notices to send")
+    st.caption((f"Rules: course finished · mock passed · {notify.INACTIVE_DAYS} days inactive · {notify.STALLED_DAYS} days without progress. "
                  "Each notice is copied to the skill family champion."))
     todo = [n for n in notify.pending(conn, packs, exams, catalog, lang=lang) if only is None or n.learner in only]
     if not todo:
-        st.info(L(lang, "No hay avisos pendientes.", "No pending notices."))
+        st.info("No pending notices.")
         return
-    st.download_button(L(lang, f"Descargar la cola ({len(todo)}) en CSV", f"Download the queue ({len(todo)}) as CSV"),
-                       pd.DataFrame(notify.queue_rows(todo)).to_csv(index=False).encode("utf-8-sig"), file_name=L(lang, "avisos_pendientes.csv", "pending_notices.csv"),
+    st.download_button(f"Download the queue ({len(todo)}) as CSV",
+                       pd.DataFrame(notify.queue_rows(todo)).to_csv(index=False).encode("utf-8-sig"), file_name="pending_notices.csv",
                        mime="text/csv", key="ak_nt_csv")
     icon = {"course_done": "🎉", "exam_passed": "🏅", "inactive": "⏰", "stalled": "🐢"}
     for i, n in enumerate(todo):
         with st.expander(f"{icon.get(n.kind, '✉️')} {n.learner} — {n.subject}"):
-            st.markdown(L(lang, "**Para:** ", "**To:** ") + (n.to or L(lang, "_sin correo registrado_", "_no e-mail on file_")) + "  \n"
-                        + "**CC:** " + (", ".join(n.cc) or (", ".join(n.champions) + L(lang, " _(falta su correo)_", " _(e-mail missing)_") if n.champions
-                                                            else L(lang, "_familia sin champion_", "_family without champion_"))))
+            st.markdown("**To:** " + (n.to or "_no e-mail on file_") + "  \n"
+                        + "**CC:** " + (", ".join(n.cc) or (", ".join(n.champions) + " _(e-mail missing)_" if n.champions
+                                                            else "_family without champion_")))
             st.text(n.body)
             c1, c2 = st.columns(2)
-            c1.link_button(L(lang, "✉️ Abrir en Outlook", "✉️ Open in Outlook"), notify.mailto(n), width="stretch")
-            if c2.button(L(lang, "Marcar como enviado", "Mark as sent"), key=f"ak_nt_sent_{i}_{n.kind}_{n.ref}", width="stretch"):
+            c1.link_button("✉️ Open in Outlook", notify.mailto(n), width="stretch")
+            if c2.button("Mark as sent", key=f"ak_nt_sent_{i}_{n.kind}_{n.ref}", width="stretch"):
                 notify.mark_sent(conn, n)
                 st.rerun()
 
 
 def my_notices(conn, packs: list[Pack], exams: list, catalog, learner: str, lang: str) -> None:
     """What the learner sees at the top: the same messages that would reach their inbox."""
-    for n in notify.pending(conn, packs, exams, catalog, learner=learner.strip() or "yo", include_sent=True, lang=lang):
+    for n in notify.pending(conn, packs, exams, catalog, learner=learner.strip() or "me", include_sent=True, lang=lang):
         first = n.body.split("\n\n")[1] if n.body.count("\n\n") >= 2 else n.subject
         (st.success if n.kind in ("course_done", "exam_passed") else st.warning)(f"**{n.subject}.** {first}")
 
@@ -507,8 +471,7 @@ def _skills_map(catalog: Catalog, packs: list[Pack], lang: str, owner: bool = Tr
     cov = catalog.coverage(packs)
     mats = load_materials()
     st.markdown(T("sk_total", lang, c=sum(1 for v in cov.values() if v), n=len(cov)) + " "
-                + L(lang, f"**{sum(1 for s in catalog.skills if mats.get(s.id))}** tienen material de apoyo.",
-                    f"**{sum(1 for s in catalog.skills if mats.get(s.id))}** have support material."))
+                + f"**{sum(1 for s in catalog.skills if mats.get(s.id))}** have support material.")
     for fam in catalog.by_gap():
         skills = catalog.in_family(fam.id)
         covered = sum(1 for s in skills if cov[s.id])
@@ -527,9 +490,9 @@ def _skills_map(catalog: Catalog, packs: list[Pack], lang: str, owner: bool = Tr
             rows = []
             vendors = list(dict.fromkeys(vendor_of(s, mats) for s in skills))
             for s in sorted(skills, key=lambda s: (vendors.index(vendor_of(s, mats)), s.category)):  # family -> vendor -> category -> skill
-                row = {L(lang, "Tecnología / vendor", "Technology / vendor"): vendor_of(s, mats)}
+                row = {"Technology / vendor": vendor_of(s, mats)}
                 if any(x.category for x in skills):
-                    row[L(lang, "Categoría", "Category")] = s.category
+                    row["Category"] = s.category
                 row[T("sk_col_skill", lang)] = s.name + ("" if s.confirmed else f" · {T('sk_unconfirmed', lang)}")
                 if any(x.severity for x in skills):
                     row[T("sk_col_sev", lang)] = s.severity
@@ -538,13 +501,12 @@ def _skills_map(catalog: Catalog, packs: list[Pack], lang: str, owner: bool = Tr
                 if numbers and any(x.impacted_roles is not None for x in skills):
                     row[T("sk_col_impact", lang)] = s.impacted_roles
                 row[T("sk_col_lessons", lang)] = " · ".join(t for _, t in cov[s.id]) or T("sk_none", lang)
-                row[L(lang, "Material", "Material")] = len(mats.get(s.id, []))
+                row["Material"] = len(mats.get(s.id, []))
                 rows.append(row)
             st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
             with_mat = [s for s in skills if mats.get(s.id)]
             if with_mat:
-                with st.expander(L(lang, f"Material de apoyo ({sum(len(mats[s.id]) for s in with_mat)})",
-                                   f"Support material ({sum(len(mats[s.id]) for s in with_mat)})")):
+                with st.expander(f"Support material ({sum(len(mats[s.id]) for s in with_mat)})"):
                     for s in with_mat:
                         st.markdown(f"**{s.name}**")
                         material_links(mats[s.id])
@@ -565,7 +527,7 @@ def _save(cat: Catalog, source: str) -> None:
 def _preview(rows: list[list], catalog: Catalog | None, packs: list[Pack], lang: str, keep_roles: bool, source: str, key: str) -> None:
     new, rep = parse_grid(rows, keep_roles=keep_roles, previous=catalog)
     if new is None:
-        st.error(message(rep["error"], lang))
+        st.error(rep["error"])
         return
     st.success(T("sk_found", lang, f=rep["families"], s=rep["skills"], r=rep["header_row"]))
     if not rep["summary"]:
@@ -585,7 +547,7 @@ def _preview(rows: list[list], catalog: Catalog | None, packs: list[Pack], lang:
                  hide_index=True, width="stretch")
     errs = validate_catalog(new)
     for e in errs:
-        st.error(message(e, lang))
+        st.error(e)
     if st.button(T("sk_save", lang), key=f"ak_sk_save_{key}", type="primary", disabled=bool(errs)):
         _save(new, source)
 
@@ -603,7 +565,7 @@ def _skills_import(catalog: Catalog | None, packs: list[Pack], lang: str) -> Non
     sheet = st.selectbox(T("sk_sheet", lang), names, index=names.index(DEFAULT_SHEET) if DEFAULT_SHEET in names else 0, key="ak_sk_sheet")
     keep = st.checkbox(T("sk_keep_roles", lang), value=False, key="ak_sk_keep")
     up.seek(0)
-    _preview(read_xlsx(up, sheet), catalog, packs, lang, keep, L(lang, f"Excel: pestaña «{sheet}»", f"Excel: sheet \"{sheet}\""), "xlsx")
+    _preview(read_xlsx(up, sheet), catalog, packs, lang, keep, f"Excel: sheet \"{sheet}\"", "xlsx")
 
 
 def _skills_paste(catalog: Catalog | None, packs: list[Pack], lang: str) -> None:
@@ -611,67 +573,6 @@ def _skills_paste(catalog: Catalog | None, packs: list[Pack], lang: str) -> None
     st.caption(T("sk_paste_help", lang))
     if text.strip():
         _preview(parse_text(text), catalog, packs, lang, False, "Tabla pegada", "paste")
-
-
-def _skills_edit(catalog: Catalog | None, packs: list[Pack], lang: str) -> None:
-    st.caption(T("sk_edit_help", lang))
-    fams = catalog.families if catalog else []
-    names = {f.id: f.name for f in fams}
-    fdf = pd.DataFrame([{"name": f.name, "gap": f.gap_volume, "impact": f.role_impact, "champion": f.champion, "email": f.champion_email}
-                        for f in fams], columns=["name", "gap", "impact", "champion", "email"]
-                       ).astype({"name": "string", "gap": "Int64", "impact": "Int64", "champion": "string", "email": "string"})
-    all_mats = load_materials()
-    sdf = pd.DataFrame([{"family": names[s.family], "vendor": vendor_of(s, all_mats), "category": s.category, "name": s.name,
-                         "severity": s.severity or None, "target": s.target, "impact": s.impacted_roles}
-                        for s in (catalog.skills if catalog else [])], columns=["family", "vendor", "category", "name", "severity", "target", "impact"]
-                       ).astype({"family": "string", "vendor": "string", "category": "string", "name": "string", "severity": "string",
-                                 "target": "string", "impact": "Int64"})
-    st.markdown(T("sk_edit_fam", lang))
-    fed = st.data_editor(fdf, num_rows="dynamic", hide_index=True, width="stretch", key="ak_sk_fam", column_config={
-        "name": st.column_config.TextColumn(T("sk_col_family", lang), required=True),
-        "gap": st.column_config.NumberColumn(T("sk_col_gap", lang), min_value=0, step=1),
-        "impact": st.column_config.NumberColumn(T("sk_col_impact", lang), min_value=0, step=1),
-        "champion": st.column_config.TextColumn(T("sk_col_champion", lang)),
-        "email": st.column_config.TextColumn(L(lang, "Correo del champion", "Champion e-mail"))})
-    fam_names = [str(x).strip() for x in fed["name"].tolist() if pd.notna(x) and str(x).strip()]
-    st.markdown(T("sk_edit_sk", lang))
-    sed = st.data_editor(sdf, num_rows="dynamic", hide_index=True, width="stretch", key="ak_sk_skills", column_config={
-        "family": st.column_config.SelectboxColumn(T("sk_col_family", lang), options=fam_names, required=True),
-        "vendor": st.column_config.TextColumn(L(lang, "Tecnología / vendor", "Technology / vendor"),
-                                              help=L(lang, "Por ejemplo: ", "For example: ") + ", ".join(VENDORS)),
-        "category": st.column_config.TextColumn(L(lang, "Categoría", "Category")),
-        "name": st.column_config.TextColumn(T("sk_col_skill", lang), required=True),
-        "severity": st.column_config.SelectboxColumn(T("sk_col_sev", lang), options=SEVERITIES),
-        "target": st.column_config.TextColumn(T("sk_col_target", lang), help="P1 … P5"),
-        "impact": st.column_config.NumberColumn(T("sk_col_impact", lang), min_value=0, step=1)})
-    st.markdown(L(lang, "##### Material de apoyo (Microsoft Learn u otra fuente)", "##### Support material (Microsoft Learn or other source)"))
-    sk_names = [str(x).strip() for x in sed["name"].tolist() if pd.notna(x) and str(x).strip()]
-    by_id = {s.id: s.name for s in (catalog.skills if catalog else [])}
-    mdf = _materials_table([(by_id.get(sid, sid), items) for sid, items in all_mats.items()], "doc")
-    med = st.data_editor(mdf, num_rows="dynamic", hide_index=True, width="stretch", key="ak_sk_mat", column_config={
-        "skill": st.column_config.SelectboxColumn(T("sk_col_skill", lang), options=sk_names, required=True),
-        "order": _class_column(lang),
-        "title": st.column_config.TextColumn(L(lang, "Título", "Title"), required=True),
-        "url": st.column_config.LinkColumn("URL", required=True, validate=r"^https://.+"),
-        "provider": st.column_config.SelectboxColumn(L(lang, "Proveedor", "Provider"), options=PROVIDERS),
-        "kind": st.column_config.SelectboxColumn(L(lang, "Tipo", "Kind"), options=["path", "module", "course", "lab", "video", "guide", "doc"]),
-        "verified": st.column_config.TextColumn(L(lang, "Verificado (fecha)", "Verified (date)"))})
-    new = catalog_from_tables(fed.to_dict("records"), sed.to_dict("records"), previous=catalog)
-    new_mats: dict[str, list[dict]] = {}
-    for r in med.to_dict("records"):
-        if pd.notna(r.get("skill")) and pd.notna(r.get("title")) and pd.notna(r.get("url")):
-            new_mats.setdefault(slug(r["skill"]), []).append(_material_item(r))
-    errs = validate_catalog(new) + validate_materials(new_mats, new)
-    lost = _orphans(new, packs)
-    if lost:
-        st.warning(T("sk_orphans", lang, c=", ".join(lost)))
-    if st.button(T("sk_save_edit", lang), key="ak_sk_save_edit", type="primary"):
-        if errs:
-            for e in errs:
-                st.error(message(e, lang))
-        else:
-            save_materials(new_mats)
-            _save(new, L(lang, "Edición manual", "Manual edit"))
 
 
 @st.cache_data(show_spinner=False)
@@ -689,50 +590,41 @@ def _content_signature() -> tuple:
 
 def content_section(lang: str) -> None:
     """Owners: the whole content (courses, lessons, questions, videos, learning paths, skills catalog) as one file."""
-    st.markdown(L(lang, "#### Contenido de la academia", "#### Academy content"))
+    st.markdown("#### Academy content")
     path = content_sync.content_path()
-    st.markdown(L(lang,
-                  f"Todo el contenido vive en **un archivo**: `{path}`. Ábrelo en Excel, filtra por la columna **Tabla**, edita, guarda y "
-                  "vuelve a abrir la app: se revisa completo y, si está bien, se aplica. Con errores no cambia nada.",
-                  f"All the content lives in **one file**: `{path}`. Open it in Excel, filter by the **Tabla** column, edit, save and "
-                  "reopen the app: it is checked in full and applied only if it is right. With errors nothing changes."))
+    st.markdown((f"All the content lives in **one Excel workbook**: `{path}`, with **one tab per section** (the tab color shows the section; "
+                  "the LEEME tab has the index). Edit, save, close Excel and reopen the app: it is checked in full and applied only if it is "
+                  "right. With errors nothing changes."))
     last = st.session_state.get("ak_content_sync") or {}
     if last.get("status") == "problems":
-        st.error(L(lang, f"El archivo de contenido tiene {len(last['problems'])} problema(s); la app sigue con el último contenido válido:",
-                   f"The content file has {len(last['problems'])} problem(s); the app keeps the last valid content:"))
+        st.error(f"The content file has {len(last['problems'])} problem(s); the app keeps the last valid content:")
         st.code("\n".join(last["problems"][:40]), language=None, wrap_lines=True)
     elif last.get("status") == "locked":
-        st.warning(L(lang, "El archivo de contenido está abierto en otro programa; ciérralo para que la app lo lea.",
-                     "The content file is open in another program; close it so the app can read it."))
+        st.warning("The content file is open in another program; close it so the app can read it.")
     elif last.get("status") == "none":
-        if st.button(L(lang, "Crear el archivo de contenido", "Create the content file"), key="ak_ct_make"):
+        if st.button("Create the content file", key="ak_ct_make"):
             content_sync.refresh()
             st.rerun()
-    as_csv, as_xlsx = _content_files(_content_signature())
-    c = st.columns(2)
-    c[0].download_button(L(lang, "Descargar todo en un CSV", "Download everything as one CSV"), as_csv,
-                         file_name="academia_contenido.csv", mime="text/csv", key="ak_ct_csv", width="stretch")
-    c[1].download_button(L(lang, "Descargar como libro de Excel (una hoja por tabla)", "Download as an Excel workbook (one sheet per table)"),
-                         as_xlsx, file_name="academia_contenido.xlsx",
-                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="ak_ct_xlsx", width="stretch")
-    up = st.file_uploader(L(lang, "Importar un archivo de contenido (CSV o Excel)", "Import a content file (CSV or Excel)"),
+    _, as_xlsx = _content_files(_content_signature())
+    st.download_button("Download the content (Excel, one tab per section)",
+                       as_xlsx, file_name="academy_content.xlsx", type="primary",
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="ak_ct_xlsx")
+    up = st.file_uploader("Import a content file (Excel; the former CSV is accepted too)",
                           type=["csv", "xlsx"], key="ak_ct_file")
     if up is not None:
         result = content.read(up.getvalue())
         if result["summary"]:
             st.dataframe(pd.DataFrame(result["summary"]), hide_index=True, width="stretch")
-        st.caption(L(lang, f"Familias: {result.get('families', 0)} · skills: {result.get('skills', 0)} · learning paths: {result.get('learning_paths', 0)}",
-                     f"Families: {result.get('families', 0)} · skills: {result.get('skills', 0)} · learning paths: {result.get('learning_paths', 0)}"))
+        st.caption(f"Families: {result.get('families', 0)} · skills: {result.get('skills', 0)} · learning paths: {result.get('learning_paths', 0)}")
         if result["problems"]:
-            st.error(L(lang, f"{len(result['problems'])} problema(s). Corrígelos en el archivo y vuelve a subirlo; no se guardó nada.",
-                       f"{len(result['problems'])} problem(s). Fix them in the file and upload it again; nothing was saved."))
+            st.error(f"{len(result['problems'])} problem(s). Fix them in the file and upload it again; nothing was saved.")
             st.code("\n".join(result["problems"][:60]), language=None, wrap_lines=True)
-        elif st.button(L(lang, "Aplicar este contenido", "Apply this content"), type="primary", key="ak_ct_apply"):
+        elif st.button("Apply this content", type="primary", key="ak_ct_apply"):
             content.apply(result)
             content_sync.refresh()
             st.cache_data.clear()
             ui.fx("step")
-            st.toast(L(lang, "Contenido actualizado (se guardó un respaldo del anterior).", "Content updated (a backup of the previous one was saved)."))
+            st.toast("Content updated (a backup of the previous one was saved).")
             st.rerun()
     st.divider()
 
@@ -740,21 +632,19 @@ def content_section(lang: str) -> None:
 def access_section(lang: str) -> None:
     """Owners manage who else is an owner, the optional PIN and the security group that will replace this list."""
     acc = load_access()
-    with st.expander(L(lang, "Acceso: quién ve la vista de owner", "Access: who gets the owner view")):
-        st.caption(L(lang, "Sin conexión esto separa vistas, no es un control de seguridad. En Microsoft 365 lo sustituye la pertenencia "
-                           "al security group. Los champions no van en esta lista: ven solo a quienes cursan su familia.",
-                     "Offline this separates views; it is not a security control. In Microsoft 365 it is replaced by membership of the "
+    with st.expander("Access: who gets the owner view"):
+        st.caption(("Offline this separates views; it is not a security control. In Microsoft 365 it is replaced by membership of the "
                      "security group. Champions are not listed here: they only see people taking their family."))
-        owners = st.text_area(L(lang, "Owners y líderes (un nombre o correo por línea)", "Owners and leaders (one name or e-mail per line)"),
+        owners = st.text_area("Owners and leaders (one name or e-mail per line)",
                               value="\n".join(acc.owners), key="ak_acc_owners", height=120)
-        group = st.text_input(L(lang, "Security group de Entra ID (para la integración)", "Entra ID security group (for the integration)"),
+        group = st.text_input("Entra ID security group (for the integration)",
                               value=acc.security_group, key="ak_acc_group", placeholder="SG-Academia-Cloud-Owners")
-        pin = st.text_input(L(lang, "Nuevo PIN de owner (vacío = no cambiar)", "New owner PIN (empty = keep)"), type="password", key="ak_acc_pin")
-        drop = st.checkbox(L(lang, "Quitar el PIN", "Remove the PIN"), key="ak_acc_nopin") if acc.has_pin() else False
-        if st.button(L(lang, "Guardar acceso", "Save access"), key="ak_acc_save"):
+        pin = st.text_input("New owner PIN (empty = keep)", type="password", key="ak_acc_pin")
+        drop = st.checkbox("Remove the PIN", key="ak_acc_nopin") if acc.has_pin() else False
+        if st.button("Save access", key="ak_acc_save"):
             new = [o.strip() for o in owners.splitlines() if o.strip()]
             if not new:
-                st.error(L(lang, "Debe quedar al menos un owner.", "At least one owner must remain."))
+                st.error("At least one owner must remain.")
             else:
                 acc.owners, acc.security_group = new, group.strip()
                 if drop:
@@ -762,44 +652,41 @@ def access_section(lang: str) -> None:
                 elif pin:
                     acc.set_pin(pin)
                 save_access(acc)
-                st.toast(L(lang, "Acceso guardado.", "Access saved."))
+                st.toast("Access saved.")
 
 
 def route_tab(catalog: Catalog | None, conn, learner: str, lang: str) -> None:
     """The learning route: per skill family, the vendor's own training (Microsoft Learn for Microsoft skills) as steps."""
     if not catalog:
-        st.info(L(lang, "El catálogo de skills todavía no está cargado.", "The skills catalog is not loaded yet."))
+        st.info("The skills catalog is not loaded yet.")
         return
     routes = build_routes(catalog, load_materials())
     tr = RouteTracker(conn, learner)
-    st.markdown(L(lang, "Tu ruta sigue la formación oficial del proveedor: **Microsoft Learn** para las skills de Microsoft y la ruta "
-                        "de carrera del fabricante para las demás. Abre cada paso, complétalo en su sitio y márcalo aquí.",
-                  "Your route follows the vendor's official training: **Microsoft Learn** for Microsoft skills and the vendor's own "
+    st.markdown(("Your route follows the vendor's official training: **Microsoft Learn** for Microsoft skills and the vendor's own "
                   "career path for the rest. Open each step, complete it on its site and mark it here."))
-    labels = {r.family_id: f"{r.family} ({len(r.steps)} {L(lang, 'pasos', 'steps')})" for r in routes}
-    fid = st.selectbox(L(lang, "Familia de skills", "Skill family"), list(labels), key="rt_family", format_func=lambda k: labels[k])
+    labels = {r.family_id: f"{r.family} ({len(r.steps)} {'steps'})" for r in routes}
+    fid = st.selectbox("Skill family", list(labels), key="rt_family", format_func=lambda k: labels[k])
     route = next(r for r in routes if r.family_id == fid)
     vendors, vendor = route.vendors(), "*"
     if len(vendors) > 1:  # family -> technology / vendor -> skill -> class 1, class 2…
-        vendor = st.segmented_control(L(lang, "Tecnología / vendor", "Technology / vendor"), ["*"] + vendors, default="*", key=f"rt_vendor_{fid}",
-                                      format_func=lambda v: L(lang, "Todas", "All") if v == "*" else v) or "*"
+        vendor = st.segmented_control("Technology / vendor", ["*"] + vendors, default="*", key=f"rt_vendor_{fid}",
+                                      format_func=lambda v: "All" if v == "*" else v) or "*"
     shown = [x for x in route.steps if vendor == "*" or x.vendor == vendor]
     done = tr.done()
     got, total = tr.progress(route)
     c = st.columns(3)
-    c[0].metric(L(lang, "Pasos completados", "Steps completed"), f"{got} / {total}", border=True)
-    c[1].metric(L(lang, "Puntos de ruta", "Route points"), f"{tr.total_points():,}", border=True)
+    c[0].metric("Steps completed", f"{got} / {total}", border=True)
+    c[1].metric("Route points", f"{tr.total_points():,}", border=True)
     nxt = tr.next_step(route)
-    c[2].metric(L(lang, "Siguiente paso", "Next step"), nxt.skill if nxt else ("✅" if total else "—"), border=True)
+    c[2].metric("Next step", nxt.skill if nxt else ("✅" if total else "—"), border=True)
     st.progress(got / total if total else 0.0)
     fb = st.session_state.pop("rt_fb", None)
     if fb is not None:
-        st.toast(L(lang, "¡Paso completado!", "Step completed!") + (f" +{fb} pts" if fb else ""))
+        st.toast("Step completed!" + (f" +{fb} pts" if fb else ""))
     if not route.steps:
-        st.info(L(lang, "Esta familia todavía no tiene pasos de formación oficial. El champion puede agregarlos en «Mapa de skills → Editar a mano».",
-                  "This family has no official training steps yet. The champion can add them in Skills map → Edit by hand."))
-    kind_name = {"path": L(lang, "Ruta", "Path"), "module": L(lang, "Módulo", "Module"), "course": L(lang, "Curso", "Course"),
-                 "lab": L(lang, "Laboratorio", "Lab"), "tutorial": "Tutorial"}
+        st.info("This family has no official training steps yet. An owner can add them with ✏️ Edit mode at the top of this tab.")
+    kind_name = {"path": "Path", "module": "Module", "course": "Course",
+                 "lab": "Lab", "tutorial": "Tutorial"}
     last_skill = None
     for stp in shown:
         ok = stp.key in done
@@ -808,30 +695,30 @@ def route_tab(catalog: Catalog | None, conn, learner: str, lang: str) -> None:
             mine = [x for x in shown if x.skill_id == stp.skill_id]
             st.markdown(f"##### {stp.skill}")
             st.caption(" · ".join(x for x in (stp.vendor, stp.category, f"{sum(x.key in done for x in mine)} / {len(mine)} "
-                                                + L(lang, "clases", "classes")) if x))
+                                                + "classes") if x))
         with st.container(border=True):
-            st.markdown(f"{'✅' if ok else '🟠' if nxt and stp.key == nxt.key else '○'} **{L(lang, 'Clase', 'Class')} {stp.number} · {stp.title}**")
+            st.markdown(f"{'✅' if ok else '🟠' if nxt and stp.key == nxt.key else '○'} **{'Class'} {stp.number} · {stp.title}**")
             st.caption(f"{kind_name.get(stp.kind, stp.kind)} · {stp.provider}")
             a, b = st.columns([1, 2])
-            a.link_button(L(lang, f"Abrir en {stp.provider} ↗", f"Open on {stp.provider} ↗"), stp.url, width="stretch")
+            a.link_button(f"Open on {stp.provider} ↗", stp.url, width="stretch")
             if ok:
-                b.caption(L(lang, "Completado", "Completed") + (f" · [{L(lang, 'evidencia', 'evidence')}]({done[stp.key]})" if done[stp.key].startswith("https://") else ""))
+                b.caption("Completed" + (f" · [{'evidence'}]({done[stp.key]})" if done[stp.key].startswith("https://") else ""))
             else:
-                ev = b.text_input(L(lang, "Enlace de tu logro (opcional)", "Link to your achievement (optional)"), key=f"rt_ev_{stp.key}",
-                                  label_visibility="collapsed", placeholder=L(lang, "Enlace de tu logro o insignia (opcional)", "Link to your achievement or badge (optional)"))
-                if b.button(L(lang, f"Marcar como completado (+{ITEM_POINTS} pts)", f"Mark as completed (+{ITEM_POINTS} pts)"), key=f"rt_done_{stp.key}"):
+                ev = b.text_input("Link to your achievement (optional)", key=f"rt_ev_{stp.key}",
+                                  label_visibility="collapsed", placeholder="Link to your achievement or badge (optional)")
+                if b.button(f"Mark as completed (+{ITEM_POINTS} pts)", key=f"rt_done_{stp.key}"):
                     st.session_state["rt_fb"] = tr.complete(stp, ev)
                     ui.fx("step")
                     st.rerun()
     if nxt:
         target = next((s.target for s in catalog.skills if s.id == nxt.skill_id), "")
         assistant_box(ai.prompt_step_coach(route.family, nxt.skill, nxt.title, nxt.provider, target, lang=lang), lang, f"coach_{nxt.key}",
-                      L(lang, "Prepárate para tu siguiente paso con el tutor de IA", "Get ready for your next step with the AI tutor"))
+                      "Get ready for your next step with the AI tutor")
     if route.uncovered:
-        st.caption(L(lang, "Skills de esta familia sin formación oficial todavía: ", "Skills of this family without official training yet: ")
+        st.caption("Skills of this family without official training yet: "
                    + ", ".join(route.uncovered) + ".")
     if route.extras:
-        with st.expander(L(lang, "Material de consulta (no cuenta como paso)", "Reference material (does not count as a step)")):
+        with st.expander("Reference material (does not count as a step)"):
             for skill, items in route.extras.items():
                 st.markdown(f"**{skill}**")
                 material_links(items)
@@ -840,29 +727,27 @@ def route_tab(catalog: Catalog | None, conn, learner: str, lang: str) -> None:
 def assistant_section(lang: str) -> None:
     """Owners connect the company's AI assistant: where people open it and, when available, its endpoint for integrations."""
     cfg = ai.load_assistant()
-    with st.expander(L(lang, f"Asistente de IA ({cfg.name})", f"AI assistant ({cfg.name})")):
-        st.caption(L(lang, "Sin endpoint, la academia prepara el mensaje y la persona lo pega en el asistente. Con endpoint y llave, "
-                           "responde aquí mismo. La llave nunca se guarda en archivos: se lee de una variable de entorno.",
-                     "Without an endpoint, the academy prepares the message and the person pastes it into the assistant. With an endpoint "
+    with st.expander(f"AI assistant ({cfg.name})"):
+        st.caption(("Without an endpoint, the academy prepares the message and the person pastes it into the assistant. With an endpoint "
                      "and key, it answers right here. The key is never stored in files: it is read from an environment variable."))
-        st.markdown(L(lang, "Modo actual: ", "Current mode: ") + (f"**API**" if cfg.mode == "api" else L(lang, "**copiar y abrir**", "**copy and open**")))
-        on = st.checkbox(L(lang, "Mostrar el asistente a las personas", "Show the assistant to people"), value=cfg.enabled, key="ak_ai_on")
-        name = st.text_input(L(lang, "Nombre", "Name"), value=cfg.name, key="ak_ai_name")
-        url = st.text_input(L(lang, "Página del asistente (para abrirlo)", "Assistant page (to open it)"), value=cfg.url, key="ak_ai_url",
+        st.markdown("Current mode: " + (f"**API**" if cfg.mode == "api" else "**copy and open**"))
+        on = st.checkbox("Show the assistant to people", value=cfg.enabled, key="ak_ai_on")
+        name = st.text_input("Name", value=cfg.name, key="ak_ai_name")
+        url = st.text_input("Assistant page (to open it)", value=cfg.url, key="ak_ai_url",
                             placeholder="https://…")
-        api = st.text_input(L(lang, "Endpoint para integraciones (opcional)", "Endpoint for integrations (optional)"), value=cfg.api_url,
+        api = st.text_input("Endpoint for integrations (optional)", value=cfg.api_url,
                             key="ak_ai_api", placeholder="https://…/chat/completions")
-        model = st.text_input(L(lang, "Modelo o despliegue (opcional)", "Model or deployment (optional)"), value=cfg.model, key="ak_ai_model")
-        env = st.text_input(L(lang, "Variable de entorno con la llave", "Environment variable holding the key"), value=cfg.key_env, key="ak_ai_env")
-        hdr = st.selectbox(L(lang, "Cabecera de autenticación", "Auth header"), ["Authorization", "api-key"],
+        model = st.text_input("Model or deployment (optional)", value=cfg.model, key="ak_ai_model")
+        env = st.text_input("Environment variable holding the key", value=cfg.key_env, key="ak_ai_env")
+        hdr = st.selectbox("Auth header", ["Authorization", "api-key"],
                            index=0 if cfg.auth_header == "Authorization" else 1, key="ak_ai_hdr")
-        if st.button(L(lang, "Guardar asistente", "Save assistant"), key="ak_ai_save"):
+        if st.button("Save assistant", key="ak_ai_save"):
             bad = [u for u in (url.strip(), api.strip()) if u and not u.startswith("https://")]
             if bad or not name.strip():
-                st.error(L(lang, "El nombre es obligatorio y las direcciones deben empezar con https://", "A name is required and addresses must start with https://"))
+                st.error("A name is required and addresses must start with https://")
             else:
                 ai.save_assistant(ai.AssistantConfig(name.strip(), on, url.strip(), api.strip(), model.strip(), env.strip() or "AMETHYST_API_KEY", hdr))
-                st.toast(L(lang, "Asistente guardado.", "Assistant saved."))
+                st.toast("Assistant saved.")
 
 
 def skills_tab(catalog: Catalog | None, packs: list[Pack], lang: str, owner: bool = True, families: set[str] | None = None) -> None:
@@ -872,11 +757,11 @@ def skills_tab(catalog: Catalog | None, packs: list[Pack], lang: str, owner: boo
         if catalog:
             _skills_map(catalog, packs, lang, owner=False, families=families)
         else:
-            st.info(L(lang, "El catálogo de skills todavía no está cargado.", "The skills catalog is not loaded yet."))
+            st.info("The skills catalog is not loaded yet.")
         return
     if st.session_state.pop("ak_sk_saved", False):
         st.toast(T("sk_saved", lang))
-    modes = {"view": "sk_mode_view", "import": "sk_mode_import", "paste": "sk_mode_paste", "edit": "sk_mode_edit"}
+    modes = {"view": "sk_mode_view", "import": "sk_mode_import", "paste": "sk_mode_paste"}
     if st.session_state.get("ak_sk_mode") not in modes:
         st.session_state["ak_sk_mode"] = "view"
     mode = st.segmented_control("skills_mode", list(modes), key="ak_sk_mode", format_func=lambda m: T(modes[m], lang),
@@ -885,12 +770,36 @@ def skills_tab(catalog: Catalog | None, packs: list[Pack], lang: str, owner: boo
         _skills_import(catalog, packs, lang)
     elif mode == "paste":
         _skills_paste(catalog, packs, lang)
-    elif mode == "edit":
-        _skills_edit(catalog, packs, lang)
     elif catalog:
         _skills_map(catalog, packs, lang)
     else:
         st.info(T("sk_empty", lang))
+
+
+# ---------------------------------------------------------------------------------------------- edit mode
+def _team_editor(pack: Pack) -> None:
+    """Every table of the content workbook, by section (the same groups and order as the Excel file)."""
+    groups = {title: names for title, _, names, _ in content.SECTIONS}
+    pick = st.segmented_control("Section of the content", list(groups), default=list(groups)[0], key="ed_team_group") or list(groups)[0]
+    editor.edit_mode(f"team_{list(groups).index(pick)}", pack.id, groups[pick])
+
+
+def _editable(key: str, draw, pack: Pack, conn, catalog, learner: str, lang: str):
+    """The section with its «✏️ Edit mode» switch: on, the section shows its editor instead of the learner's view."""
+    special = {"tab_certs": lambda: certs_admin(conn, catalog, lang, {f.id for f in catalog.families} if catalog else set(),
+                                                learner.strip() or "me", report.roster(conn)),
+               "tab_team": lambda: _team_editor(pack)}
+    if key not in editor.SECTION_TABLES and key not in special:
+        return draw  # the forum is run in place by owners and champions; nothing else to edit there
+
+    def run() -> None:
+        if editor.toggle(key):
+            st.caption("Switch edit mode off to see the section as learners see it.")
+            special[key]() if key in special else editor.edit_mode(key, pack.id)
+            return
+        draw()
+
+    return run
 
 
 # ---------------------------------------------------------------------------------------------- page
@@ -906,22 +815,25 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
     st.title(pack.title)
     if pack.subtitle:
         st.caption(pack.subtitle)
+    editor.saved_notice()
+    news_page.splash()  # the latest Microsoft security news, once per session, in a window that closes
     ui.hero(pack, tr, lang, role)  # what to study next + overall progress; ranks and medals live in the Progress tab
     my_notices(conn, packs, exams, catalog, learner, lang)
     if catalog:  # experts, champions and owners: questions of their families still waiting in the forum
         forum = Forum(conn)
-        mine = ({f.id for f in catalog.families} if owner else set(families)) | forum.sme_families(learner.strip() or "yo", email)
+        mine = ({f.id for f in catalog.families} if owner else set(families)) | forum.sme_families(learner.strip() or "me", email)
         pending = len(forum.waiting(mine)) if mine else 0
         if pending:
-            st.warning(L(lang, f"**Foro:** {pending} pregunta(s) de tus familias de skills esperan respuesta de un experto. Ábrelas en la pestaña «Foro».",
-                         f"**Forum:** {pending} question(s) in your skill families are waiting for an expert's answer. Open them in the Forum tab."))
+            st.warning(f"**Forum:** {pending} question(s) in your skill families are waiting for an expert's answer. Open them in the Forum tab.")
     sections = [("tab_route", lambda: route_tab(catalog, conn, learner, lang)), ("tab_course", lambda: course(pack, tr, lang, role)), ("tab_glossary", lambda: glossary(pack, tr, lang)),
                 ("tab_library", lambda: library(pack, lang)), ("tab_progress", lambda: progress_tab(pack, tr, lang, role)),
                 ("tab_skills", lambda: skills_tab(catalog, packs, lang, owner, families)),
                 ("tab_certs", lambda: certifications_tab(exams, conn, learner, lang, catalog, leader=owner or bool(families))),
-                ("tab_forum", lambda: forum_tab(conn, catalog, learner, email, lang, owner, families))]
+                ("tab_forum", lambda: forum_tab(conn, catalog, learner, email, lang, owner, families)),
+                ("tab_rhythm", lambda: rhythm_page.rhythm_tab(conn, catalog, packs, exams, learner, owner, families)),
+                ("tab_news", lambda: news_page.knowledge_tab(lang))]  # Knowledge exchange: the practice's reading bank
     if owner or families:  # reports are for owners (every family) and champions (their own)
-        sections.append(("tab_reports", lambda: reports_tab(conn, packs, exams, catalog, lang, learner.strip() or "yo", None if owner else families)))
+        sections.append(("tab_reports", lambda: reports_tab(conn, packs, exams, catalog, lang, learner.strip() or "me", None if owner else families)))
         sections.append(("tab_demand", lambda: demand_tab(catalog, packs, lang)))  # what the market asks for, against the practice and the courses
     if owner:  # team measurements are for owners and leaders only
 
@@ -940,6 +852,8 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
             notices_section(conn, packs, exams, catalog, lang, only=people)
 
         sections.append(("tab_team", family_view))
+    if owner:  # ✏️ Edit mode: the owner edits the section's own content with drop-down lists
+        sections = [(key, _editable(key, draw, pack, conn, catalog, learner, lang)) for key, draw in sections]
     labels = [f"{n} · {T(key, lang)}" for n, (key, _) in enumerate(sections, start=1)]
     goto = st.session_state.pop("ak_goto", None)  # set by the «start lesson» button: open that tab
     target = next((lb for lb, (key, _) in zip(labels, sections) if key == goto), None)
@@ -955,6 +869,6 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
             draw()
     if pack.disclaimer:
         st.caption(pack.disclaimer)
-    st.caption(f"{pack.title} · v{pack.version} · {VBD_POINTS} pts/VBD")
+    st.caption(f"{pack.title} · v{pack.version}")
     ui.legal_footer(lang)
     ui.play_fx(sound=st.session_state.get("ak_sound", True))  # the sound / celebration of what just happened

@@ -15,7 +15,7 @@ if str(ROOT) not in sys.path:
 import streamlit as st  # noqa: E402
 
 from academy import page  # noqa: E402
-from academy import content_sync, notify  # noqa: E402
+from academy import content_sync, english, notify  # noqa: E402
 from academy import legal  # noqa: E402
 from academy.access import load_access, save_access  # noqa: E402
 from academy.catalog import load_catalog  # noqa: E402
@@ -39,18 +39,21 @@ def _conn(path: str):
 
 
 @st.cache_data
-def _pack(name: str, lang: str = "en"):
-    return load_pack(name, lang)
+def _pack(name: str):
+    return load_pack(name)
 
 
 @st.cache_data
-def _exam(name: str, lang: str = "en"):
-    return load_exam(name, lang)
+def _exam(name: str):
+    return load_exam(name)
 
 
 legal.guard()  # the copyright notice is fixed; the app does not open if it was altered
 
-# The content file (content/academia_contenido.csv) is where courses, videos, learning paths and skills are edited:
+# The academy is English only: files of earlier two-language versions are converted once (with a backup).
+if english.migrate():
+    st.cache_data.clear()
+# The content file (content/academy_content.xlsx) is where courses, videos, learning paths and skills are edited:
 # when it changed since the last run it is checked and, if it is right, applied before anything is shown.
 _sync = content_sync.sync()
 if _sync["status"] == "none":  # first run: write the file from what the app already holds
@@ -62,30 +65,27 @@ if _sync["status"] == "applied":
 
 packs = available_packs()
 if not packs:
-    st.error("No packs in packs/. Copy packs/_plantilla to packs/<your-topic> and fill in pack.json. · "
-             "No hay paquetes en packs/. Copia packs/_plantilla a packs/<tu-tema> y llena pack.json.")
+    st.error("No courses in packs/. Copy packs/_template to packs/<your-topic> and fill in pack.json.")
     st.stop()
 default = os.environ.get("ACADEMY_PACK", packs[0])
 with st.sidebar:
-    lang = st.radio("Language / Idioma", ["en", "es"], horizontal=True, key="ak_lang", format_func=lambda x: "Español" if x == "es" else "English")  # English first = default
-    name = st.selectbox(T("pack", lang), packs, index=packs.index(default) if default in packs else 0, key="ak_pack",
-                        format_func=lambda n: _pack(n, lang).title)
-    pack = _pack(name, lang)
-    learner = st.text_input(T("who", lang), value=st.query_params.get("u", "yo"), key="ak_learner", help=T("who_help", lang))
+    name = st.selectbox(T("pack"), packs, index=packs.index(default) if default in packs else 0, key="ak_pack",
+                        format_func=lambda n: _pack(n).title)
+    pack = _pack(name)
+    learner = st.text_input(T("who"), value=st.query_params.get("u", "me"), key="ak_learner", help=T("who_help"))
     role = None
     if pack.roles:
         opts = [""] + list(pack.roles)
-        if st.session_state.get("ak_role") not in opts:  # role names are translated with the pack
+        if st.session_state.get("ak_role") not in opts:  # the course's roles changed
             st.session_state.pop("ak_role", None)
-        role = st.selectbox(T("role", lang), opts, key="ak_role", format_func=lambda r: r or T("any_role", lang)) or None
+        role = st.selectbox(T("role"), opts, key="ak_role", format_func=lambda r: r or T("any_role")) or None
 
-    st.toggle("Sounds" if lang == "en" else "Sonidos", value=True, key="ak_sound",
-              help="A short sound when you answer, finish a step or complete a lesson." if lang == "en"
-              else "Un sonido corto al responder, terminar un paso o completar una lección.")
-    email = st.text_input(T("email", lang), key="ak_email", help=T("email_help", lang), placeholder="nombre@empresa.com" if lang == "es" else "name@company.com")
+    st.toggle("Sounds", value=True, key="ak_sound",
+              help="A short sound when you answer, finish a step or complete a lesson.")
+    email = st.text_input(T("email"), key="ak_email", help=T("email_help"), placeholder="name@company.com")
 
 conn = _conn(os.environ.get("ACADEMY_DB", str(ROOT / "data" / "academy.db")))
-who = learner.strip() or "yo"
+who = learner.strip() or "me"
 if email.strip() and "@" in email and notify.emails(conn).get(who) != email.strip():
     notify.set_email(conn, who, email)
 email = email.strip() or notify.emails(conn).get(who, "")
@@ -99,25 +99,25 @@ mine = acc.champion_families(who, email, catalog)
 with st.sidebar:
     if not acc.configured:
         st.divider()
-        st.caption(T("claim", lang))
-        if st.button(T("claim_btn", lang), key="ak_claim"):
+        st.caption(T("claim"))
+        if st.button(T("claim_btn"), key="ak_claim"):
             acc.owners = [email or who]
             save_access(acc)
             st.rerun()
     elif is_owner or mine:
         st.divider()
-        on = st.toggle(T("view_owner" if is_owner else "view_champion", lang), value=True, key="ak_owner_view",
-                       help=T("view_owner_help" if is_owner else "view_champion_help", lang))
+        on = st.toggle(T("view_owner" if is_owner else "view_champion"), value=True, key="ak_owner_view",
+                       help=T("view_owner_help" if is_owner else "view_champion_help"))
         if on and acc.has_pin():
-            pin = st.text_input(T("pin", lang), type="password", key="ak_owner_pin")
+            pin = st.text_input(T("pin"), type="password", key="ak_owner_pin")
             on = bool(pin) and acc.check_pin(pin)
             if pin and not on:
-                st.caption(T("pin_bad", lang))
+                st.caption(T("pin_bad"))
         owner, families = on and is_owner, (mine if on and not is_owner else set())
 
-page.render(pack, conn, learner, lang, role, catalog=catalog, packs=[_pack(n, lang) for n in packs],
-            exams=[_exam(n, lang) for n in available_exams()], owner=owner, families=families, email=email)
+page.render(pack, conn, learner, "en", role, catalog=catalog, packs=[_pack(n) for n in packs],
+            exams=[_exam(n) for n in available_exams()], owner=owner, families=families, email=email)
 
 with st.sidebar:
     st.divider()
-    st.caption(legal.notice(lang))
+    st.caption(legal.notice("en"))

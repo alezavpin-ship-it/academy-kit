@@ -1,9 +1,9 @@
 """The academy content as one file.
 
-    python tools/content.py export                      -> content/academia_contenido.csv (the file the app reads)
-    python tools/content.py export contenido.xlsx       -> the same content as an Excel workbook, one sheet per table
-    python tools/content.py check  archivo.csv|xlsx     -> lists the problems, changes nothing
-    python tools/content.py import archivo.csv|xlsx     -> checks it and, if it is right, replaces the app's content (with a backup)
+    python tools/content.py export                      -> content/academy_content.xlsx (the file the app reads, one tab per section)
+    python tools/content.py export content.csv          -> the same content as one CSV (column Table = the tab each row belongs to)
+    python tools/content.py check  file.csv|xlsx        -> lists the problems, changes nothing
+    python tools/content.py import file.csv|xlsx        -> checks it and, if it is right, replaces the app's content (with a backup)
 """
 
 import sys

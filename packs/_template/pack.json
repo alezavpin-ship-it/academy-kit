@@ -1,0 +1,206 @@
+{
+ "meta": {
+  "id": "my-topic",
+  "title": "<TOPIC> Academy",
+  "subtitle": "<One line: what the learner will learn and why>",
+  "language": "en",
+  "version": "0.1",
+  "updated": "YYYY-MM-DD",
+  "disclaimer": "<Optional notice, e.g. 'Practice in test environments'>",
+  "ranks": [
+   {
+    "name": "<Rank 1>",
+    "points": 0,
+    "emoji": "🔰",
+    "color": "#8A99AD"
+   },
+   {
+    "name": "<Rank 2>",
+    "points": 100,
+    "emoji": "🛡️",
+    "color": "#FFB414"
+   },
+   {
+    "name": "<Rank 3>",
+    "points": 300,
+    "emoji": "🔐",
+    "color": "#FF8A4C"
+   },
+   {
+    "name": "<Rank 4>",
+    "points": 600,
+    "emoji": "🏰",
+    "color": "#FF5800"
+   },
+   {
+    "name": "<Rank 5>",
+    "points": 1000,
+    "emoji": "🦉",
+    "color": "#CE0569"
+   }
+  ]
+ },
+ "levels": [
+  "<Level 1>",
+  "<Level 2>",
+  "<Level 3>",
+  "<Level 4>"
+ ],
+ "roles": {
+  "<Role A>": [
+   "<skill-1>",
+   "<skill-2>"
+  ],
+  "<Role B>": [
+   "<skill-2>"
+  ]
+ },
+ "topics": {
+  "<topic-1>": "<Topic name in the video library>",
+  "references": "Official references"
+ },
+ "lessons": [
+  {
+   "id": "a1",
+   "level": "<Level 1>",
+   "title": "<Lesson title>",
+   "summary": "<1-2 sentences: the central idea>",
+   "points": [
+    "<Key point 1 (concrete, verifiable)>",
+    "<Key point 2>",
+    "<Key point 3>",
+    "<Key point 4 (optional)>"
+   ],
+   "skills": [
+    "<skill-1>"
+   ],
+   "practice": {
+    "label": "<What to practice>",
+    "url": "https://<lab-or-documentation>"
+   },
+   "quiz": [
+    {
+     "q": "<Question 1: a real situation, not memory>",
+     "options": [
+      "<A>",
+      "<B>",
+      "<C>",
+      "<D>"
+     ],
+     "answer": 1,
+     "why": "<Why the correct one is correct>"
+    },
+    {
+     "q": "<Question 2: a real situation, not memory>",
+     "options": [
+      "<A>",
+      "<B>",
+      "<C>",
+      "<D>"
+     ],
+     "answer": 2,
+     "why": "<Why the correct one is correct>"
+    },
+    {
+     "q": "<Question 3: a real situation, not memory>",
+     "options": [
+      "<A>",
+      "<B>",
+      "<C>",
+      "<D>"
+     ],
+     "answer": 0,
+     "why": "<Why the correct one is correct>"
+    }
+   ],
+   "resources": [
+    "video_1",
+    "video_2",
+    "doc_1"
+   ],
+   "resource_notes": {
+    "video_1": "<Why this video matters for THIS lesson (optional)>"
+   }
+  }
+ ],
+ "glossary": [
+  {
+   "term": "<Term 1>",
+   "category": "<Category>",
+   "definition": "<Short definition>"
+  },
+  {
+   "term": "<Term 2>",
+   "category": "<Category>",
+   "definition": "<Short definition>"
+  },
+  {
+   "term": "<Term 3>",
+   "category": "<Category>",
+   "definition": "<Short definition>"
+  },
+  {
+   "term": "<Term 4>",
+   "category": "<Category>",
+   "definition": "<Short definition>"
+  },
+  {
+   "term": "<Term 5>",
+   "category": "<Category>",
+   "definition": "<Short definition>"
+  },
+  {
+   "term": "<Term 6>",
+   "category": "<Category>",
+   "definition": "<Short definition>"
+  },
+  {
+   "term": "<Term 7>",
+   "category": "<Category>",
+   "definition": "<Short definition>"
+  },
+  {
+   "term": "<Term 8>",
+   "category": "<Category>",
+   "definition": "<Short definition>"
+  }
+ ],
+ "resources": {
+  "video_1": {
+   "title": "<EXACT title YouTube shows>",
+   "url": "https://www.youtube.com/watch?v=<ID>",
+   "channel": "<EXACT channel>",
+   "lang": "en",
+   "topic": "<topic-1>",
+   "why": "<What it explains, in one line>",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "YYYY-MM-DD"
+  },
+  "video_2": {
+   "title": "<Title>",
+   "url": "https://www.youtube.com/watch?v=<ID2>",
+   "channel": "<Another channel>",
+   "lang": "en",
+   "topic": "<topic-1>",
+   "why": "<What it explains>",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "<Expert speaking>",
+   "verified": "YYYY-MM-DD"
+  },
+  "doc_1": {
+   "title": "<Official documentation page>",
+   "url": "https://learn.microsoft.com/<page>",
+   "channel": "Microsoft Learn",
+   "lang": "en",
+   "topic": "references",
+   "why": "<What to read there>",
+   "kind": "link",
+   "level": "basic",
+   "who": "",
+   "verified": "YYYY-MM-DD"
+  }
+ }
+}

@@ -4,7 +4,7 @@
   "code": "AI-901",
   "title": "Microsoft Azure AI Fundamentals",
   "provider": "Microsoft",
-  "language": "es",
+  "language": "en",
   "family": "ai-security-governance",
   "skills": [
    "azure-ai-security",
@@ -16,38 +16,38 @@
   "outline_date": "2026-04-15",
   "verified": "2026-10-01",
   "version": "0.1",
-  "disclaimer": "Preguntas originales de práctica escritas para esta academia a partir de la guía de estudio pública. No son preguntas del examen real. La duración y el número de preguntas del simulacro son de esta academia, no datos oficiales.",
+  "disclaimer": "Original practice questions written for this academy from the public study guide. They are not questions from the real exam. The duration and number of questions of the mock exam are this academy's, not official figures.",
   "links": [
    {
-    "title": "Examen AI-901 (página oficial)",
+    "title": "Exam AI-901 (official page)",
     "url": "https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-901/",
     "kind": "exam",
     "provider": "Microsoft Learn",
     "verified": "2026-10-01"
    },
    {
-    "title": "Guía de estudio oficial",
+    "title": "Official study guide",
     "url": "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-901",
     "kind": "guide",
     "provider": "Microsoft Learn",
     "verified": "2026-10-01"
    },
    {
-    "title": "Curso AI-901T00: Introduction to AI in Azure",
+    "title": "Course AI-901T00: Introduction to AI in Azure",
     "url": "https://learn.microsoft.com/en-us/training/courses/ai-901t00",
     "kind": "course",
     "provider": "Microsoft Learn",
     "verified": "2026-10-01"
    },
    {
-    "title": "Evaluación de práctica oficial (requiere iniciar sesión)",
+    "title": "Official practice assessment (sign-in required)",
     "url": "https://aiskillsnavigator.microsoft.com/credentials/cert-83587e0a0754cfee561ade3e27d9fa1cdaf15ae03be52d2413b2b858d1b4eda4",
     "kind": "practice",
     "provider": "Microsoft AI Skills Navigator",
     "verified": "2026-10-01"
    },
    {
-    "title": "Sandbox del examen (conoce la interfaz)",
+    "title": "Exam sandbox (get to know the interface)",
     "url": "https://aka.ms/examdemo",
     "kind": "sandbox",
     "provider": "Microsoft",
@@ -58,13 +58,13 @@
  "domains": [
   {
    "id": "concepts",
-   "title": "Identificar conceptos y capacidades de IA",
+   "title": "Identify AI concepts and capabilities",
    "weight": 42.5,
    "official": "40–45%"
   },
   {
    "id": "foundry",
-   "title": "Implementar soluciones de IA con Microsoft Foundry",
+   "title": "Implement AI solutions with Microsoft Foundry",
    "weight": 57.5,
    "official": "55–60%"
   }
@@ -73,15 +73,15 @@
   {
    "id": "rai",
    "domain": "concepts",
-   "title": "Principios de IA responsable",
-   "summary": "Seis principios guían cualquier solución de IA en Microsoft. El examen pide reconocer cuál aplica en una situación concreta.",
+   "title": "Responsible AI principles",
+   "summary": "Six principles guide any AI solution at Microsoft. The exam asks you to recognize which one applies in a specific situation.",
    "points": [
-    "Equidad (fairness): el sistema trata a todas las personas de forma comparable; se vigilan sesgos en datos y resultados.",
-    "Confiabilidad y seguridad: se comporta como se espera, incluso ante entradas inesperadas, y se prueba antes de liberar.",
-    "Privacidad y seguridad: protege los datos personales y resiste ataques.",
-    "Inclusión: sirve a personas con distintas capacidades, idiomas y contextos.",
-    "Transparencia: las personas saben que tratan con IA, cómo funciona y cuáles son sus límites.",
-    "Responsabilidad (accountability): hay personas que responden por el sistema y pueden supervisarlo o corregirlo."
+    "Fairness: the system treats all people comparably; bias in data and outcomes is monitored.",
+    "Reliability and safety: it behaves as expected, even with unexpected inputs, and is tested before release.",
+    "Privacy and security: it protects personal data and resists attacks.",
+    "Inclusiveness: it serves people with different abilities, languages and contexts.",
+    "Transparency: people know they are dealing with AI, how it works and what its limits are.",
+    "Accountability: there are people who answer for the system and can oversee or correct it."
    ],
    "materials": [
     {
@@ -110,31 +110,31 @@
     {
      "id": "rai-match",
      "type": "match",
-     "prompt": "Relaciona cada situación con el principio de IA responsable que atiende.",
+     "prompt": "Match each situation with the responsible AI principle it addresses.",
      "pairs": [
       [
-       "Un modelo de crédito aprueba menos solicitudes de un grupo con el mismo perfil financiero",
-       "Equidad"
+       "A credit model approves fewer applications from one group with the same financial profile",
+       "Fairness"
       ],
       [
-       "El asistente avisa al usuario que las respuestas las genera una IA y pueden tener errores",
-       "Transparencia"
+       "The assistant tells the user that answers are generated by AI and may contain errors",
+       "Transparency"
       ],
       [
-       "Un comité revisa y puede detener el sistema si causa daño",
-       "Responsabilidad"
+       "A committee reviews the system and can stop it if it causes harm",
+       "Accountability"
       ],
       [
-       "La app de voz funciona con lector de pantalla y con distintos acentos",
-       "Inclusión"
+       "The voice app works with a screen reader and with different accents",
+       "Inclusiveness"
       ],
       [
-       "Los datos de pacientes se anonimizan antes de entrenar",
-       "Privacidad y seguridad"
+       "Patient data is anonymized before training",
+       "Privacy and security"
       ],
       [
-       "El modelo se prueba con entradas extremas antes de salir a producción",
-       "Confiabilidad y seguridad"
+       "The model is tested with extreme inputs before going to production",
+       "Reliability and safety"
       ]
      ]
     }
@@ -143,15 +143,15 @@
   {
    "id": "models",
    "domain": "concepts",
-   "title": "Modelos de IA generativa: cómo funcionan y cómo se configuran",
-   "summary": "Un modelo generativo predice el siguiente token a partir del contexto. Elegir bien el modelo, el tipo de despliegue y los parámetros decide costo, latencia y calidad.",
+   "title": "Generative AI models: how they work and how they are configured",
+   "summary": "A generative model predicts the next token from the context. Choosing the right model, deployment type and parameters decides cost, latency and quality.",
    "points": [
-    "El texto se divide en tokens; el modelo los convierte en vectores (embeddings) y usa atención para decidir qué partes del contexto pesan más.",
-    "La ventana de contexto es el máximo de tokens que el modelo considera entre instrucciones, historial y respuesta.",
-    "Temperatura y top-p controlan la variedad de la respuesta; el máximo de tokens de salida limita su longitud.",
-    "Para responder con datos propios y recientes se usa grounding (RAG); el ajuste fino cambia el comportamiento del modelo y cuesta más.",
-    "Los modelos pequeños (SLM) son más baratos y rápidos; los grandes y los multimodales cubren tareas más complejas o con imagen y audio.",
-    "El despliegue estándar se paga por tokens consumidos; el aprovisionado reserva capacidad para una latencia predecible."
+    "Text is split into tokens; the model turns them into vectors (embeddings) and uses attention to decide which parts of the context weigh more.",
+    "The context window is the maximum number of tokens the model considers across instructions, history and response.",
+    "Temperature and top-p control how varied the response is; the maximum output tokens limits its length.",
+    "To answer with your own, recent data you use grounding (RAG); fine-tuning changes the model's behavior and costs more.",
+    "Small language models (SLMs) are cheaper and faster; large and multimodal ones cover more complex tasks or tasks with image and audio.",
+    "Standard deployment is billed per token consumed; provisioned deployment reserves capacity for predictable latency."
    ],
    "materials": [
     {
@@ -180,13 +180,13 @@
     {
      "id": "models-order",
      "type": "order",
-     "prompt": "Ordena lo que ocurre cuando un modelo generativo responde a un prompt.",
+     "prompt": "Put in order what happens when a generative model responds to a prompt.",
      "steps": [
-      "El texto del prompt se divide en tokens",
-      "Cada token se convierte en un vector (embedding)",
-      "La atención pondera qué tokens del contexto importan más",
-      "El modelo calcula la probabilidad del siguiente token",
-      "Se elige un token según la temperatura y se repite hasta terminar"
+      "The prompt text is split into tokens",
+      "Each token is converted into a vector (embedding)",
+      "Attention weighs which tokens of the context matter most",
+      "The model computes the probability of the next token",
+      "A token is chosen according to the temperature, and this repeats until done"
      ]
     }
    ]
@@ -194,14 +194,14 @@
   {
    "id": "workloads",
    "domain": "concepts",
-   "title": "Cargas de trabajo de IA: texto, voz, visión y extracción",
-   "summary": "El examen describe un escenario y pide identificar la carga de trabajo y la técnica correctas.",
+   "title": "AI workloads: text, speech, vision and extraction",
+   "summary": "The exam describes a scenario and asks you to identify the right workload and technique.",
    "points": [
-    "Análisis de texto: extracción de frases clave, detección de entidades, análisis de sentimiento y resumen.",
-    "Voz: reconocimiento (voz a texto) y síntesis (texto a voz).",
-    "Visión: clasificar una imagen, detectar objetos y su ubicación, leer texto (OCR) o describir la imagen; los modelos de generación crean imágenes nuevas a partir de texto.",
-    "Extracción de información: convertir documentos, imágenes, audio y video en campos estructurados.",
-    "IA generativa crea contenido; la IA agéntica además usa herramientas y da pasos para cumplir un objetivo."
+    "Text analysis: key phrase extraction, entity detection, sentiment analysis and summarization.",
+    "Speech: recognition (speech to text) and synthesis (text to speech).",
+    "Vision: classifying an image, detecting objects and their location, reading text (OCR) or describing the image; generation models create new images from text.",
+    "Information extraction: turning documents, images, audio and video into structured fields.",
+    "Generative AI creates content; agentic AI also uses tools and takes steps to reach a goal."
    ],
    "materials": [
     {
@@ -230,31 +230,31 @@
     {
      "id": "workloads-match",
      "type": "match",
-     "prompt": "Relaciona cada necesidad con la técnica de IA adecuada.",
+     "prompt": "Match each need with the right AI technique.",
      "pairs": [
       [
-       "Saber si las reseñas de clientes son positivas o negativas",
-       "Análisis de sentimiento"
+       "Finding out whether customer reviews are positive or negative",
+       "Sentiment analysis"
       ],
       [
-       "Obtener nombres de personas, empresas y fechas de un contrato",
-       "Detección de entidades"
+       "Getting the names of people, companies and dates from a contract",
+       "Entity detection"
       ],
       [
-       "Transcribir una reunión grabada",
-       "Reconocimiento de voz"
+       "Transcribing a recorded meeting",
+       "Speech recognition"
       ],
       [
-       "Contar cuántos cascos aparecen en una foto y dónde están",
-       "Detección de objetos"
+       "Counting how many helmets appear in a photo and where they are",
+       "Object detection"
       ],
       [
-       "Leer el texto impreso de una foto de un letrero",
+       "Reading the printed text in a photo of a sign",
        "OCR"
       ],
       [
-       "Crear una ilustración a partir de una descripción",
-       "Generación de imágenes"
+       "Creating an illustration from a description",
+       "Image generation"
       ]
      ]
     }
@@ -263,14 +263,14 @@
   {
    "id": "genai",
    "domain": "foundry",
-   "title": "Apps y agentes de IA generativa con Foundry",
-   "summary": "Del prompt al agente: desplegar un modelo en un proyecto de Foundry, probarlo en el playground, llamarlo desde código y darle instrucciones y herramientas.",
+   "title": "Generative AI apps and agents with Foundry",
+   "summary": "From prompt to agent: deploying a model in a Foundry project, testing it in the playground, calling it from code and giving it instructions and tools.",
    "points": [
-    "El mensaje de sistema fija rol, tono, límites y formato; el mensaje de usuario trae la petición concreta.",
-    "Un buen prompt da contexto, instrucciones claras, ejemplos y el formato de salida esperado.",
-    "En el portal de Foundry se elige un modelo del catálogo, se despliega en un proyecto y se prueba en el playground.",
-    "Una app cliente usa el endpoint del proyecto y el nombre del despliegue; mantiene el historial de mensajes para conservar el contexto.",
-    "Un agente combina un modelo, instrucciones y herramientas (por ejemplo, búsqueda en archivos o ejecución de código) y conserva la conversación en un hilo."
+    "The system message sets role, tone, limits and format; the user message carries the specific request.",
+    "A good prompt gives context, clear instructions, examples and the expected output format.",
+    "In the Foundry portal you choose a model from the catalog, deploy it in a project and test it in the playground.",
+    "A client app uses the project endpoint and the deployment name; it keeps the message history to preserve context.",
+    "An agent combines a model, instructions and tools (for example, file search or code execution) and keeps the conversation in a thread."
    ],
    "materials": [
     {
@@ -299,26 +299,26 @@
     {
      "id": "genai-order",
      "type": "order",
-     "prompt": "Ordena los pasos para tener un chat funcionando con un modelo en Foundry.",
+     "prompt": "Put in order the steps to get a chat working with a model in Foundry.",
      "steps": [
-      "Crear un proyecto en Microsoft Foundry",
-      "Elegir un modelo en el catálogo",
-      "Desplegar el modelo",
-      "Probarlo en el playground con un mensaje de sistema",
-      "Conectar la app cliente al endpoint del proyecto con el SDK"
+      "Create a project in Microsoft Foundry",
+      "Choose a model from the catalog",
+      "Deploy the model",
+      "Test it in the playground with a system message",
+      "Connect the client app to the project endpoint with the SDK"
      ]
     },
     {
      "id": "genai-lab",
      "type": "lab",
-     "prompt": "Práctica guiada: tu primer agente en el portal de Foundry (usa una suscripción de pruebas).",
+     "prompt": "Guided practice: your first agent in the Foundry portal (use a test subscription).",
      "url": "https://learn.microsoft.com/en-us/training/courses/ai-901t00",
-     "label": "Abrir el curso AI-901T00 en Microsoft Learn",
+     "label": "Open course AI-901T00 on Microsoft Learn",
      "steps": [
-      "Creé un proyecto y desplegué un modelo de chat",
-      "Escribí un mensaje de sistema y comparé respuestas con temperatura baja y alta",
-      "Creé un agente con instrucciones y al menos una herramienta",
-      "Probé el agente con 3 preguntas y anoté una respuesta mejorable"
+      "I created a project and deployed a chat model",
+      "I wrote a system message and compared responses at low and high temperature",
+      "I created an agent with instructions and at least one tool",
+      "I tested the agent with 3 questions and noted one response that could be better"
      ]
     }
    ]
@@ -326,17 +326,17 @@
   {
    "id": "text-speech",
    "domain": "foundry",
-   "title": "Soluciones de texto y voz con Foundry",
-   "summary": "Analizar texto y conversar por voz, ya sea con un modelo multimodal desplegado o con Azure Speech en Foundry Tools.",
+   "title": "Text and speech solutions with Foundry",
+   "summary": "Analyzing text and conversing by voice, either with a deployed multimodal model or with Azure Speech in Foundry Tools.",
    "points": [
-    "Un modelo generativo puede hacer análisis de texto con un prompt: resumir, clasificar sentimiento o extraer entidades.",
-    "Los modelos multimodales aceptan audio como entrada y pueden responder a un prompt hablado.",
-    "Azure Speech en Foundry Tools ofrece voz a texto y texto a voz, con voces neuronales en muchos idiomas.",
-    "Para una app de voz: capturar el audio, transcribirlo, generar la respuesta y sintetizarla."
+    "A generative model can do text analysis with a prompt: summarizing, classifying sentiment or extracting entities.",
+    "Multimodal models accept audio as input and can respond to a spoken prompt.",
+    "Azure Speech in Foundry Tools offers speech to text and text to speech, with neural voices in many languages.",
+    "For a voice app: capture the audio, transcribe it, generate the response and synthesize it."
    ],
    "materials": [
     {
-     "title": "Curso AI-901T00: Introduction to AI in Azure",
+     "title": "Course AI-901T00: Introduction to AI in Azure",
      "url": "https://learn.microsoft.com/en-us/training/courses/ai-901t00",
      "kind": "course",
      "provider": "Microsoft Learn",
@@ -354,13 +354,13 @@
     {
      "id": "speech-order",
      "type": "order",
-     "prompt": "Ordena el flujo de un asistente de voz.",
+     "prompt": "Put in order the flow of a voice assistant.",
      "steps": [
-      "El usuario habla al micrófono",
-      "El audio se convierte en texto (reconocimiento de voz)",
-      "El modelo genera la respuesta en texto",
-      "El texto se convierte en audio (síntesis de voz)",
-      "El usuario escucha la respuesta"
+      "The user speaks into the microphone",
+      "The audio is converted to text (speech recognition)",
+      "The model generates the response as text",
+      "The text is converted to audio (speech synthesis)",
+      "The user hears the response"
      ]
     }
    ]
@@ -368,13 +368,13 @@
   {
    "id": "vision",
    "domain": "foundry",
-   "title": "Visión e imágenes generadas con Foundry",
-   "summary": "Interpretar imágenes dentro de un prompt con un modelo multimodal y crear imágenes nuevas con un modelo generativo.",
+   "title": "Vision and generated images with Foundry",
+   "summary": "Interpreting images inside a prompt with a multimodal model and creating new images with a generative model.",
    "points": [
-    "Un modelo multimodal recibe texto e imagen en el mismo prompt y puede describir, comparar o responder preguntas sobre la imagen.",
-    "Un modelo de generación de imágenes crea una imagen a partir de una descripción en texto; el detalle del prompt define el resultado.",
-    "En una app, la imagen se envía como URL o como datos codificados junto con el texto del mensaje.",
-    "Los filtros de contenido aplican tanto a los prompts como a las imágenes generadas."
+    "A multimodal model receives text and image in the same prompt and can describe, compare or answer questions about the image.",
+    "An image generation model creates an image from a text description; the detail of the prompt defines the result.",
+    "In an app, the image is sent as a URL or as encoded data together with the message text.",
+    "Content filters apply both to prompts and to generated images."
    ],
    "materials": [
     {
@@ -396,19 +396,19 @@
     {
      "id": "vision-match",
      "type": "match",
-     "prompt": "Relaciona cada tarea con el tipo de modelo que la resuelve.",
+     "prompt": "Match each task with the type of model that solves it.",
      "pairs": [
       [
-       "Describir qué pasa en una foto que sube el usuario",
-       "Modelo multimodal (texto + imagen)"
+       "Describing what is happening in a photo the user uploads",
+       "Multimodal model (text + image)"
       ],
       [
-       "Crear un logotipo de ejemplo a partir de una descripción",
-       "Modelo de generación de imágenes"
+       "Creating a sample logo from a description",
+       "Image generation model"
       ],
       [
-       "Resumir un correo largo",
-       "Modelo de lenguaje (solo texto)"
+       "Summarizing a long e-mail",
+       "Language model (text only)"
       ]
      ]
     }
@@ -417,14 +417,14 @@
   {
    "id": "extraction",
    "domain": "foundry",
-   "title": "Extracción de información con Content Understanding",
-   "summary": "Azure Content Understanding en Foundry Tools convierte documentos, imágenes, audio y video en datos estructurados mediante analizadores.",
+   "title": "Information extraction with Content Understanding",
+   "summary": "Azure Content Understanding in Foundry Tools turns documents, images, audio and video into structured data through analyzers.",
    "points": [
-    "Un analizador define qué contenido procesar y qué campos devolver; hay analizadores prediseñados y personalizados.",
-    "En un analizador personalizado se describe un esquema de campos (nombre, tipo y descripción) y el servicio los extrae.",
-    "De documentos y formularios se obtienen campos como fechas, totales o nombres; de imágenes, descripciones y atributos.",
-    "De audio y video se obtienen transcripciones, resúmenes y campos por segmento.",
-    "La app cliente envía el archivo al analizador y recibe el resultado en JSON."
+    "An analyzer defines which content to process and which fields to return; there are prebuilt and custom analyzers.",
+    "In a custom analyzer you describe a field schema (name, type and description) and the service extracts the fields.",
+    "From documents and forms you get fields such as dates, totals or names; from images, descriptions and attributes.",
+    "From audio and video you get transcripts, summaries and fields per segment.",
+    "The client app sends the file to the analyzer and receives the result as JSON."
    ],
    "materials": [
     {
@@ -453,13 +453,13 @@
     {
      "id": "extraction-order",
      "type": "order",
-     "prompt": "Ordena los pasos para extraer datos de facturas con un analizador personalizado.",
+     "prompt": "Put in order the steps to extract data from invoices with a custom analyzer.",
      "steps": [
-      "Definir el esquema de campos que se necesitan",
-      "Crear el analizador con ese esquema",
-      "Probarlo con facturas de ejemplo",
-      "Enviar las facturas desde la app cliente",
-      "Leer los campos del resultado en JSON"
+      "Define the schema of the fields you need",
+      "Create the analyzer with that schema",
+      "Test it with sample invoices",
+      "Send the invoices from the client app",
+      "Read the fields from the JSON result"
      ]
     }
    ]
@@ -468,457 +468,457 @@
  "questions": [
   {
    "module": "rai",
-   "q": "Un banco descubre que su modelo de préstamos rechaza con más frecuencia a solicitantes de cierto código postal con el mismo historial que otros. ¿Qué principio se está incumpliendo?",
+   "q": "A bank finds that its loan model rejects applicants from a certain postal code more often than others with the same history. Which principle is being breached?",
    "options": [
-    "Transparencia",
-    "Equidad",
-    "Inclusión",
-    "Responsabilidad"
+    "Transparency",
+    "Fairness",
+    "Inclusiveness",
+    "Accountability"
    ],
    "answer": 1,
-   "why": "Tratar distinto a personas con el mismo perfil es un problema de equidad (sesgo en datos o resultados).",
+   "why": "Treating people with the same profile differently is a fairness problem (bias in data or outcomes).",
    "id": "q01"
   },
   {
    "module": "rai",
-   "q": "Tu equipo publica un chatbot y agrega un aviso: «Estas respuestas las genera una IA y pueden contener errores». ¿Qué principio atiende ese aviso?",
+   "q": "Your team publishes a chatbot and adds a notice: \"These answers are generated by AI and may contain errors\". Which principle does that notice address?",
    "options": [
-    "Transparencia",
-    "Privacidad y seguridad",
-    "Equidad",
-    "Confiabilidad y seguridad"
+    "Transparency",
+    "Privacy and security",
+    "Fairness",
+    "Reliability and safety"
    ],
    "answer": 0,
-   "why": "Transparencia: las personas deben saber que interactúan con IA y conocer sus límites.",
+   "why": "Transparency: people must know they are interacting with AI and know its limits.",
    "id": "q02"
   },
   {
    "module": "rai",
-   "q": "Antes de liberar un asistente médico, el equipo lo prueba con preguntas ambiguas y fuera de alcance para verificar que no dé indicaciones peligrosas. ¿Qué principio aplica?",
+   "q": "Before releasing a medical assistant, the team tests it with ambiguous and out-of-scope questions to verify it gives no dangerous instructions. Which principle applies?",
    "options": [
-    "Inclusión",
-    "Responsabilidad",
-    "Confiabilidad y seguridad",
-    "Transparencia"
+    "Inclusiveness",
+    "Accountability",
+    "Reliability and safety",
+    "Transparency"
    ],
    "answer": 2,
-   "why": "Confiabilidad y seguridad: el sistema debe comportarse de forma segura también ante entradas inesperadas.",
+   "why": "Reliability and safety: the system must behave safely with unexpected inputs too.",
    "id": "q03"
   },
   {
    "module": "rai",
-   "q": "Una empresa nombra a un responsable que revisa las decisiones del sistema de IA y puede corregirlas o suspenderlo. ¿Qué principio describe esto?",
+   "q": "A company appoints a person who reviews the AI system's decisions and can correct them or suspend it. Which principle does this describe?",
    "options": [
-    "Equidad",
-    "Responsabilidad (accountability)",
-    "Privacidad y seguridad",
-    "Inclusión"
+    "Fairness",
+    "Accountability",
+    "Privacy and security",
+    "Inclusiveness"
    ],
    "answer": 1,
-   "why": "Accountability: hay personas que responden por el sistema y lo supervisan.",
+   "why": "Accountability: there are people who answer for the system and oversee it.",
    "id": "q04"
   },
   {
    "module": "rai",
-   "q": "Un asistente de voz reconoce mal a personas con acentos regionales y no ofrece alternativa por texto. ¿Qué principio se debe reforzar?",
+   "q": "A voice assistant misrecognizes people with regional accents and offers no text alternative. Which principle should be strengthened?",
    "options": [
-    "Inclusión",
-    "Transparencia",
-    "Responsabilidad",
-    "Privacidad y seguridad"
+    "Inclusiveness",
+    "Transparency",
+    "Accountability",
+    "Privacy and security"
    ],
    "answer": 0,
-   "why": "Inclusión: la solución debe servir a personas con distintas formas de hablar y capacidades.",
+   "why": "Inclusiveness: the solution must serve people with different ways of speaking and different abilities.",
    "id": "q05"
   },
   {
    "module": "models",
-   "q": "Necesitas que un modelo responda con información de los manuales internos de tu empresa, que cambian cada semana. ¿Qué enfoque es el más adecuado?",
+   "q": "You need a model to answer with information from your company's internal manuals, which change every week. Which approach fits best?",
    "options": [
-    "Subir la temperatura",
-    "Ajuste fino (fine-tuning) cada semana",
-    "Grounding con recuperación de los documentos (RAG)",
-    "Aumentar el máximo de tokens de salida"
+    "Raising the temperature",
+    "Fine-tuning every week",
+    "Grounding with document retrieval (RAG)",
+    "Increasing the maximum output tokens"
    ],
    "answer": 2,
-   "why": "RAG aporta al prompt los documentos vigentes sin reentrenar el modelo; el ajuste fino semanal sería caro y lento.",
+   "why": "RAG brings the current documents into the prompt without retraining the model; weekly fine-tuning would be expensive and slow.",
    "id": "q06"
   },
   {
    "module": "models",
-   "q": "Un modelo da respuestas distintas cada vez para una tarea de clasificación que debe ser consistente. ¿Qué parámetro ajustas primero?",
+   "q": "A model gives different answers each time for a classification task that must be consistent. Which parameter do you adjust first?",
    "options": [
-    "Bajar la temperatura",
-    "Subir top-p",
-    "Subir el máximo de tokens",
-    "Ampliar la ventana de contexto"
+    "Lower the temperature",
+    "Raise top-p",
+    "Raise the maximum tokens",
+    "Enlarge the context window"
    ],
    "answer": 0,
-   "why": "Una temperatura baja reduce la aleatoriedad y hace la salida más repetible.",
+   "why": "A low temperature reduces randomness and makes the output more repeatable.",
    "id": "q07"
   },
   {
    "module": "models",
-   "q": "¿Qué son los tokens en un modelo de lenguaje?",
+   "q": "What are tokens in a language model?",
    "options": [
-    "Las llaves de acceso al servicio",
-    "Las unidades de texto (palabras o fragmentos) que el modelo procesa",
-    "Los parámetros entrenados del modelo",
-    "Los documentos usados para grounding"
+    "The access keys to the service",
+    "The units of text (words or fragments) the model processes",
+    "The trained parameters of the model",
+    "The documents used for grounding"
    ],
    "answer": 1,
-   "why": "El texto se divide en tokens; con ellos se mide también el consumo y el límite de contexto.",
+   "why": "Text is split into tokens; consumption and the context limit are also measured in them.",
    "id": "q08"
   },
   {
    "module": "models",
-   "q": "Una app procesa un volumen alto y constante de solicitudes y necesita latencia predecible. ¿Qué tipo de despliegue conviene?",
+   "q": "An app processes a high, steady volume of requests and needs predictable latency. Which deployment type fits?",
    "options": [
-    "Estándar de pago por tokens",
-    "Aprovisionado, con capacidad reservada",
-    "Un modelo local en cada equipo",
-    "Cualquiera, el despliegue no influye en la latencia"
+    "Standard, pay per token",
+    "Provisioned, with reserved capacity",
+    "A local model on each computer",
+    "Any; deployment does not affect latency"
    ],
    "answer": 1,
-   "why": "El despliegue aprovisionado reserva capacidad de proceso y da un rendimiento predecible para cargas constantes.",
+   "why": "Provisioned deployment reserves processing capacity and gives predictable performance for steady workloads.",
    "id": "q09"
   },
   {
    "module": "models",
-   "q": "Para clasificar correos cortos en tres categorías con el menor costo y latencia, ¿qué modelo eliges?",
+   "q": "To classify short e-mails into three categories at the lowest cost and latency, which model do you choose?",
    "options": [
-    "El modelo más grande disponible",
-    "Un modelo de generación de imágenes",
-    "Un modelo de lenguaje pequeño (SLM)",
-    "Un modelo de voz"
+    "The largest model available",
+    "An image generation model",
+    "A small language model (SLM)",
+    "A speech model"
    ],
    "answer": 2,
-   "why": "Para tareas simples y de alto volumen, un modelo pequeño cuesta menos y responde más rápido.",
+   "why": "For simple, high-volume tasks, a small model costs less and responds faster.",
    "id": "q10"
   },
   {
    "module": "workloads",
-   "q": "Una aseguradora quiere obtener automáticamente el número de póliza, la fecha y el monto de miles de formularios escaneados. ¿Qué carga de trabajo es?",
+   "q": "An insurer wants to automatically get the policy number, date and amount from thousands of scanned forms. Which workload is it?",
    "options": [
-    "Análisis de sentimiento",
-    "Extracción de información",
-    "Síntesis de voz",
-    "Generación de imágenes"
+    "Sentiment analysis",
+    "Information extraction",
+    "Speech synthesis",
+    "Image generation"
    ],
    "answer": 1,
-   "why": "Convertir documentos en campos estructurados es extracción de información.",
+   "why": "Turning documents into structured fields is information extraction.",
    "id": "q11"
   },
   {
    "module": "workloads",
-   "q": "Marketing quiere saber qué temas se repiten más en 10,000 comentarios de clientes. ¿Qué técnica usas?",
+   "q": "Marketing wants to know which topics come up most in 10,000 customer comments. Which technique do you use?",
    "options": [
-    "Extracción de frases clave",
-    "Síntesis de voz",
-    "Detección de objetos",
+    "Key phrase extraction",
+    "Speech synthesis",
+    "Object detection",
     "OCR"
    ],
    "answer": 0,
-   "why": "La extracción de frases clave identifica los temas principales de cada texto.",
+   "why": "Key phrase extraction identifies the main topics of each text.",
    "id": "q12"
   },
   {
    "module": "workloads",
-   "q": "Una app debe leer en voz alta las noticias a personas con baja visión. ¿Qué capacidad necesita?",
+   "q": "An app must read the news aloud to people with low vision. Which capability does it need?",
    "options": [
-    "Reconocimiento de voz",
-    "Detección de entidades",
-    "Síntesis de voz (texto a voz)",
-    "Clasificación de imágenes"
+    "Speech recognition",
+    "Entity detection",
+    "Speech synthesis (text to speech)",
+    "Image classification"
    ],
    "answer": 2,
-   "why": "Convertir texto en audio es síntesis de voz.",
+   "why": "Converting text into audio is speech synthesis.",
    "id": "q13"
   },
   {
    "module": "workloads",
-   "q": "En un almacén se necesita saber cuántas cajas hay en cada foto y dónde está cada una. ¿Qué técnica de visión corresponde?",
+   "q": "A warehouse needs to know how many boxes are in each photo and where each one is. Which vision technique applies?",
    "options": [
-    "Clasificación de imágenes",
-    "Detección de objetos",
+    "Image classification",
+    "Object detection",
     "OCR",
-    "Generación de imágenes"
+    "Image generation"
    ],
    "answer": 1,
-   "why": "La detección de objetos identifica cada objeto y su ubicación; la clasificación solo etiqueta la imagen completa.",
+   "why": "Object detection identifies each object and its location; classification only labels the whole image.",
    "id": "q14"
   },
   {
    "module": "workloads",
-   "q": "¿Qué distingue a una solución de IA agéntica de un chat generativo simple?",
+   "q": "What distinguishes an agentic AI solution from a simple generative chat?",
    "options": [
-    "Usa un modelo más grande",
-    "Solo trabaja con voz",
-    "Puede usar herramientas y ejecutar pasos para cumplir un objetivo",
-    "No necesita instrucciones"
+    "It uses a larger model",
+    "It only works with voice",
+    "It can use tools and carry out steps to reach a goal",
+    "It needs no instructions"
    ],
    "answer": 2,
-   "why": "Un agente planifica y actúa con herramientas; un chat simple solo genera una respuesta.",
+   "why": "An agent plans and acts with tools; a simple chat only generates a response.",
    "id": "q15"
   },
   {
    "module": "genai",
-   "q": "Quieres que el asistente siempre responda en español, en máximo tres viñetas y sin dar asesoría legal. ¿Dónde pones esas reglas?",
+   "q": "You want the assistant to always answer in English, in at most three bullets and without giving legal advice. Where do you put those rules?",
    "options": [
-    "En el mensaje de sistema",
-    "En cada mensaje de usuario",
-    "En el nombre del despliegue",
-    "En el parámetro de temperatura"
+    "In the system message",
+    "In every user message",
+    "In the deployment name",
+    "In the temperature parameter"
    ],
    "answer": 0,
-   "why": "El mensaje de sistema define rol, tono, límites y formato para toda la conversación.",
+   "why": "The system message defines role, tone, limits and format for the whole conversation.",
    "id": "q16"
   },
   {
    "module": "genai",
-   "q": "Tu app de chat olvida lo que el usuario dijo dos mensajes antes. ¿Cuál es la causa más probable?",
+   "q": "Your chat app forgets what the user said two messages ago. What is the most likely cause?",
    "options": [
-    "La temperatura es muy baja",
-    "La app no envía el historial de mensajes en cada llamada",
-    "El modelo no está desplegado",
-    "Falta un filtro de contenido"
+    "The temperature is too low",
+    "The app does not send the message history on each call",
+    "The model is not deployed",
+    "A content filter is missing"
    ],
    "answer": 1,
-   "why": "El modelo no guarda memoria entre llamadas: la app debe enviar el historial para conservar el contexto.",
+   "why": "The model keeps no memory between calls: the app must send the history to preserve context.",
    "id": "q17"
   },
   {
    "module": "genai",
-   "q": "En el portal de Foundry ya elegiste un modelo del catálogo. ¿Qué debes hacer antes de usarlo en el playground o desde código?",
+   "q": "In the Foundry portal you have already chosen a model from the catalog. What must you do before using it in the playground or from code?",
    "options": [
-    "Entrenarlo desde cero",
-    "Desplegarlo en tu proyecto",
-    "Exportarlo a un archivo",
-    "Crear un analizador"
+    "Train it from scratch",
+    "Deploy it in your project",
+    "Export it to a file",
+    "Create an analyzer"
    ],
    "answer": 1,
-   "why": "Un modelo del catálogo se despliega en el proyecto para obtener un despliegue al que se le envían solicitudes.",
+   "why": "A catalog model is deployed in the project to get a deployment that requests are sent to.",
    "id": "q18"
   },
   {
    "module": "genai",
-   "q": "¿Qué elementos definen a un agente en Foundry?",
+   "q": "Which elements define an agent in Foundry?",
    "options": [
-    "Un modelo, instrucciones y herramientas",
-    "Solo un conjunto de documentos",
-    "Una base de datos y un tablero",
-    "Un analizador y un esquema de campos"
+    "A model, instructions and tools",
+    "Only a set of documents",
+    "A database and a dashboard",
+    "An analyzer and a field schema"
    ],
    "answer": 0,
-   "why": "Un agente combina un modelo desplegado, instrucciones que fijan su comportamiento y herramientas para actuar.",
+   "why": "An agent combines a deployed model, instructions that set its behavior and tools to act with.",
    "id": "q19"
   },
   {
    "module": "genai",
-   "q": "Un modelo responde de forma genérica a «escribe un correo». ¿Qué mejora más el resultado?",
+   "q": "A model responds generically to \"write an e-mail\". What improves the result most?",
    "options": [
-    "Repetir la misma petición",
-    "Dar contexto, destinatario, tono, un ejemplo y el formato esperado",
-    "Bajar el máximo de tokens",
-    "Cambiar el nombre del proyecto"
+    "Repeating the same request",
+    "Giving context, recipient, tone, an example and the expected format",
+    "Lowering the maximum tokens",
+    "Renaming the project"
    ],
    "answer": 1,
-   "why": "Los prompts efectivos dan contexto, instrucciones concretas, ejemplos y formato de salida.",
+   "why": "Effective prompts give context, specific instructions, examples and an output format.",
    "id": "q20"
   },
   {
    "module": "text-speech",
-   "q": "Necesitas una app que convierta llamadas grabadas en texto para analizarlas después. ¿Qué capacidad de Azure Speech usas?",
+   "q": "You need an app that turns recorded calls into text to analyze them later. Which Azure Speech capability do you use?",
    "options": [
-    "Texto a voz",
-    "Voz a texto",
-    "Traducción de documentos",
-    "Generación de imágenes"
+    "Text to speech",
+    "Speech to text",
+    "Document translation",
+    "Image generation"
    ],
    "answer": 1,
-   "why": "Transcribir audio es reconocimiento de voz (voz a texto).",
+   "why": "Transcribing audio is speech recognition (speech to text).",
    "id": "q21"
   },
   {
    "module": "text-speech",
-   "q": "Con un modelo generativo desplegado quieres clasificar reseñas como positivas, negativas o neutras. ¿Cómo lo haces de la forma más simple?",
+   "q": "With a deployed generative model you want to classify reviews as positive, negative or neutral. What is the simplest way?",
    "options": [
-    "Con un prompt que pida la clasificación y defina las tres etiquetas",
-    "Entrenando un modelo de visión",
-    "Creando un analizador de video",
-    "Subiendo la temperatura al máximo"
+    "With a prompt that asks for the classification and defines the three labels",
+    "Training a vision model",
+    "Creating a video analyzer",
+    "Raising the temperature to the maximum"
    ],
    "answer": 0,
-   "why": "Un modelo generativo puede hacer análisis de texto con un prompt claro que fije las categorías de salida.",
+   "why": "A generative model can do text analysis with a clear prompt that fixes the output categories.",
    "id": "q22"
   },
   {
    "module": "text-speech",
-   "q": "Un usuario quiere hablarle a la app y recibir respuesta sin escribir. ¿Qué tipo de modelo acepta el audio directamente como entrada?",
+   "q": "A user wants to talk to the app and get an answer without typing. Which type of model accepts audio directly as input?",
    "options": [
-    "Un modelo multimodal",
-    "Un modelo de solo texto",
-    "Un modelo de generación de imágenes",
-    "Un analizador de documentos"
+    "A multimodal model",
+    "A text-only model",
+    "An image generation model",
+    "A document analyzer"
    ],
    "answer": 0,
-   "why": "Los modelos multimodales aceptan más de un tipo de entrada, incluido el audio.",
+   "why": "Multimodal models accept more than one type of input, including audio.",
    "id": "q23"
   },
   {
    "module": "text-speech",
-   "q": "Un kiosco debe dar indicaciones habladas en varios idiomas con voz natural. ¿Qué necesitas?",
+   "q": "A kiosk must give spoken directions in several languages with a natural voice. What do you need?",
    "options": [
     "OCR",
-    "Síntesis de voz con voces neuronales",
-    "Detección de entidades",
-    "Detección de objetos"
+    "Speech synthesis with neural voices",
+    "Entity detection",
+    "Object detection"
    ],
    "answer": 1,
-   "why": "La síntesis de voz con voces neuronales produce audio natural en muchos idiomas.",
+   "why": "Speech synthesis with neural voices produces natural audio in many languages.",
    "id": "q24"
   },
   {
    "module": "text-speech",
-   "q": "De un contrato quieres obtener las partes firmantes, las fechas y los montos. ¿Qué técnica de análisis de texto es?",
+   "q": "From a contract you want the signing parties, the dates and the amounts. Which text analysis technique is it?",
    "options": [
-    "Análisis de sentimiento",
-    "Resumen",
-    "Detección de entidades",
-    "Síntesis de voz"
+    "Sentiment analysis",
+    "Summarization",
+    "Entity detection",
+    "Speech synthesis"
    ],
    "answer": 2,
-   "why": "La detección de entidades identifica personas, organizaciones, fechas y cantidades en el texto.",
+   "why": "Entity detection identifies people, organizations, dates and quantities in the text.",
    "id": "q25"
   },
   {
    "module": "vision",
-   "q": "Un usuario sube la foto de un tablero de control y pregunta «¿qué alarma está encendida?». ¿Qué necesitas?",
+   "q": "A user uploads a photo of a control panel and asks \"which alarm is on?\". What do you need?",
    "options": [
-    "Un modelo multimodal que reciba imagen y texto en el mismo prompt",
-    "Un modelo de solo texto",
-    "Un modelo de síntesis de voz",
-    "Un despliegue aprovisionado"
+    "A multimodal model that receives image and text in the same prompt",
+    "A text-only model",
+    "A speech synthesis model",
+    "A provisioned deployment"
    ],
    "answer": 0,
-   "why": "Para razonar sobre una imagen junto con una pregunta se usa un modelo multimodal.",
+   "why": "To reason about an image together with a question you use a multimodal model.",
    "id": "q26"
   },
   {
    "module": "vision",
-   "q": "El equipo de diseño quiere bocetos nuevos a partir de descripciones escritas. ¿Qué tipo de modelo usas?",
+   "q": "The design team wants new sketches from written descriptions. Which type of model do you use?",
    "options": [
-    "De detección de objetos",
-    "De generación de imágenes",
-    "De reconocimiento de voz",
-    "De extracción de frases clave"
+    "Object detection",
+    "Image generation",
+    "Speech recognition",
+    "Key phrase extraction"
    ],
    "answer": 1,
-   "why": "Los modelos de generación de imágenes crean imágenes nuevas a partir de un prompt de texto.",
+   "why": "Image generation models create new images from a text prompt.",
    "id": "q27"
   },
   {
    "module": "vision",
-   "q": "Una imagen generada sale distinta a lo que esperabas. ¿Qué ajuste da más control sobre el resultado?",
+   "q": "A generated image comes out different from what you expected. Which adjustment gives the most control over the result?",
    "options": [
-    "Describir con más detalle el sujeto, el estilo y la composición en el prompt",
-    "Bajar el volumen de audio",
-    "Cambiar el idioma del portal",
-    "Borrar el historial del chat"
+    "Describing the subject, style and composition in more detail in the prompt",
+    "Lowering the audio volume",
+    "Changing the portal language",
+    "Clearing the chat history"
    ],
    "answer": 0,
-   "why": "En generación de imágenes, el detalle del prompt es lo que más define el resultado.",
+   "why": "In image generation, the detail of the prompt is what defines the result most.",
    "id": "q28"
   },
   {
    "module": "vision",
-   "q": "En una app cliente, ¿cómo se envía una imagen a un modelo multimodal?",
+   "q": "In a client app, how is an image sent to a multimodal model?",
    "options": [
-    "Como parte del mensaje, junto con el texto, mediante una URL o los datos de la imagen",
-    "Solo por correo",
-    "Convirtiéndola antes en audio",
-    "No se puede: solo aceptan texto"
+    "As part of the message, together with the text, through a URL or the image data",
+    "Only by e-mail",
+    "By converting it to audio first",
+    "It cannot be done: they only accept text"
    ],
    "answer": 0,
-   "why": "El mensaje incluye el texto y la imagen (por URL o codificada) en la misma solicitud.",
+   "why": "The message includes the text and the image (by URL or encoded) in the same request.",
    "id": "q29"
   },
   {
    "module": "vision",
-   "q": "¿Qué diferencia hay entre interpretar una imagen y generar una imagen?",
+   "q": "What is the difference between interpreting an image and generating an image?",
    "options": [
-    "Ninguna, son lo mismo",
-    "Interpretar recibe una imagen y devuelve texto; generar recibe texto y devuelve una imagen",
-    "Interpretar solo funciona con video",
-    "Generar requiere OCR"
+    "None, they are the same",
+    "Interpreting takes an image and returns text; generating takes text and returns an image",
+    "Interpreting only works with video",
+    "Generating requires OCR"
    ],
    "answer": 1,
-   "why": "Son direcciones opuestas: visión como entrada frente a imagen como salida.",
+   "why": "They are opposite directions: vision as input versus image as output.",
    "id": "q30"
   },
   {
    "module": "extraction",
-   "q": "En Content Understanding, ¿qué define qué campos se extraen de un contenido?",
+   "q": "In Content Understanding, what defines which fields are extracted from a piece of content?",
    "options": [
-    "El analizador y su esquema de campos",
-    "La temperatura del modelo",
-    "El tamaño del archivo",
-    "El nombre del proyecto"
+    "The analyzer and its field schema",
+    "The model's temperature",
+    "The file size",
+    "The project name"
    ],
    "answer": 0,
-   "why": "Un analizador declara el tipo de contenido y el esquema de campos a devolver.",
+   "why": "An analyzer declares the content type and the schema of fields to return.",
    "id": "q31"
   },
   {
    "module": "extraction",
-   "q": "Quieres obtener de facturas un campo propio, «centro de costo», que no viene en los analizadores prediseñados. ¿Qué haces?",
+   "q": "You want to get from invoices a field of your own, \"cost center\", that is not in the prebuilt analyzers. What do you do?",
    "options": [
-    "Usar OCR y buscarlo a mano",
-    "Crear un analizador personalizado que incluya ese campo en su esquema",
-    "Subir la temperatura",
-    "Usar síntesis de voz"
+    "Use OCR and look for it by hand",
+    "Create a custom analyzer that includes that field in its schema",
+    "Raise the temperature",
+    "Use speech synthesis"
    ],
    "answer": 1,
-   "why": "Un analizador personalizado permite describir campos propios para que el servicio los extraiga.",
+   "why": "A custom analyzer lets you describe your own fields so the service extracts them.",
    "id": "q32"
   },
   {
    "module": "extraction",
-   "q": "De grabaciones de llamadas de soporte necesitas la transcripción y un resumen por llamada. ¿Qué usas?",
+   "q": "From recordings of support calls you need the transcript and a summary per call. What do you use?",
    "options": [
-    "Content Understanding con un analizador de audio",
-    "Un modelo de generación de imágenes",
-    "Solo síntesis de voz",
-    "Detección de objetos"
+    "Content Understanding with an audio analyzer",
+    "An image generation model",
+    "Speech synthesis only",
+    "Object detection"
    ],
    "answer": 0,
-   "why": "Content Understanding procesa audio y devuelve transcripción y campos como el resumen.",
+   "why": "Content Understanding processes audio and returns the transcript and fields such as the summary.",
    "id": "q33"
   },
   {
    "module": "extraction",
-   "q": "¿En qué formato recibe la app cliente el resultado de un analizador?",
+   "q": "In which format does the client app receive an analyzer's result?",
    "options": [
-    "Una imagen",
-    "Datos estructurados en JSON",
-    "Un archivo de audio",
-    "Un documento de Word"
+    "An image",
+    "Structured data in JSON",
+    "An audio file",
+    "A Word document"
    ],
    "answer": 1,
-   "why": "El resultado llega como JSON con los campos extraídos, listo para usarse en la app.",
+   "why": "The result arrives as JSON with the extracted fields, ready to use in the app.",
    "id": "q34"
   },
   {
    "module": "extraction",
-   "q": "¿Qué tipos de contenido puede procesar Content Understanding?",
+   "q": "Which types of content can Content Understanding process?",
    "options": [
-    "Solo documentos PDF",
-    "Solo imágenes",
-    "Documentos, imágenes, audio y video",
-    "Solo texto plano"
+    "PDF documents only",
+    "Images only",
+    "Documents, images, audio and video",
+    "Plain text only"
    ],
    "answer": 2,
-   "why": "El servicio es multimodal: documentos y formularios, imágenes, audio y video.",
+   "why": "The service is multimodal: documents and forms, images, audio and video.",
    "id": "q35"
   }
  ]

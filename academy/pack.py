@@ -1,7 +1,7 @@
 """Content packs: one JSON file per subject (Cloud Security, IT, onboarding…). The engine never hard-codes content.
 
 A pack holds: meta (title, language, ranks), levels, optional roles, lessons (points, practice, 3-question quiz,
-value-based deliverable, videos), glossary, topics and the resource catalog. ``load_pack`` parses it into dataclasses
+videos), glossary, topics and the resource catalog. ``load_pack`` parses it into dataclasses
 and ``validate`` returns the list of problems (empty = valid). The full format is documented in FORMATO_PACK.md.
 """
 
@@ -35,16 +35,6 @@ class Question:
 
 
 @dataclass(frozen=True)
-class VBD:
-    """Value-based deliverable: a concrete result the learner produces at work, not a quiz score."""
-
-    deliverable: str
-    done_when: list[str]
-    value: str
-    where: dict = field(default_factory=dict)  # {"label": ..., "url": ...}
-
-
-@dataclass(frozen=True)
 class Lesson:
     id: str
     level: str
@@ -52,7 +42,6 @@ class Lesson:
     summary: str
     points: list[str]
     quiz: list[Question]
-    vbd: VBD | None = None
     practice: dict = field(default_factory=dict)  # {"label": ..., "url": ...}
     skills: list[str] = field(default_factory=list)
     resources: list[str] = field(default_factory=list)  # keys of Pack.resources, most relevant first
@@ -70,7 +59,7 @@ class Resource:
     topic: str
     why: str  # what it explains, in one line
     kind: str = "video"  # "video" | "playlist" | "link"
-    level: str = "básico"
+    level: str = "basic"
     who: str = ""  # the expert speaking, when it's not the channel owner
     verified: str = ""  # date of the last oEmbed check (YYYY-MM-DD)
 
@@ -128,32 +117,25 @@ def _parse(data: dict, folder: Path | None = None) -> Pack:
     lessons = []
     for x in data["lessons"]:
         quiz = [Question(q["q"], list(q["options"]), int(q["answer"]), q["why"]) for q in x["quiz"]]
-        v = x.get("vbd")
-        vbd = VBD(v["deliverable"], list(v["done_when"]), v["value"], v.get("where", {})) if v else None
-        lessons.append(Lesson(x["id"], x["level"], x["title"], x["summary"], list(x["points"]), quiz, vbd,
+        lessons.append(Lesson(x["id"], x["level"], x["title"], x["summary"], list(x["points"]), quiz,
                               x.get("practice", {}), list(x.get("skills", [])), list(x.get("resources", [])),
                               dict(x.get("resource_notes", {})), list(x.get("catalog_skills", []))))
-    resources = {k: Resource(k, r["title"], r["url"], r["channel"], r.get("lang", meta.get("language", "es")),
-                             r.get("topic", ""), r.get("why", ""), r.get("kind", "video"), r.get("level", "básico"),
+    resources = {k: Resource(k, r["title"], r["url"], r["channel"], r.get("lang", meta.get("language", "en")),
+                             r.get("topic", ""), r.get("why", ""), r.get("kind", "video"), r.get("level", "basic"),
                              r.get("who", ""), r.get("verified", ""))
                  for k, r in data.get("resources", {}).items()}
-    return Pack(meta["id"], meta["title"], meta.get("subtitle", ""), meta.get("language", "es"), meta.get("version", "1.0"),
+    return Pack(meta["id"], meta["title"], meta.get("subtitle", ""), meta.get("language", "en"), meta.get("version", "1.0"),
                 meta.get("disclaimer", ""), [Rank(**r) for r in meta["ranks"]], list(data["levels"]), lessons,
                 list(data.get("glossary", [])), dict(data.get("topics", {})), resources, dict(data.get("roles", {})), folder)
 
 
 def load_pack(path: str | Path, lang: str | None = None) -> Pack:
-    """Load packs/<name>/pack.json (pass the folder, the json file or just the pack name).
-
-    With ``lang``, the translation packs/<name>/pack.<lang>.json is used when it exists (same ids, levels in the same order,
-    same answers: progress is shared between languages); otherwise the pack's own language is shown."""
+    """Load packs/<name>/pack.json (pass the folder, the json file or just the pack name). ``lang`` is ignored: English only."""
     p = Path(path)
     if not p.exists():
         p = PACKS_DIR / str(path)
     if p.is_dir():
         p = p / "pack.json"
-    if lang and (p.parent / f"pack.{lang}.json").exists():
-        p = p.parent / f"pack.{lang}.json"
     return _parse(json.loads(p.read_text(encoding="utf-8")), p.parent)
 
 
@@ -171,62 +153,58 @@ def validate(pack: Pack, catalog=None) -> list[str]:
     for les in pack.lessons:
         for sid in les.catalog_skills if known is not None else []:
             if sid not in known:
-                errs.append(f"[{les.id}] skill de catálogo '{sid}' no existe en catalog/skills.json.")
+                errs.append(f"[{les.id}] catalog skill '{sid}' does not exist in catalog/skills.json.")
     ids = [les.id for les in pack.lessons]
     if len(ids) != len(set(ids)):
-        errs.append("Hay ids de lección repetidos.")
+        errs.append("There are repeated lesson ids.")
     if [r.points for r in pack.ranks] != sorted(r.points for r in pack.ranks) or not pack.ranks or pack.ranks[0].points != 0:
-        errs.append("Los rangos deben ir en orden de puntos y el primero empezar en 0.")
+        errs.append("Ranks must be in order of points and the first one must start at 0.")
     for les in pack.lessons:
         tag = f"[{les.id}]"
         if les.level not in pack.levels:
-            errs.append(f"{tag} nivel '{les.level}' no está en 'levels'.")
+            errs.append(f"{tag} level '{les.level}' is not in 'levels'.")
         if not (les.title and les.summary):
-            errs.append(f"{tag} falta título o resumen.")
+            errs.append(f"{tag} title or summary is missing.")
         if len(les.points) < 3:
-            errs.append(f"{tag} necesita al menos 3 puntos clave.")
+            errs.append(f"{tag} needs at least 3 key points.")
         if len(les.quiz) != 3:
-            errs.append(f"{tag} necesita exactamente 3 preguntas.")
+            errs.append(f"{tag} needs exactly 3 questions.")
         for i, q in enumerate(les.quiz):
             if len(q.options) != 4 or len(set(q.options)) != 4:
-                errs.append(f"{tag} pregunta {i + 1}: necesita 4 opciones distintas.")
+                errs.append(f"{tag} question {i + 1}: needs 4 distinct options.")
             if not 0 <= q.answer < len(q.options):
-                errs.append(f"{tag} pregunta {i + 1}: 'answer' fuera de rango.")
+                errs.append(f"{tag} question {i + 1}: 'answer' out of range.")
             if not q.why:
-                errs.append(f"{tag} pregunta {i + 1}: falta la explicación ('why').")
-        if les.vbd is None:
-            errs.append(f"{tag} falta el entregable de valor (vbd).")
-        elif len(les.vbd.done_when) < 3 or not les.vbd.deliverable or not les.vbd.value:
-            errs.append(f"{tag} el VBD necesita entregable, valor y al menos 3 criterios 'done_when'.")
+                errs.append(f"{tag} question {i + 1}: the explanation ('why') is missing.")
         missing = [k for k in les.resources if k not in pack.resources]
         if missing:
-            errs.append(f"{tag} recursos inexistentes: {', '.join(missing)}.")
+            errs.append(f"{tag} unknown resources: {', '.join(missing)}.")
         res = [pack.resources[k] for k in les.resources if k in pack.resources]
         if sum(r.kind != "link" for r in res) < 2:
-            errs.append(f"{tag} necesita al menos 2 videos.")
+            errs.append(f"{tag} needs at least 2 videos.")
         if len({r.channel for r in res}) < 2:
-            errs.append(f"{tag} los videos deben venir de al menos 2 fuentes distintas.")
+            errs.append(f"{tag} the videos must come from at least 2 different channels.")
         for k in les.resource_notes:
             if k not in les.resources:
-                errs.append(f"{tag} nota para '{k}', que no está en sus recursos.")
+                errs.append(f"{tag} note for '{k}', which is not in its resources.")
         for s in les.skills:
             if pack.roles and not any(s in v for v in pack.roles.values()):
-                errs.append(f"{tag} habilidad '{s}' no aparece en ningún rol.")
+                errs.append(f"{tag} skill '{s}' is not in any role.")
     for k, r in pack.resources.items():
         if urlparse(r.url).scheme != "https":
-            errs.append(f"[recurso {k}] la URL debe ser https.")
+            errs.append(f"[resource {k}] the URL must be https.")
         if r.kind in ("video", "playlist") and not embed_src(r.url):
-            errs.append(f"[recurso {k}] no es un video/playlist de YouTube embebible; usa kind='link'.")
+            errs.append(f"[resource {k}] is not an embeddable YouTube video/playlist; use kind='link'.")
         if not (r.title and r.channel and r.why):
-            errs.append(f"[recurso {k}] falta título, canal o 'why'.")
+            errs.append(f"[resource {k}] title, channel or 'why' is missing.")
         if r.topic and r.topic not in pack.topics:
-            errs.append(f"[recurso {k}] tema '{r.topic}' no está en 'topics'.")
+            errs.append(f"[resource {k}] topic '{r.topic}' is not in 'topics'.")
     urls = [r.url for r in pack.resources.values()]
     if len(urls) != len(set(urls)):
-        errs.append("Hay URLs de recursos repetidas.")
+        errs.append("There are repeated resource URLs.")
     terms = [g["term"].lower() for g in pack.glossary]
     if len(terms) != len(set(terms)):
-        errs.append("Hay términos del glosario repetidos.")
+        errs.append("There are repeated glossary terms.")
     if pack.glossary and len(terms) < 8:
-        errs.append("El glosario necesita al menos 8 términos para que el quiz tenga distractores.")
+        errs.append("The glossary needs at least 8 terms so the quiz has distractors.")
     return errs

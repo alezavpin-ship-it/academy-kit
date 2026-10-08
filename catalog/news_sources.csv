@@ -1,0 +1,10 @@
+﻿Name,Category,Url,FeedUrl,Splash,Enabled,Description
+Microsoft Security Insider,Microsoft,https://www.microsoft.com/en-us/security/security-insider,https://www.microsoft.com/en-us/security/blog/feed/,yes,yes,Threat intelligence and insights from Microsoft. The latest items come from the Microsoft Security blog feed.
+Microsoft Security Response Center,Microsoft,https://msrc.microsoft.com/blog/,https://msrc.microsoft.com/blog/feed,no,yes,"Security updates, vulnerability research and incident response from MSRC."
+AWS Security Blog,Cloud providers,https://aws.amazon.com/blogs/security/,https://aws.amazon.com/blogs/security/feed/,no,yes,"Security, identity and compliance on AWS."
+Google Cloud Security,Cloud providers,https://cloud.google.com/blog/products/identity-security,https://cloud.google.com/blog/products/identity-security/rss/,no,yes,Identity and security news from Google Cloud.
+Trend Micro Research,Security vendors,https://www.trendmicro.com/en_us/research.html,,no,yes,Threat research and security news from Trend Micro.
+NIST Cybersecurity,Frameworks and standards,https://www.nist.gov/cybersecurity,https://www.nist.gov/news-events/cybersecurity/rss.xml,no,yes,"NIST news on the Cybersecurity Framework, guidance and standards."
+CIS Advisories,Frameworks and standards,https://www.cisecurity.org/advisory,https://www.cisecurity.org/feed/advisories,no,yes,"Center for Internet Security: advisories, CIS Controls and Benchmarks."
+ISO/IEC 27001,Frameworks and standards,https://www.iso.org/standard/27001,,no,yes,The information security management standard (ISMS).
+CISA Cybersecurity Advisories,Government advisories,https://www.cisa.gov/news-events/cybersecurity-advisories,https://www.cisa.gov/cybersecurity-advisories/all.xml,no,yes,Alerts and advisories from the US Cybersecurity and Infrastructure Security Agency.

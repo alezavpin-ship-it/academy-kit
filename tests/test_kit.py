@@ -1,4 +1,4 @@
-"""Academy Kit: pack rules, scoring, VBD flow, team view and the Streamlit page end to end."""
+"""Academy Kit: pack rules, scoring, team view, content workbook, edit mode, reports and the Streamlit page end to end."""
 
 import json
 import random
@@ -12,7 +12,7 @@ from academy import catalog as catmod
 from academy.catalog import (catalog_from_tables, load_catalog, parse_grid, parse_text, read_xlsx, save_catalog, sheet_names,
                              validate_catalog)
 from academy.pack import available_packs, load_pack, validate
-from academy.progress import VBD_POINTS, Tracker, connect, team  # noqa: F401
+from academy.progress import Tracker, connect, team  # noqa: F401
 from academy.videos import embed_src, playlist_id, youtube_id
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,25 +29,24 @@ def conn(tmp_path):
 
 
 def test_every_shipped_pack_is_valid():
-    assert "cloud-security" in available_packs() and "_plantilla" not in available_packs()
+    assert "cloud-security" in available_packs() and "_template" not in available_packs()
     for name in available_packs():
         assert validate(load_pack(name)) == [], name
 
 
 def test_template_has_the_same_shape():
-    tpl = load_pack(ROOT / "packs" / "_plantilla")
-    assert tpl.lessons and tpl.lessons[0].vbd and len(tpl.lessons[0].quiz) == 3
+    tpl = load_pack(ROOT / "packs" / "_template")
+    assert tpl.lessons and len(tpl.lessons[0].quiz) == 3 and tpl.language == "en"
 
 
 def test_validator_catches_broken_content(pack, tmp_path):
     data = json.loads((ROOT / "packs" / "cloud-security" / "pack.json").read_text(encoding="utf-8"))
     data["lessons"][0]["quiz"] = data["lessons"][0]["quiz"][:2]
     data["lessons"][1]["resources"] = data["lessons"][1]["resources"][:1]
-    data["lessons"][2]["vbd"]["done_when"] = ["solo uno"]
     data["resources"]["x"] = {"title": "t", "url": "http://example.com", "channel": "c", "why": "w", "kind": "video", "topic": "nope"}
     (tmp_path / "pack.json").write_text(json.dumps(data), encoding="utf-8")
     errs = " | ".join(validate(load_pack(tmp_path)))
-    for needle in ("exactamente 3 preguntas", "al menos 2 videos", "3 criterios", "https", "embebible", "tema 'nope'"):
+    for needle in ("exactly 3 questions", "at least 2 videos", "https", "embeddable", "topic 'nope'"):
         assert needle in errs, needle
 
 
@@ -73,17 +72,11 @@ def test_quiz_scoring_and_completion(pack, conn):
     assert Tracker(conn, pack, "luis").total_points() == 0  # progress is per person
 
 
-def test_vbd_needs_every_criterion(pack, conn):
+def test_retired_value_deliverables_do_not_count(pack, conn):
     t = Tracker(conn, pack, "ana")
-    les = pack.lessons[0]
-    assert t.complete_vbd(les.id) == 0
-    for i in range(len(les.vbd.done_when) - 1):
-        t.set_check(les.id, i, True)
-    assert t.complete_vbd(les.id) == 0
-    t.set_check(les.id, len(les.vbd.done_when) - 1, True)
-    assert t.complete_vbd(les.id, "https://wiki/raci") == VBD_POINTS
-    assert t.complete_vbd(les.id) == 0 and les.id in t.vbds_done()
-    assert any(n == "Generador de valor" and ok for n, _, ok in t.badges())
+    t.record("vbd", pack.lessons[0].id, 25, True)  # a row written by an earlier version
+    assert t.total_points() == 0 and all("VBD" not in how for _, how, _ in t.badges())
+    assert not hasattr(pack.lessons[0], "vbd")
 
 
 def test_ranks_and_team(pack, conn):
@@ -91,11 +84,11 @@ def test_ranks_and_team(pack, conn):
     assert t.rank(0) == (0, 100) and t.rank(1000)[1] is None
     t.record("glossary", "MFA", 10, True)
     df = team(conn, pack)
-    assert list(df["Persona"]) == ["ana"] and df["Puntos"].iloc[0] == 10
+    assert list(df["Person"]) == ["ana"] and df["Points"].iloc[0] == 10
 
 
 def test_role_filter(pack):
-    soc = pack.lessons_for_role("Analista de seguridad (SOC)")
+    soc = pack.lessons_for_role("Security analyst (SOC)")
     assert {"r1", "r2", "r3"} <= soc and "d3" not in soc
 
 
@@ -111,7 +104,7 @@ def test_shuffle_is_stable():
     assert opts[ci] == "c" and quiz.shuffled("f1:0", ["a", "b", "c", "d"], 2) == (opts, ci)
 
 
-def _run(tmp_path, monkeypatch, owners=("yo",), **state):
+def _run(tmp_path, monkeypatch, owners=("me",), **state):
     from streamlit.testing.v1 import AppTest
 
     monkeypatch.setenv("ACADEMY_ACCESS", str(tmp_path / "access.json"))
@@ -120,16 +113,20 @@ def _run(tmp_path, monkeypatch, owners=("yo",), **state):
         (tmp_path / "access.json").write_text(json.dumps({"owners": list(owners)}), encoding="utf-8")
 
     monkeypatch.setenv("ACADEMY_DB", str(tmp_path / "app.db"))
-    monkeypatch.setenv("ACADEMY_CONTENT", str(tmp_path / "content.csv"))  # never let a test read or rewrite the real content file
-    monkeypatch.setenv("ACADEMY_DEMAND", str(tmp_path / "demanda_roles.csv"))
+    monkeypatch.setenv("ACADEMY_CONTENT", str(tmp_path / "content.xlsx"))  # never let a test read or rewrite the real content file
+    monkeypatch.setenv("ACADEMY_DEMAND", str(tmp_path / "demand_roles.csv"))
     if not (tmp_path / "practice.json").exists():
         (tmp_path / "practice.json").write_text((ROOT / "catalog" / "practice.json").read_text(encoding="utf-8"), encoding="utf-8")
     monkeypatch.setenv("ACADEMY_CONTENT_STATE", str(tmp_path / "content_state.json"))
+    monkeypatch.setenv("ACADEMY_NEWS_OFFLINE", "1")  # tests never go to the internet
+    monkeypatch.setenv("ACADEMY_NEWS_CACHE", str(tmp_path / "news_cache.json"))
+    monkeypatch.setenv("ACADEMY_NEWS", str(tmp_path / "news_sources.csv"))
+    if not (tmp_path / "news_sources.csv").exists():
+        (tmp_path / "news_sources.csv").write_bytes((ROOT / "catalog" / "news_sources.csv").read_bytes())
     monkeypatch.setenv("ACADEMY_CATALOG", str(tmp_path / "skills.json"))  # never let a test overwrite the real catalog
     if not (tmp_path / "skills.json").exists():
         (tmp_path / "skills.json").write_text(catmod.CATALOG_PATH.read_text(encoding="utf-8"), encoding="utf-8")
     at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=60)
-    state.setdefault("ak_lang", "es")  # the app opens in English; these tests read the Spanish texts
     state.setdefault("ak_cert_view", "prep")  # the Certifications tab opens on «my certifications»; most tests look at the exam prep
     for k, v in state.items():
         if v is not None:  # None = leave the app's own default
@@ -140,36 +137,30 @@ def _run(tmp_path, monkeypatch, owners=("yo",), **state):
 def test_app_renders_and_scores(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch)
     assert not at.exception
-    assert any("Videos de esta lección" in m.value for m in at.markdown)
-    assert any("Entregable de valor" in m.value for m in at.markdown)
+    assert any("Videos for this lesson" in m.value for m in at.markdown)
+    assert not any("deliverable" in m.value.lower() for m in at.markdown)  # value deliverables were retired
     pack = load_pack("cloud-security")
     les = pack.lessons[0]
     opts, ci = quiz.shuffled(f"{les.id}:0", les.quiz[0].options, les.quiz[0].answer)
-    at.radio(key=f"ak_q_yo_{les.id}:0").set_value(ci).run()
+    at.radio(key=f"ak_q_me_{les.id}:0").set_value(ci).run()
     at.button(key=f"ak_check_{les.id}:0").click().run()
-    assert not at.exception and any("Correcto" in s.value for s in at.success)
+    assert not at.exception and any("Correct" in s.value for s in at.success)
     at.selectbox(key=f"ak_vid_{les.id}").set_value(1).run()  # change video without losing the answer
-    assert not at.exception and any("Correcto" in s.value for s in at.success)
-    for i in range(len(les.vbd.done_when)):
-        at.checkbox(key=f"ak_vbd_yo_{les.id}_{i}").check().run()
-    at.button(key=f"ak_vbd_btn_{les.id}").click().run()
-    assert not at.exception
-    assert les.id in Tracker(connect(tmp_path / "app.db"), pack, "yo").vbds_done()
+    assert not at.exception and any("Correct" in s.value for s in at.success)
+    assert Tracker(connect(tmp_path / "app.db"), pack, "me").total_points() == 10
 
 
-def test_app_other_tabs_and_english(tmp_path, monkeypatch):
+def test_app_other_tabs(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch)
     at.radio(key=f"ak_gq_pick_{at.session_state['ak_gq_n']}").set_value(0).run()
     at.button(key="ak_gq_check").click().run()
     assert not at.exception
-    for topic in ("fundamentos", "identidad", "referencias"):
+    for topic in ("fundamentals", "identity", "references"):
         at.selectbox(key="ak_lib_topic").set_value(topic).run()
         assert not at.exception
-    at.toggle(key="ak_lib_es").set_value(True).run()
     at.selectbox(key="ak_role").set_value("DevOps / SRE").run()
     assert not at.exception
-    at.radio(key="ak_lang").set_value("en").run()
-    assert not at.exception and any("Videos for this lesson" in m.value for m in at.markdown)
+    assert not any(r.key == "ak_lang" for r in at.radio)  # no language switch: English only
 
 
 def test_catalog_is_valid_and_lessons_point_to_it(pack):
@@ -179,7 +170,7 @@ def test_catalog_is_valid_and_lessons_point_to_it(pack):
     assert cat.by_gap()[0].name == "Microsoft 365 Security" and cat.by_gap()[-1].gap_volume is None
     assert len(cat.families) == 9
     cov = cat.coverage([pack])
-    assert any(t == "Contenedores y Kubernetes" for _, t in cov["container-security"]) and cov["exchange-online"] == []
+    assert any(t == 'Containers and Kubernetes' for _, t in cov["container-security"]) and cov["exchange-online"] == []
 
 
 def test_validator_catches_unknown_catalog_skill(tmp_path):
@@ -193,7 +184,7 @@ def test_skills_tab_renders(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch)
     assert not at.exception
     assert any("Microsoft 365 Security" in m.value for m in at.markdown)
-    assert any("por asignar" in m.value for m in at.markdown)
+    assert any("to be assigned" in m.value for m in at.markdown)
 
 
 def _sample(tmp_path):
@@ -219,7 +210,7 @@ def test_import_reads_only_the_chosen_sheet(tmp_path):
     sk = next(s for s in cat.skills if s.id == "microsoft-365-security")
     assert sk.severity == "High" and sk.target == "P3 - Advanced" and sk.impacted_roles == 2 and sk.roles == []
     kept, _ = parse_grid(read_xlsx(path, "Upskilling Plan"), keep_roles=True)
-    assert next(s for s in kept.skills if s.id == "microsoft-365-security").roles == ["Rol de ejemplo 1", "Rol de ejemplo 2"]
+    assert next(s for s in kept.skills if s.id == "microsoft-365-security").roles == ["Sample role 1", "Sample role 2"]
 
 
 def test_import_keeps_assigned_champions_and_round_trips(tmp_path):
@@ -247,13 +238,9 @@ def test_pasted_table_and_manual_tables():
 
 
 def test_skills_tab_modes_render_and_save(tmp_path, monkeypatch):
-    at = _run(tmp_path, monkeypatch, ak_sk_mode="edit")
-    assert not at.exception
-    at.button(key="ak_sk_save_edit").click().run()
-    assert not at.exception and len(load_catalog(tmp_path / "skills.json").skills) == 34
     at = _run(tmp_path, monkeypatch, ak_sk_mode="paste")
     at.text_area(key="ak_sk_text").set_value("Skill Family\tMissing Skill\nRedes\tAzure Firewall").run()
-    assert not at.exception and any("1 familias" in s.value for s in at.success)
+    assert not at.exception and any("1 families" in s.value for s in at.success)
     at.button(key="ak_sk_save_paste").click().run()
     assert not at.exception and [s.name for s in load_catalog(tmp_path / "skills.json").skills] == ["Azure Firewall"]
     assert not _run(tmp_path, monkeypatch, ak_sk_mode="import").exception
@@ -267,12 +254,12 @@ def test_sharepoint_export(tmp_path, pack):
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     files = {p.stem: p for p in mod.export("cloud-security", tmp_path)}
-    assert set(files) == {"Familias", "Skills", "Lecciones", "Preguntas", "Recursos", "LeccionRecursos", "Glosario", "Rangos"}
+    assert set(files) == {"Families", "Skills", "Lessons", "Questions", "Resources", "LessonResources", "Glossary", "Ranks"}
     rows = {k: list(csv.DictReader(p.open(encoding="utf-8-sig"))) for k, p in files.items()}
-    assert len(rows["Lecciones"]) == 12 and len(rows["Preguntas"]) == 36 and len(rows["Skills"]) == 34 and len(rows["Familias"]) == 9
-    q = rows["Preguntas"][0]
+    assert len(rows["Lessons"]) == 12 and len(rows["Questions"]) == 36 and len(rows["Skills"]) == 34 and len(rows["Families"]) == 9
+    q = rows["Questions"][0]
     assert q[f"Option{q['AnswerLetter']}"] == pack.lessons[0].quiz[0].options[pack.lessons[0].quiz[0].answer]
-    assert {r["LessonId"] for r in rows["LeccionRecursos"]} == {les.id for les in pack.lessons}
+    assert {r["LessonId"] for r in rows["LessonResources"]} == {les.id for les in pack.lessons}
 
 
 # ---------------------------------------------------------------------------------------------- certifications
@@ -351,9 +338,9 @@ def test_notices_rules_and_champion_copy(pack, exam, conn):
     assert notify.pending(*args) == []  # active today, nothing to say
     _backdate(conn, "ana@x.com", 6)
     (n,) = notify.pending(*args)
-    assert n.kind == "inactive" and "6 días" in n.subject and n.to == "ana@x.com" and n.cc and n.champions
-    assert "El modelo de responsabilidad compartida" in n.body and n.champions[0] in n.body
-    assert notify.mailto(n).startswith("mailto:ana%40x.com?cc=") and "subject=No%20has%20tomado" in notify.mailto(n)
+    assert n.kind == "inactive" and "6 days" in n.subject and n.to == "ana@x.com" and n.cc and n.champions
+    assert 'The shared responsibility model' in n.body and n.champions[0] in n.body
+    assert notify.mailto(n).startswith("mailto:ana%40x.com?cc=") and "subject=You%20have%20not%20taken" in notify.mailto(n)
     notify.mark_sent(conn, n)
     assert notify.pending(*args) == [] and len(notify.pending(*args, include_sent=True)) == 1
     # stalled: came back (activity without points) but no progress for a week
@@ -370,7 +357,7 @@ def test_notices_rules_and_champion_copy(pack, exam, conn):
     notify.set_email(conn, "luis", "luis@x.com")
     mine = {x.kind: x for x in notify.pending(*args, learner="luis")}
     assert set(mine) == {"course_done", "exam_passed"} and mine["course_done"].to == "luis@x.com"
-    assert "AI-901" in mine["exam_passed"].subject and "1000 de 1000" in mine["exam_passed"].body
+    assert "AI-901" in mine["exam_passed"].subject and "1000 out of 1000" in mine["exam_passed"].body
     ai = next(f for f in cat.families if f.id == exam.family)
     assert mine["exam_passed"].cc == [ai.champion_email]
     assert notify.owner_families(pack, cat)[0].name == "Cloud & Network Security"
@@ -413,39 +400,39 @@ def _tab_labels(at):
 
 
 def test_end_user_does_not_see_team_measurements(tmp_path, monkeypatch):
-    at = _run(tmp_path, monkeypatch, owners=("jefa",))  # "yo" is not an owner
+    at = _run(tmp_path, monkeypatch, owners=("jefa",))  # "me" is not an owner
     assert not at.exception
-    assert not any("Equipo" in x for x in _tab_labels(at)) and len(_tab_labels(at)) == 8
-    assert not any("Avisos por enviar" in m.value for m in at.markdown)
-    assert not any(m.label in ("Brecha", "Roles afectados") for m in at.metric)
+    assert not any("Team" in x for x in _tab_labels(at)) and len(_tab_labels(at)) == 10
+    assert not any("Notices to send" in m.value for m in at.markdown)
+    assert not any(m.label in ("Gap", "Roles affected") for m in at.metric)
     assert any("Microsoft 365 Security" in m.value for m in at.markdown)  # the map itself stays visible
     assert not any(str(b.key).startswith("ak_sk_save") for b in at.button) and "ak_owner_view" not in [t.key for t in at.toggle]
 
 
 def test_owner_view_and_switch_to_end_user(tmp_path, monkeypatch):
-    at = _run(tmp_path, monkeypatch)  # "yo" is an owner
-    assert any("Equipo" in x for x in _tab_labels(at)) and len(_tab_labels(at)) == 11
-    assert any(m.label == "Brecha" for m in at.metric) and any("Avisos por enviar" in m.value for m in at.markdown)
+    at = _run(tmp_path, monkeypatch)  # "me" is an owner
+    assert any("Team" in x for x in _tab_labels(at)) and len(_tab_labels(at)) == 13
+    assert any(m.label == "Gap" for m in at.metric) and any("Notices to send" in m.value for m in at.markdown)
     at.toggle(key="ak_owner_view").set_value(False).run()  # preview what an end user sees
-    assert not at.exception and len(_tab_labels(at)) == 8 and not any(m.label == "Brecha" for m in at.metric)
+    assert not at.exception and len(_tab_labels(at)) == 10 and not any(m.label == "Gap" for m in at.metric)
 
 
 def test_first_owner_claim_and_pin(tmp_path, monkeypatch):
     from academy.access import load_access, save_access
 
     at = _run(tmp_path, monkeypatch, owners=None)  # nothing configured yet
-    assert len(_tab_labels(at)) == 8
+    assert len(_tab_labels(at)) == 10
     at.button(key="ak_claim").click().run()
-    assert not at.exception and load_access(tmp_path / "access.json").owners == ["yo"] and len(_tab_labels(at)) == 11
+    assert not at.exception and load_access(tmp_path / "access.json").owners == ["me"] and len(_tab_labels(at)) == 13
     acc = load_access(tmp_path / "access.json")
     acc.set_pin("2468")
     save_access(acc, tmp_path / "access.json")
     at = _run(tmp_path, monkeypatch, owners=None)
-    assert len(_tab_labels(at)) == 8  # owner, but the PIN has not been typed
+    assert len(_tab_labels(at)) == 10  # owner, but the PIN has not been typed
     at.text_input(key="ak_owner_pin").set_value("1111").run()
-    assert len(_tab_labels(at)) == 8
+    assert len(_tab_labels(at)) == 10
     at.text_input(key="ak_owner_pin").set_value("2468").run()
-    assert not at.exception and len(_tab_labels(at)) == 11
+    assert not at.exception and len(_tab_labels(at)) == 13
 
 
 def test_champion_sees_only_their_family(tmp_path, monkeypatch, pack, exam, conn):
@@ -456,24 +443,24 @@ def test_champion_sees_only_their_family(tmp_path, monkeypatch, pack, exam, conn
     Tracker(conn, pack, "ana").answer_quiz("d2:0", True)   # d2 = Zero Trust / red -> Cloud & Network Security
     Tracker(conn, pack, "luis").answer_quiz("d3:0", True)  # d3 = contenedores -> Application Security & DevSecOps
     rows = notify.family_team(conn, [pack], [exam], cat, {net})
-    assert [r["Persona"] for r in rows] == ["ana"] and rows[0]["Lecciones de la familia"].startswith("0/")
+    assert [r["Person"] for r in rows] == ["ana"] and rows[0]["Family lessons"].startswith("0/")
     assert notify.family_team(conn, [pack], [exam], cat, {"microsoft-365-security"}) == []
     from academy.exam import ExamTracker
 
     ExamTracker(conn, exam, "sol").answer_practice(exam.questions[0].id, True)
-    assert [r["Persona"] for r in notify.family_team(conn, [pack], [exam], cat, {exam.family})] == ["sol"]
+    assert [r["Person"] for r in notify.family_team(conn, [pack], [exam], cat, {exam.family})] == ["sol"]
 
     # in the app: a champion (not an owner) gets the team tab scoped to the family and gap numbers only for it
     data = json.loads(catmod.CATALOG_PATH.read_text(encoding="utf-8"))
     for f in data["families"]:
         if f["id"] == net:
-            f["champion"] = "yo"
+            f["champion"] = "me"
     (tmp_path / "skills.json").write_text(json.dumps(data), encoding="utf-8")
     at = _run(tmp_path, monkeypatch, owners=("jefa",))
-    assert not at.exception and len(_tab_labels(at)) == 11
-    assert any("Mi familia" in m.value and "Cloud & Network Security" in m.value for m in at.markdown)
-    assert not any("Acceso" in e.label for e in at.expander) and not any(str(b.key).startswith("ak_sk_save") for b in at.button)
-    assert [m.value for m in at.metric if m.label == "Brecha"] == ["98"]  # only their own family's number
+    assert not at.exception and len(_tab_labels(at)) == 13
+    assert any("My family" in m.value and "Cloud & Network Security" in m.value for m in at.markdown)
+    assert not any("Access" in e.label for e in at.expander) and not any(str(b.key).startswith("ak_sk_save") for b in at.button)
+    assert [m.value for m in at.metric if m.label == "Gap"] == ["98"]  # only their own family's number
 
 
 # ---------------------------------------------------------------------------------------------- learning route
@@ -500,16 +487,16 @@ def test_route_follows_vendor_training(conn):
 
 
 def test_route_tab_marks_a_step(tmp_path, monkeypatch):
-    from academy.route import RouteTracker, build_routes
+    from academy.route import RouteTracker
 
     (tmp_path / "materials.json").write_text((catmod.CATALOG_PATH.parent / "materials.json").read_text(encoding="utf-8"), encoding="utf-8")
     at = _run(tmp_path, monkeypatch, owners=("jefa",))
-    assert not at.exception and _tab_labels(at)[0].endswith("Ruta de aprendizaje")
+    assert not at.exception and _tab_labels(at)[0].endswith("Learning route")
     done = [b for b in at.button if str(b.key).startswith("rt_done_")]
     assert done
     done[0].click().run()
     assert not at.exception
-    assert len(RouteTracker(connect(tmp_path / "app.db"), "yo").done()) == 1
+    assert len(RouteTracker(connect(tmp_path / "app.db"), "me").done()) == 1
 
 
 def test_family_lead_adds_a_workday_course(tmp_path, monkeypatch):
@@ -520,14 +507,14 @@ def test_family_lead_adds_a_workday_course(tmp_path, monkeypatch):
     data = json.loads(catmod.CATALOG_PATH.read_text(encoding="utf-8"))
     for f in data["families"]:
         if f["id"] == "technical-delivery-leadership":
-            f["champion"] = "yo"
+            f["champion"] = "me"
     (tmp_path / "skills.json").write_text(json.dumps(data), encoding="utf-8")
     base = json.loads((catmod.CATALOG_PATH.parent / "materials.json").read_text(encoding="utf-8"))
     base["stakeholder-governance"] = [{"title": "Stakeholder Management Essentials", "url": "https://wd5.myworkday.com/empresa/learning/course/123",
                                        "provider": "Workday Learning", "kind": "course", "verified": "2026-10-01"}]
     (tmp_path / "materials.json").write_text(json.dumps(base), encoding="utf-8")
     at = _run(tmp_path, monkeypatch, owners=("jefa",))
-    assert not at.exception and any("Cursos de mi familia" in e.label for e in at.expander)
+    assert not at.exception and any("My family's courses" in e.label for e in at.expander)
     at.button(key="ak_fam_courses_save").click().run()  # saving keeps the family's rows and every other family's material
     assert not at.exception
     saved = load_materials(tmp_path / "materials.json")
@@ -552,10 +539,10 @@ def test_assistant_config_modes_and_prompts(tmp_path, monkeypatch, exam):
     q = exam.questions[0]
     p = ai.prompt_explain(q.q, q.options, q.options[q.answer], q.why, q.options[0], exam.name)
     assert q.q in p and q.options[q.answer] in p and "AI-901" in p
-    plan = ai.prompt_study_plan(exam.name, 560, 700, [("Conceptos", 6, 11)], ["Módulo X"], [("Curso", "https://learn.microsoft.com/x")])
-    assert "560 de 1000" in plan and "6 de 11" in plan and "https://learn.microsoft.com/x" in plan and "7 días" in plan
-    assert "Workday" not in plan and "brecha" not in plan.lower()  # only the learner's own result and study content
-    assert "ORIGINALES" in ai.prompt_draft_questions(exam.name, "m", ["a", "b", "c"]) and "P3" in ai.prompt_step_coach("F", "S", "T", "Microsoft Learn", "P3 - Advanced")
+    plan = ai.prompt_study_plan(exam.name, 560, 700, [("Concepts", 6, 11)], ["Module X"], [("Course", "https://learn.microsoft.com/x")])
+    assert "560 out of 1000" in plan and "6 of 11" in plan and "https://learn.microsoft.com/x" in plan and "7-day" in plan
+    assert "Workday" not in plan and "gap" not in plan.lower()  # only the learner's own result and study content
+    assert "ORIGINAL" in ai.prompt_draft_questions(exam.name, "m", ["a", "b", "c"]) and "P3" in ai.prompt_step_coach("F", "S", "T", "Microsoft Learn", "P3 - Advanced")
 
 
 def test_assistant_api_call_and_errors(monkeypatch):
@@ -584,7 +571,7 @@ def test_assistant_api_call_and_errors(monkeypatch):
     assert seen["headers"]["Api-key"] == "k-123" and seen["body"]["model"] == "m1" and seen["body"]["messages"][1]["content"] == "hola"
     monkeypatch.setattr(ai.urllib.request, "urlopen", lambda req, timeout=0: Resp(b'{"otro": 1}'))
     assert ai.ask(cfg, "hola")[0] is False
-    assert ai.ask(ai.AssistantConfig(api_url="http://inseguro"), "x") == (False, "La URL del asistente debe ser https.")
+    assert ai.ask(ai.AssistantConfig(api_url="http://inseguro"), "x") == (False, "The assistant URL must be https.")
 
 
 def test_assistant_shows_in_the_app(tmp_path, monkeypatch):
@@ -592,49 +579,57 @@ def test_assistant_shows_in_the_app(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch)
     assert not at.exception
     labels = [e.label for e in at.expander]
-    assert any("siguiente paso con el tutor de IA" in x for x in labels) and any("Asistente de IA (Amethyst)" in x for x in labels)
-    assert any("borrador de preguntas" in x for x in labels)  # leaders only
-    (tmp_path / "u").mkdir()  # a second, separate installation where "yo" is an end user
+    assert any("next step with the AI tutor" in x for x in labels) and any("AI assistant (Amethyst)" in x for x in labels)
+    assert any("draft new questions" in x for x in labels)  # leaders only
+    (tmp_path / "u").mkdir()  # a second, separate installation where "me" is an end user
     (tmp_path / "u" / "materials.json").write_text((tmp_path / "materials.json").read_text(encoding="utf-8"), encoding="utf-8")
     at2 = _run(tmp_path / "u", monkeypatch, owners=("jefa",))
     labels2 = [e.label for e in at2.expander]
-    assert any("tutor de IA" in x for x in labels2) and not any("borrador de preguntas" in x or "Asistente de IA" in x for x in labels2)
+    assert any("AI tutor" in x for x in labels2) and not any("draft new questions" in x or "AI assistant" in x for x in labels2)
 
 
-# ---------------------------------------------------------------------------------------------- languages
-def test_english_pack_mirrors_the_spanish_one():
-    """Same ids, levels in the same order and same answers, so progress is shared between languages."""
-    es, en = load_pack("cloud-security"), load_pack("cloud-security", "en")
-    assert en.language == "en" and es.language == "es" and en.id == es.id
-    assert validate(en, load_catalog()) == []
-    assert len(en.levels) == len(es.levels) and len(en.glossary) == len(es.glossary) and set(en.resources) == set(es.resources)
-    level = dict(zip(es.levels, en.levels))
-    for a, b in zip(es.lessons, en.lessons):
-        assert (a.id, level[a.level], a.resources, a.skills) == (b.id, b.level, b.resources, b.skills)
-        assert [(q.answer, len(q.options)) for q in a.quiz] == [(q.answer, len(q.options)) for q in b.quiz]
-        assert len(a.vbd.done_when) == len(b.vbd.done_when)
-    assert [sorted(v) for v in es.roles.values()] == [sorted(v) for v in en.roles.values()]
-    assert load_pack("cloud-security", "fr").language == "es"  # no translation: the pack's own language
+# ---------------------------------------------------------------------------------------------- English only
+def test_everything_is_english_only():
+    """One file per course and exam, in English, with English videos only."""
+    from academy.exam import load_exam
+
+    pack = load_pack("cloud-security")
+    assert pack.language == "en" and all(r.lang == "en" for r in pack.resources.values())
+    assert not list((ROOT / "packs" / "cloud-security").glob("pack.*.json")) and not list((ROOT / "exams" / "ai-901").glob("exam.*.json"))
+    assert load_exam("ai-901").questions and validate(pack, load_catalog()) == []
+    assert all(r.level in ("basic", "intermediate", "advanced") for r in pack.resources.values())
 
 
-def test_english_exam_mirrors_the_spanish_one():
-    from academy.exam import load_exam, validate_exam
+def test_english_migration_keeps_progress_and_backs_up(tmp_path):
+    from academy import english
 
-    es, en = load_exam("ai-901"), load_exam("ai-901", "en")
-    assert validate_exam(en, load_catalog()) == []
-    assert [(q.id, q.module, q.answer, len(q.options)) for q in es.questions] == [(q.id, q.module, q.answer, len(q.options)) for q in en.questions]
-    assert [(m.id, [(e.id, e.type, len(e.steps), len(e.pairs)) for e in m.exercises]) for m in es.modules] == \
-           [(m.id, [(e.id, e.type, len(e.steps), len(e.pairs)) for e in m.exercises]) for m in en.modules]
+    folder = tmp_path / "packs" / "demo"
+    folder.mkdir(parents=True)
+    en = json.loads((ROOT / "packs" / "cloud-security" / "pack.json").read_text(encoding="utf-8"))
+    es = json.loads(json.dumps(en))
+    es["meta"]["language"] = "es"
+    en["resources"]["spanish"] = dict(next(iter(en["resources"].values())), lang="es", url="https://www.youtube.com/watch?v=es1", level="básico")
+    en["lessons"][0]["resources"].append("spanish")
+    (folder / "pack.json").write_text(json.dumps(es), encoding="utf-8")
+    (folder / "pack.en.json").write_text(json.dumps(en), encoding="utf-8")
+    (tmp_path / "content").mkdir()
+    (tmp_path / "content" / "demanda_roles.csv").write_text("x", encoding="utf-8")
+    assert english.migrate(tmp_path) is True
+    out = json.loads((folder / "pack.json").read_text(encoding="utf-8"))
+    assert out["meta"]["language"] == "en" and "spanish" not in out["resources"] and "spanish" not in out["lessons"][0]["resources"]
+    assert [x["id"] for x in out["lessons"]] == [x["id"] for x in es["lessons"]]  # same lesson ids: progress is kept
+    assert not (folder / "pack.en.json").exists() and (tmp_path / "content" / "demand_roles.csv").exists()
+    assert list((tmp_path / "data" / "content_backups").glob("*-english/packs/demo/pack.json"))
+    assert english.migrate(tmp_path) is False  # nothing left to convert
+    (folder / "pack.en.json").write_text(json.dumps(dict(out, meta=dict(out["meta"], title="older"))), encoding="utf-8")
+    assert english.migrate(tmp_path) and json.loads((folder / "pack.json").read_text(encoding="utf-8"))["meta"]["title"] != "older"  # English main file wins
 
 
-def test_app_opens_in_english_and_can_switch_to_spanish(tmp_path, monkeypatch):
-    at = _run(tmp_path, monkeypatch, ak_lang=None)
-    assert not at.exception
-    assert at.session_state["ak_lang"] == "en"
+def test_app_is_english_without_a_language_switch(tmp_path, monkeypatch):
+    at = _run(tmp_path, monkeypatch)
+    assert not at.exception and "ak_lang" not in at.session_state
     text = " ".join(m.value for m in at.markdown)
-    assert "Your next step" in text and "The shared responsibility model" in text and "Tu siguiente paso" not in text
-    es = _run(tmp_path, monkeypatch)
-    assert "Tu siguiente paso" in " ".join(m.value for m in es.markdown)
+    assert "Your next step" in text and 'The shared responsibility model' in text and "Tu siguiente paso" not in text
 
 
 # ---------------------------------------------------------------------------------------------- reports, sound, motion
@@ -665,8 +660,8 @@ def test_family_report_status_and_followup(tmp_path):
     assert people["carla"]["_late"] and people["carla"]["Days idle"] == 12 and not people["ana"]["_late"]
     assert rep["followup"][0]["Person"] == "carla"  # whoever needs follow-up comes first
     assert all(not k.startswith("_") for r in report.visible(rep["status"]) for k in r)
-    only = report.build(conn, [pack], [], cat, "es", only={fam}, now=now)  # what a champion gets: their family only
-    assert len(only["status"]) == 1 and {r["Familia de skills"] for r in only["followup"]} == {only["status"][0]["Familia de skills"]}
+    only = report.build(conn, [pack], [], cat, "en", only={fam}, now=now)  # what a champion gets: their family only
+    assert len(only["status"]) == 1 and {r["Skill family"] for r in only["followup"]} == {only["status"][0]["Skill family"]}
 
 
 def test_family_report_exports(tmp_path):
@@ -682,14 +677,17 @@ def test_family_report_exports(tmp_path):
     assert wb.sheetnames[0] == "Status by family" and len(wb.sheetnames) == 4 and wb.worksheets[0].max_row == 4 + len(cat.families)
     assert [c.value for c in wb["Follow-up by person"][4]][:3] == ["Skill family", "Champion", "Person"]
     assert [c.value for c in wb["Progress by person"][4]][0] == "Person"
-    page = report.to_html(rep)
-    assert page.startswith("<!doctype html>") and "carla" in page and cat.families[0].name.replace("&", "&amp;") in page
+    from academy import report_pdf
+
+    pdf = report_pdf.to_pdf(rep)
+    assert pdf.startswith(b"%PDF") and len(pdf) > 3000
+    assert not hasattr(report, "to_html")  # the HTML report was retired: PDF only
 
 
 def test_owner_sees_the_report_and_sounds_can_be_turned_off(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch)
     assert not at.exception
-    assert any("Reporte de estado y seguimiento" in m.value for m in at.markdown)
+    assert any("Status and follow-up report" in m.value for m in at.markdown)
     assert at.session_state["ak_sound"] is True
     from academy import ui
 
@@ -708,8 +706,10 @@ def _content_sandbox(tmp_path, monkeypatch):
     for name in ("skills.json", "materials.json", "practice.json"):
         shutil.copy(ROOT / "catalog" / name, tmp_path / name)
     monkeypatch.setenv("ACADEMY_CATALOG", str(tmp_path / "skills.json"))
-    monkeypatch.setenv("ACADEMY_CONTENT", str(tmp_path / "content" / "academia_contenido.csv"))
+    monkeypatch.setenv("ACADEMY_CONTENT", str(tmp_path / "content" / "academy_content.xlsx"))
     monkeypatch.setenv("ACADEMY_CONTENT_STATE", str(tmp_path / "content_state.json"))
+    shutil.copy(ROOT / "catalog" / "news_sources.csv", tmp_path / "news_sources.csv")
+    monkeypatch.setenv("ACADEMY_NEWS", str(tmp_path / "news_sources.csv"))
     monkeypatch.setattr(content, "PACKS_DIR", packs)
     return content, packs
 
@@ -720,7 +720,7 @@ def test_content_round_trips_as_excel_and_as_one_csv(tmp_path, monkeypatch):
 
     as_xlsx, as_csv = content.read(content.export_bytes()), content.read(content.csv_bytes(content.export_csv()))
     assert as_xlsx["problems"] == [] and as_csv["problems"] == []
-    assert as_xlsx["packs"] == as_csv["packs"] and set(as_csv["packs"]) >= {("cloud-security", "es"), ("cloud-security", "en")}
+    assert as_xlsx["packs"] == as_csv["packs"] and set(as_csv["packs"]) == {"cloud-security"}
     from academy.catalog import vendor_of
     from academy.route import build_routes
 
@@ -730,9 +730,9 @@ def test_content_round_trips_as_excel_and_as_one_csv(tmp_path, monkeypatch):
     assert {k: sorted(i["url"] for i in v) for k, v in as_csv["materials"].items()} == {k: sorted(i["url"] for i in v) for k, v in mats.items()}
     steps = lambda c, m: [[(st.vendor, st.skill_id, st.number, st.url) for st in r.steps] for r in build_routes(c, m)]  # noqa: E731
     assert steps(as_csv["catalog"], as_csv["materials"]) == steps(cat, mats)  # same classes, in the same order
-    for (pid, lang), d in as_csv["packs"].items():
-        assert validate(load_pack(pid, lang), load_catalog()) == []
-        disk = json.loads(content.target_file(pid, lang).read_text(encoding="utf-8"))
+    for pid, d in as_csv["packs"].items():
+        assert validate(load_pack(pid), load_catalog()) == []
+        disk = json.loads(content.target_file(pid).read_text(encoding="utf-8"))
         assert [(x["id"], x["title"], x["resources"], [q["answer"] for q in x["quiz"]]) for x in d["lessons"]] == \
                [(x["id"], x["title"], x["resources"], [q["answer"] for q in x["quiz"]]) for x in disk["lessons"]]
         assert {k: v["url"] for k, v in d["resources"].items()} == {k: v["url"] for k, v in disk["resources"].items()}
@@ -741,8 +741,7 @@ def test_content_round_trips_as_excel_and_as_one_csv(tmp_path, monkeypatch):
 
 
 def test_content_file_edit_is_applied_and_a_broken_one_is_not(tmp_path, monkeypatch):
-    import csv
-    import io
+    from openpyxl import load_workbook
 
     content, packs = _content_sandbox(tmp_path, monkeypatch)
     from academy import content_sync
@@ -750,33 +749,46 @@ def test_content_file_edit_is_applied_and_a_broken_one_is_not(tmp_path, monkeypa
     assert content_sync.sync()["status"] == "none"
     assert content_sync.refresh()["status"] == "written" and content_sync.sync()["status"] == "same"
     path = content_sync.content_path()
-    rows = list(csv.reader(io.StringIO(path.read_text(encoding="utf-8-sig"), newline="")))
-    head = rows[0]
-    t, title, url, key, letter = (head.index(c) for c in ("Tabla", "Title", "Url", "ResourceKey", "AnswerLetter"))
-    video = next(r for r in rows if r[t] == "Recursos" and r[head.index("Kind")] == "video")
-    for r in rows:
-        if r[t] == "Recursos" and r[key] == video[key]:
-            r[url] = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
-        if r[t] == "Lecciones" and r[head.index("LessonId")] == "f1" and r[head.index("Lang")] == "en":
-            r[title] = "Shared responsibility, edited in Excel"
+    wb = load_workbook(path)
+    assert wb.sheetnames[0] == "README" and wb.sheetnames[1:] == list(content.SHEETS)  # one tab per table, grouped by section
+    assert wb["Families"].sheet_properties.tabColor.rgb.endswith("FF5800")
 
-    def write(data):
-        buf = io.StringIO(newline="")
-        csv.writer(buf).writerows(data)
-        path.write_bytes(buf.getvalue().encode("utf-8-sig"))
+    def col(ws, name):
+        return [c.value for c in ws[1]].index(name) + 1
 
-    write(rows)
+    rec = wb["Resources"]
+    video_row = next(r for r in range(2, rec.max_row + 1) if rec.cell(r, col(rec, "Kind")).value == "video")
+    key = rec.cell(video_row, col(rec, "ResourceKey")).value
+    for r in range(2, rec.max_row + 1):
+        if rec.cell(r, col(rec, "ResourceKey")).value == key:
+            rec.cell(r, col(rec, "Url")).value = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    les = wb["Lessons"]
+    for r in range(2, les.max_row + 1):
+        if les.cell(r, col(les, "LessonId")).value == "f1":
+            les.cell(r, col(les, "Title")).value = "Shared responsibility, edited in Excel"
+    wb.save(path)
     assert content_sync.sync()["status"] == "applied"
-    en = load_pack(packs / "cloud-security", "en")
-    assert en.lessons[0].title == "Shared responsibility, edited in Excel" and en.resources[video[key]].url.endswith("dQw4w9WgXcQ")
-    assert any((tmp_path / "data" / "content_backups").rglob("pack.en.json"))  # the previous version is kept
-    broken = [list(r) for r in rows]
-    next(r for r in broken if r[t] == "Preguntas")[letter] = "Z"
-    write(broken)
+    en = load_pack(packs / "cloud-security")
+    assert en.lessons[0].title == "Shared responsibility, edited in Excel" and en.resources[key].url.endswith("dQw4w9WgXcQ")
+    assert any((tmp_path / "data" / "content_backups").rglob("pack.json"))  # the previous version is kept
+    wb["Questions"].cell(2, col(wb["Questions"], "AnswerLetter")).value = "Z"
+    wb.save(path)
     out = content_sync.sync()
     assert out["status"] == "problems" and any("AnswerLetter" in e for e in out["problems"])
-    assert load_pack(packs / "cloud-security", "en").lessons[0].title == "Shared responsibility, edited in Excel"  # nothing changed
+    assert load_pack(packs / "cloud-security").lessons[0].title == "Shared responsibility, edited in Excel"  # nothing changed
     assert content_sync.sync()["status"] == "problems"  # still reported until the file is fixed
+
+
+def test_former_single_csv_becomes_the_workbook(tmp_path, monkeypatch):
+    content, packs = _content_sandbox(tmp_path, monkeypatch)
+    from academy import content_sync
+
+    old = content_sync.content_path().with_suffix(".csv")
+    old.parent.mkdir(parents=True, exist_ok=True)
+    old.write_bytes(content.csv_bytes(content.export_csv().replace("The shared responsibility model", "Edited in the old CSV", 1)))
+    assert content_sync.sync()["status"] == "same"
+    assert content_sync.content_path().exists() and not old.exists() and old.with_name(old.stem + " (old).csv").exists()
+    assert load_pack(packs / "cloud-security").lessons[0].title == "Edited in the old CSV"  # the last edits of the CSV were kept
 
 
 def test_content_file_carries_the_skills_catalog(tmp_path, monkeypatch):
@@ -786,8 +798,8 @@ def test_content_file_carries_the_skills_catalog(tmp_path, monkeypatch):
     content, _ = _content_sandbox(tmp_path, monkeypatch)
     rows = list(csv.reader(io.StringIO(content.export_csv(), newline="")))
     head = rows[0]
-    t = head.index("Tabla")
-    fam = next(r for r in rows if r[t] == "Familias")
+    t = head.index("Table")
+    fam = next(r for r in rows if r[t] == "Families")
     fam[head.index("Champion")] = "Ana Champion"
     rows.append(["Skills"] + [{"SkillId": "defender-for-apis", "Name": "Defender for APIs", "FamilyId": fam[head.index("FamilyId")],
                               "Confirmed": "yes", "Severity": "High"}.get(c, "") for c in head[1:]])
@@ -863,84 +875,17 @@ def test_forum_tab_and_report_column(tmp_path, monkeypatch):
 
     conn = connect(tmp_path / "app.db")
     cat = load_catalog()
-    Forum(conn).ask("ana", cat.families[0].id, "¿Dónde empiezo con Defender?")
+    Forum(conn).ask("ana", cat.families[0].id, "Where do I start with Defender?")
     conn.close()
     at = _run(tmp_path, monkeypatch)
     assert not at.exception
-    assert any("Foro" in t.label for t in at.tabs) and any("¿Dónde empiezo con Defender?" in e.label for e in at.expander)
-    assert any("esperan respuesta de un experto" in w.value for w in at.warning)  # the owner is told at the top
-    rep = report.build(connect(tmp_path / "app.db"), [load_pack("cloud-security")], [], cat, "es")
-    assert next(r for r in rep["status"] if r["Familia de skills"] == cat.families[0].name)["Foro: sin contestar"] == 1
+    assert any("Forum" in t.label for t in at.tabs) and any("Where do I start with Defender?" in e.label for e in at.expander)
+    assert any("waiting for an expert" in w.value for w in at.warning)  # the owner is told at the top
+    rep = report.build(connect(tmp_path / "app.db"), [load_pack("cloud-security")], [], cat, "en")
+    assert next(r for r in rep["status"] if r["Skill family"] == cat.families[0].name)["Forum: waiting"] == 1
 
 
 # ---------------------------------------------------------------------------------------------- career path and certifications
-def test_report_tells_who_keeps_up_with_the_career_path(tmp_path):
-    from academy import notify, report
-
-    conn, pack, cat, now, fam = _seed_family_activity(tmp_path)
-    notify.set_email(conn, "pedro", "pedro@empresa.com")  # known to the academy, has not started anything
-    rep = report.build(conn, [pack], [], cat, "en", only={fam}, now=now)
-    state = {r["Person"]: r["_path"] for r in rep["paths"]}
-    assert state == {"carla": report.BEHIND, "pedro": report.NOT_STARTED, "ana": report.GOING}
-    assert [r["Person"] for r in rep["paths"]] == ["carla", "pedro", "ana"]  # who is not doing their part comes first
-    people = {r["Person"]: r for r in rep["people"]}
-    assert people["carla"]["Career path"] == "Not keeping up" and people["pedro"]["Career path"] == "Not started"
-    assert rep["summary"]["behind"] == 1 and rep["summary"]["not_started"] == 1
-
-
-def test_certification_register_csv_and_report(tmp_path):
-    from datetime import date
-
-    from academy.certs import CURRENT, DESIRED, Certs
-
-    c = Certs(connect(tmp_path / "certs.db"))
-    cat = load_catalog()
-    fam = cat.families[0].id
-    c.set_requirements(fam, [{"Code": "sc-200", "Name": "Security Operations Analyst", "Vendor": "Microsoft", "Level": "requerida"},
-                             {"Code": "SC-900", "Name": "SCI Fundamentals", "Level": ""}])
-    assert [(r["Code"], r["Level"]) for r in c.requirements()] == [("SC-200", "required"), ("SC-900", "desirable")]
-    c.set_records("ana", [{"Code": "az-500", "Name": "Azure Security Engineer", "Status": "actual", "Obtained": "01/03/2026", "Expires": "2026-11-15"},
-                          {"Code": "SC-200", "Status": "deseable", "Obtained": "2026-01-01"}], by="ana")
-    recs = {r["Code"]: r for r in c.records("ANA")}
-    assert recs["AZ-500"]["Status"] == CURRENT and recs["AZ-500"]["Obtained"] == "2026-03-01"
-    assert recs["SC-200"]["Status"] == DESIRED and recs["SC-200"]["Obtained"] == ""  # a desired certification has no dates yet
-    with pytest.raises(ValueError):
-        c.set_records("luis", [{"Code": "X", "Obtained": "pronto"}])
-    # CSV round trip; an owner's import replaces only the people in the file
-    data, problems = Certs.parse_records(c.records_csv())
-    assert problems == [] and list(data) == ["ana"] and len(data["ana"]) == 2
-    csv_text = "Learner;Code;Name;Vendor;Status;Obtained;Expires;CredentialUrl\r\nluis;SC-200;;Microsoft;current;2026-02-01;;https://learn.microsoft.com/x\r\n"
-    data, problems = Certs.parse_records(csv_text.encode("utf-8"))
-    assert problems == []
-    for who, rows in data.items():
-        c.set_records(who, rows, by="owner")
-    assert len(c.records("ana")) == 2 and c.records("luis")[0]["CredentialUrl"].startswith("https://")
-    _, problems = Certs.parse_records(csv_text.encode("utf-8"), only_learner="ana")  # a learner cannot import someone else's rows
-    assert any("luis" in e for e in problems)
-    _, problems = Certs.parse_records(b"Learner,Code\nana,AZ-500\n")
-    assert any("Faltan columnas" in e for e in problems)
-    reqs, problems = Certs.parse_requirements(c.requirements_csv(), {f.id for f in cat.families}, allowed={"otra"})
-    assert reqs == {} and len(problems) == 2  # a champion cannot change another family's requirements
-    reqs, problems = Certs.parse_requirements(c.requirements_csv(), {f.id for f in cat.families})
-    assert problems == [] and len(reqs[fam]) == 2
-    rep = c.report(cat, "en", roster=["ana", "luis", "pedro"], today=date(2026, 10, 1))
-    row = next(r for r in rep["families"] if r["Certification"].startswith("SC-200"))
-    assert row["Level"] == "Required" and row["Hold it"] == 1 and row["Aiming for it"] == 1 and row["Who holds it"] == "luis"
-    people = {r["Person"]: r for r in rep["people"]}
-    assert people["ana"]["Required and missing"] == "SC-200" and people["luis"]["Required and missing"] == "—" and people["pedro"]["Current"] == 0
-    assert [(r["Person"], r["Days left"]) for r in rep["expiring"]] == [("ana", 45)]
-    assert rep["summary"] == {"people_with": 2, "people": 3, "current": 2, "desired": 1, "expiring": 1}
-    assert c.load_suggested({f.id for f in cat.families}) > 0 and len(c.requirements({fam})) == 2  # never overwrites what a family already set
-
-
-def test_reports_tab_and_my_certifications_render(tmp_path, monkeypatch):
-    at = _run(tmp_path, monkeypatch, ak_cert_view="mine")
-    assert not at.exception
-    assert any("Reportes" in x for x in _tab_labels(at))
-    assert any("Ruta de carrera por familia y persona" in m.value for m in at.markdown)
-    assert any("Registra las certificaciones" in m.value for m in at.markdown)
-    user = _run(tmp_path, monkeypatch, ak_owner_view=False)
-    assert not user.exception and not any("Reportes" in x for x in _tab_labels(user))
 
 
 # ---------------------------------------------------------------------------------------------- career path and certifications
@@ -987,7 +932,7 @@ def test_certification_register_csv_and_report(tmp_path):
     _, problems = Certs.parse_records(csv_text.encode("utf-8"), only_learner="ana")  # a learner cannot import someone else's rows
     assert any("luis" in e for e in problems)
     _, problems = Certs.parse_records(b"Learner,Code\nana,AZ-500\n")
-    assert any("Faltan columnas" in e for e in problems)
+    assert any("Missing columns" in e for e in problems)
     reqs, problems = Certs.parse_requirements(c.requirements_csv(), {f.id for f in cat.families}, allowed={"otra"})
     assert reqs == {} and len(problems) == 2  # a champion cannot change another family's requirements
     reqs, problems = Certs.parse_requirements(c.requirements_csv(), {f.id for f in cat.families})
@@ -1005,11 +950,11 @@ def test_certification_register_csv_and_report(tmp_path):
 def test_reports_tab_and_my_certifications_render(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch, ak_cert_view="mine")
     assert not at.exception
-    assert any("Reportes" in x for x in _tab_labels(at)) and any("Demanda" in x for x in _tab_labels(at))
-    assert any("Ruta de carrera por familia y persona" in m.value for m in at.markdown)
-    assert any("Registra las certificaciones" in m.value for m in at.markdown)
+    assert any("Reports" in x for x in _tab_labels(at)) and any("Demand" in x for x in _tab_labels(at))
+    assert any("Career path by family and person" in m.value for m in at.markdown)
+    assert any("Register the certifications" in m.value for m in at.markdown)
     user = _run(tmp_path, monkeypatch, ak_owner_view=False)
-    assert not user.exception and not any("Reportes" in x or "Demanda" in x for x in _tab_labels(user))
+    assert not user.exception and not any("Reports" in x or "Demand" in x for x in _tab_labels(user))
 
 
 # ---------------------------------------------------------------------------------------------- practice and demand
@@ -1039,8 +984,8 @@ def test_demand_analysis_and_report(tmp_path):
     assert again == rows and problems == []
     semi = "Role ID;Role Title;Role Primary Skill;Role Other Skills\nR1;Cloud Security Engineer;Azure AD;Sentinel, KQL | Java\nR2;SAP Consultant;SAP GRC;\n"
     few, problems = demand.parse(semi.encode("utf-8"))
-    assert len(few) == 2 and len(problems) == 1 and "Aviso" in problems[0]  # other columns may be absent
-    assert demand.parse(b"Client,Project\nA,B\n")[1][0].startswith("Faltan columnas")
+    assert len(few) == 2 and len(problems) == 1 and "Warning" in problems[0]  # other columns may be absent
+    assert demand.parse(b"Client,Project\nA,B\n")[1][0].startswith("Missing columns")
     assert demand.role_skills(few[0]) == ["Azure AD", "Sentinel", "KQL", "Java"]
     cat = load_catalog(ROOT / "catalog" / "skills.json")
     practice = load_practice(ROOT / "catalog" / "practice.json")
@@ -1049,12 +994,15 @@ def test_demand_analysis_and_report(tmp_path):
     skills = {r["Skill"]: r for r in a["skills"]}
     assert skills["Microsoft Entra ID"]["Roles"] == 1 and skills["Sentinel"]["Roles"] == 1  # Sentinel and KQL are the same practice skill
     assert skills["Java"]["_scope"] == "outside" and a["outside_roles"][0]["Role ID"] == "R2"
-    full = demand.analyze(rows, practice, cat, [load_pack("cloud-security")], load_materials(ROOT / "catalog" / "materials.json"), "es")
+    full = demand.analyze(rows, practice, cat, [load_pack("cloud-security")], load_materials(ROOT / "catalog" / "materials.json"), "en")
     assert sum(full["scope_roles"].values()) == len(rows) and full["titles"][0]["Roles"] >= full["titles"][1]["Roles"]
     assert all(r["_cover"] != "lessons" and r["_scope"] != "outside" for r in full["backlog"]) and full["backlog"]
-    page = demand.to_html(full, practice, "2026-10-07")
-    assert page.startswith("<!doctype html>") and page.count("<svg") >= 5 and "Fuera de la práctica" in page
-    assert b"Tabla" in demand.catalog_suggestions(full) and b"Skills" in demand.catalog_suggestions(full)
+    charts = demand.charts(full)
+    assert sum(v.count("<svg") for v in charts.values()) >= 5 and not hasattr(demand, "to_html")  # charts in the app; reports are PDF only
+    sug = demand.catalog_suggestions(full).decode("utf-8-sig").splitlines()
+    from academy.content_xlsx import SHEETS
+
+    assert sug[0].split(",") == SHEETS["Skills"] and len(sug) > 1  # same columns as the Skills tab: paste and done
     merged = demand.merge(rows, [dict(rows[0], **{"Role Title": "Changed"})])
     assert len(merged) == len(rows) and merged[0]["Role Title"] == "Changed"
     assert demand.load(demand.save(rows, tmp_path / "d.csv")) == rows
@@ -1063,10 +1011,10 @@ def test_demand_analysis_and_report(tmp_path):
 def test_demand_tab_renders_with_the_sample(tmp_path, monkeypatch):
     from academy import demand
 
-    demand.save(demand.sample_rows(), tmp_path / "demanda_roles.csv")
+    demand.save(demand.sample_rows(), tmp_path / "demand_roles.csv")
     at = _run(tmp_path, monkeypatch)
     assert not at.exception
-    assert any(m.label == "Skills de la práctica sin curso" for m in at.metric)
+    assert any(m.label == "Practice skills without a course" for m in at.metric)
 
 
 def test_practice_travels_in_the_content_file(tmp_path, monkeypatch):
@@ -1084,7 +1032,7 @@ def test_demand_snapshots_and_trend(tmp_path, monkeypatch):
     from academy import demand
     from academy.practice import load_practice
 
-    monkeypatch.setenv("ACADEMY_DEMAND", str(tmp_path / "content" / "demanda_roles.csv"))
+    monkeypatch.setenv("ACADEMY_DEMAND", str(tmp_path / "content" / "demand_roles.csv"))
     (week1, rows1), (week2, rows2) = demand.sample_history()
     assert demand.snapshot_date(rows1) == week1 == "2026-09-30" and demand.snapshot_date([{"Timestamp": "07/10/2026 09:00"}]) == "2026-10-07"
     assert demand.save_snapshot(rows2) == week2 and demand.save_snapshot(rows1) == week1  # loaded out of order
@@ -1106,9 +1054,8 @@ def test_demand_snapshots_and_trend(tmp_path, monkeypatch):
     assert row[week2] - row[week1] == row["_delta"] and row["Change vs previous"] in (f"{row['_delta']:+d}", "0")
     charts = demand.trend_charts(t)
     assert charts["lines"].count("<path") == 4 and "<svg" in charts["up"]
-    one = demand.trend([(week2, rows2)], practice, "es")
-    assert one["skills"][0]["Cambio vs anterior"] == "—" and demand.trend_charts(one)["lines"] == ""  # one upload: no trend yet
-    assert "Tendencia de la demanda" in demand.to_html(demand.analyze(rows2, practice, lang="es"), practice, "x", demand.trend([(week1, rows1), (week2, rows2)], practice, "es"))
+    one = demand.trend([(week2, rows2)], practice, "en")
+    assert one["skills"][0]["Change vs previous"] == "—" and demand.trend_charts(one)["lines"] == ""  # one upload: no trend yet
 
 
 def test_demand_report_as_pdf():
@@ -1119,8 +1066,8 @@ def test_demand_report_as_pdf():
         pytest.skip("reportlab is not installed")
     practice = load_practice(ROOT / "catalog" / "practice.json")
     history = demand.sample_history()
-    a = demand.analyze(history[-1][1], practice, load_catalog(ROOT / "catalog" / "skills.json"), [load_pack("cloud-security")], {}, "es")
-    pdf = demand_pdf.to_pdf(a, practice, "2026-10-07", demand.trend(history, practice, "es"))
+    a = demand.analyze(history[-1][1], practice, load_catalog(ROOT / "catalog" / "skills.json"), [load_pack("cloud-security")], {}, "en")
+    pdf = demand_pdf.to_pdf(a, practice, "2026-10-07", demand.trend(history, practice, "en"))
     assert pdf.startswith(b"%PDF") and len(pdf) > 20_000
     assert demand_pdf.to_pdf(demand.analyze([], practice, lang="en"), practice).startswith(b"%PDF")  # an empty file does not break it
 
@@ -1130,7 +1077,7 @@ def test_copyright_notice_is_fixed_and_sealed(tmp_path, monkeypatch):
     from academy import legal
 
     assert legal.verify()
-    assert legal.notice("es") == "© 2026 Alejandro Zavala. Todos los derechos reservados."
+    assert legal.notice("es") == "© 2026 Alejandro Zavala. Todos los derechos reservados."  # the sealed module keeps both
     assert legal.notice("en") == "© 2026 Alejandro Zavala. All rights reserved."
     at = _run(tmp_path, monkeypatch)
     assert not at.exception
@@ -1141,3 +1088,221 @@ def test_copyright_notice_is_fixed_and_sealed(tmp_path, monkeypatch):
     bad = _run(tmp_path, monkeypatch)
     assert any("derechos de autor" in e.value or "copyright notice" in e.value for e in bad.error)
     assert not any("Otra Persona" in m.value for m in bad.markdown)
+
+
+# ---------------------------------------------------------------------------------------------- edit mode
+def test_edit_mode_lists_merge_and_save(tmp_path, monkeypatch):
+    content, packs = _content_sandbox(tmp_path, monkeypatch)
+    from academy import editor
+
+    data = content.tables()
+    extra = {("Resources", "Channel"): ["My new channel"]}
+    assert editor.options("Lessons", "Level", data, {}) == load_pack("cloud-security").levels  # the course's own levels
+    assert "f1" in editor.options("Questions", "LessonId", data, {}) and editor.options("Lessons", "LessonId", data, {}) is None  # keys are free
+    assert editor.options("Questions", "AnswerLetter", data, {}) == list("ABCD")
+    assert "My new channel" in editor.options("Resources", "Channel", data, extra)  # «➕ New option»
+    assert "Microsoft" in editor.options("Skills", "Vendor", data, {}) and editor.options("Resources", "Url", data, {}) is None
+    flt = {"PackId": "cloud-security", "LessonId": "f1"}
+    shown = [r for r in data["Questions"] if editor._match("Questions", r, flt)]
+    assert len(shown) == 3
+    df = editor._frame("Questions", shown)
+    df.loc[0, "Question"] = "Edited in the app?"
+    rows = editor._rows("Questions", df)
+    merged = editor._merge("Questions", data["Questions"], rows, flt)
+    assert len(merged) == len(data["Questions"]) and merged[0]["Question"] == "Edited in the app?"  # same place, nothing lost
+    data["Questions"] = merged
+    new = {"PackId": "", "Term": "Zero-day", "Category": "Threats", "Definition": "A flaw attackers use before a fix exists."}
+    data["Glossary"] = editor._merge("Glossary", data["Glossary"], data["Glossary"] + [new], {"PackId": "cloud-security"})  # added at the bottom
+    assert data["Glossary"][-1]["PackId"] == "cloud-security"  # the new row takes the course of the filter
+    editor._fill_ids(data)
+    result = content.build(data)
+    assert result["problems"] == []
+    content.apply(result, backup_dir=tmp_path / "bk")
+    pack = load_pack(packs / "cloud-security")
+    assert pack.lessons[0].quiz[0].q == "Edited in the app?" and any(g["term"] == "Zero-day" for g in pack.glossary)
+    data["Questions"][0]["AnswerLetter"] = "Z"  # a broken edit is refused with the reason, like an import
+    assert any("AnswerLetter" in e for e in content.build(data)["problems"])
+
+
+def test_edit_mode_shows_in_every_section_for_owners(tmp_path, monkeypatch):
+    from academy import editor
+
+    for section in list(editor.SECTION_TABLES) + ["tab_certs", "tab_team"]:
+        at = _run(tmp_path, monkeypatch, **{f"ed_on_{section}": True})
+        assert not at.exception, (section, at.exception[0].stack_trace if at.exception else "")
+        if section != "tab_certs":
+            assert any(str(b.key) == f"ed_{section if section != 'tab_team' else 'team_0'}_save" for b in at.button), section
+    (tmp_path / "u").mkdir()  # a separate installation where "me" is a learner
+    user = _run(tmp_path / "u", monkeypatch, owners=("jefa",))
+    assert not user.exception and not any(str(t.key).startswith("ed_on_") for t in user.toggle)  # learners never see it
+
+
+# ---------------------------------------------------------------------------------------------- news
+RSS = b"""<?xml version="1.0"?><rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/"><channel><title>Blog</title>
+<item><title>Older post</title><link>https://example.com/old</link><pubDate>Mon, 05 Oct 2026 10:00:00 +0000</pubDate>
+<description>Old &lt;b&gt;news&lt;/b&gt;</description></item>
+<item><title>New [threat] report</title><link>https://example.com/new</link><pubDate>Wed, 07 Oct 2026 10:00:00 +0000</pubDate>
+<description><![CDATA[<p>Attackers <script>alert(1)</script>moved to the cloud.</p><img src="https://example.com/a.png">]]></description></item>
+</channel></rss>"""
+ATOM = b"""<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>F</title>
+<entry><title>Atom entry</title><link rel="alternate" href="https://example.org/e1"/><updated>2026-10-06T09:00:00Z</updated>
+<summary>Short summary</summary></entry></feed>"""
+PAGE = b"""<html><head><title>ISO</title><meta property="og:title" content="ISO/IEC 27001"><meta property="og:description"
+content="Information security management systems"><meta property="og:image" content="https://www.iso.org/i.png"></head></html>"""
+
+
+def test_news_feeds_pages_and_sources(tmp_path, monkeypatch):
+    from academy import news
+
+    items = news.parse_feed(RSS, "Blog")
+    assert [i.title for i in items] == ["New [threat] report", "Older post"] and items[0].published == "2026-10-07"
+    assert items[0].image == "https://example.com/a.png" and "alert" not in items[0].summary and "<" not in items[1].summary
+    (atom,) = news.parse_feed(ATOM)
+    assert (atom.link, atom.published, atom.summary) == ("https://example.org/e1", "2026-10-06", "Short summary")
+    page = news.parse_page(PAGE, "https://www.iso.org/standard/27001")
+    assert page.title == "ISO/IEC 27001" and page.image.startswith("https://") and page.kind == "page"
+    sources = news.load_sources(ROOT / "catalog" / "news_sources.csv")
+    assert news.splash_source(sources).name == "Microsoft Security Insider"
+    assert {"Microsoft", "Cloud providers", "Frameworks and standards"} <= {s.category for s in sources}
+    assert all(s.url.startswith("https://") for s in sources)
+    back, problems = news.parse_sources(news.to_csv(sources))
+    assert back == sources and problems == []
+    assert news.parse_sources(b"Name,Url\nX,http://insecure\n")[1]
+
+
+def test_news_reading_falls_back_and_keeps_the_last_good_one(tmp_path, monkeypatch):
+    from academy import news
+
+    monkeypatch.setenv("ACADEMY_NEWS_CACHE", str(tmp_path / "cache.json"))
+    monkeypatch.delenv("ACADEMY_NEWS_OFFLINE", raising=False)
+    feed = news.Source("Blog", "Microsoft", "https://example.com", "https://example.com/feed")
+    iso = news.Source("ISO", "Frameworks and standards", "https://www.iso.org/standard/27001")
+    web = {"https://example.com/feed": RSS, "https://www.iso.org/standard/27001": PAGE}
+
+    def fetch(url, timeout=0):
+        if url not in web:
+            raise OSError("down")
+        return web[url]
+
+    got = news.latest([feed, iso], fetch=fetch)
+    assert got["Blog"].ok and got["Blog"].items[0].title == "New [threat] report" and got["ISO"].items[0].kind == "page"
+    web.clear()  # offline now: the last good reading is still shown, marked as not fresh
+    again = news.latest([feed, iso], fetch=fetch)
+    assert not again["Blog"].ok and again["Blog"].items[0].title == "New [threat] report"
+    assert news.cover_image(news.Item("t", "https://example.com/x", image="https://example.com/i.png")) == "https://example.com/i.png"
+
+
+def test_knowledge_exchange_tab_renders(tmp_path, monkeypatch):
+    import json as _json
+
+    (tmp_path / "news_cache.json").write_text(_json.dumps({"AWS Security Blog": {"source": "AWS Security Blog", "fetched": "2026-10-07T10:00:00+00:00",
+                                                          "ok": True, "error": "", "items": [{"title": "IAM tips", "link": "https://aws.amazon.com/x",
+                                                          "summary": "Least privilege", "published": "2026-10-07", "image": "", "source": "AWS Security Blog",
+                                                          "kind": "item"}]}}), encoding="utf-8")
+    at = _run(tmp_path, monkeypatch)
+    assert not at.exception and any("Knowledge exchange" in x for x in _tab_labels(at))
+    assert any("reading bank" in c.value for c in at.caption)
+
+
+# ---------------------------------------------------------------------------------------------- team inventory
+def test_inventory_template_import_matrix_and_search(tmp_path):
+    from academy import inventory as inv
+    from academy.certs import Certs
+    from academy.practice import load_practice
+
+    conn = connect(tmp_path / "inv.db")
+    cat, practice = load_catalog(), load_practice(ROOT / "catalog" / "practice.json")
+    blank = inv.parse(inv.template_csv(), practice, cat)  # the example leaves the skill levels for each person to rate
+    assert blank["problems"] and all("Level must be 1 to 5" in e for e in blank["problems"])
+    import csv as _csv
+    import io as _io
+
+    table = list(_csv.DictReader(_io.StringIO(inv.template_csv().decode("utf-8-sig"))))
+    for r in table:  # the person rates their skills
+        if r["Type"] == "skill":
+            r["Level"] = "4" if r["Name"] == "KQL" else "3"
+    buf = _io.StringIO()
+    w = _csv.DictWriter(buf, fieldnames=inv.COLUMNS)
+    w.writeheader()
+    w.writerows(table)
+    parsed = inv.parse(buf.getvalue().encode("utf-8"), practice, cat)
+    assert parsed["problems"] == [] and parsed["people"] == ["Alejandro Zavala"]
+    assert {c["Code"] for c in parsed["certs"]["Alejandro Zavala"]} == {"AZ-900", "SC-200", "AZ-500", "AI-901"}
+    kql = next(s for s in parsed["skills"]["Alejandro Zavala"] if s["Skill"] == "KQL")
+    assert kql["SkillId"] == "microsoft-sentinel" and kql["Level"] == 4  # the practice's aliases map free names to the catalog
+    assert inv.parse(inv.template_xlsx(skills=["KQL"]), practice, cat)["problems"] == blank["problems"]  # the Excel template reads the same
+    store = inv.Inventory(conn)
+    store.apply(parsed, by="owner")
+    extra = "Person;Email;Type;Name;Code;Vendor;Level;Years;Status\nLuis;luis@x.com;skill;KQL;;Microsoft;3;2;current\n" \
+            "Luis;;skill;Terraform;;HashiCorp;2;;current\nLuis;;certification;SC-200;SC-200;Microsoft;;;desired\n"
+    store.apply(inv.parse(extra.encode(), practice, cat), by="owner")
+    assert len(Certs(conn).records("Alejandro Zavala")) == 4 and Certs(conn).records("luis")[0]["Status"] == "desired"
+    cols, rows = store.matrix(cat)
+    assert "Microsoft Sentinel" in cols and {r["Person"] for r in rows} == {"Alejandro Zavala", "Luis"}
+    found = store.who_has(["Microsoft Sentinel"], 3, cat)
+    assert [r["Person"] for r in found] == ["Alejandro Zavala", "Luis"] and "AZ-500" in found[0]["Certifications"]
+    store.validate("Luis", "KQL", "champion")
+    assert store.matrix(cat)[1][1]["Microsoft Sentinel"] == "3 ✓"
+    store.set_skills("Luis", [{"Skill": "KQL", "SkillId": "microsoft-sentinel", "Level": 4}], by="Luis")  # a new level drops the validation
+    assert not store.skills("Luis")[0]["ValidatedBy"] and store.coverage(["microsoft-sentinel"]) == {"microsoft-sentinel": 2}
+    back = inv.parse(store.export_csv(), practice, cat)  # round trip in the same columns
+    assert back["problems"] == [] and set(back["people"]) == {"Alejandro Zavala", "Luis"}
+    bad = inv.parse(b"Person,Type,Name,Level,Status\nAna,skill,KQL,,current\nAna,badge,x,,current\n", practice, cat)
+    assert len(bad["problems"]) == 2
+
+
+# ---------------------------------------------------------------------------------------------- rhythm
+def test_rhythm_dates_invites_agendas_and_actions(tmp_path, pack, exam):
+    from datetime import date
+
+    from academy import rhythm as rh
+
+    conn = connect(tmp_path / "rh.db")
+    cat = load_catalog()
+    r = rh.Rhythm(conn)
+    made = r.standard(cat.families, "owner", today=date(2026, 10, 1))
+    assert len(made) == 1 + len(cat.families) and r.standard(cat.families, "owner") == []  # created once
+    monthly = next(s for s in r.all() if s.kind == rh.MONTHLY)
+    assert rh.occurrences(monthly, date(2026, 10, 1), date(2026, 12, 31)) == [date(2026, 10, 6), date(2026, 11, 3), date(2026, 12, 1)]  # 1st Tuesday
+    r.update(monthly.id, week=-1, weekday=4)
+    assert rh.occurrences(r.get(monthly.id), date(2026, 10, 1), date(2026, 10, 31)) == [date(2026, 10, 30)]  # last Friday
+    sid = r.create(rh.STUDY, "AI-901 study group", cert="ai-901", lead="ana", weekday=2, time="17:00", start="2026-10-01", end="2026-11-12")
+    g = r.get(sid)
+    days = rh.occurrences(g, date(2026, 10, 1), date(2026, 12, 31))
+    assert days[0] == date(2026, 10, 7) and days[-1] == date(2026, 11, 11) and len(days) == 6  # weekly, until the day before the exam
+    assert rh.session_number(g, date(2026, 10, 14)) == (2, 6)
+    plan = rh.study_plan(exam, 6)
+    assert len(plan) == 6 and "Mock exam" in plan[-2]
+    r.join(sid, "luis")
+    assert r.attendees(g, ["owner"], {}, None) == ["ana", "luis"]
+    assert "owner" in r.attendees(r.get(monthly.id), ["owner"], {f.id: f.champion for f in cat.families})
+    invite = rh.ics(g, {"ana": "ana@x.com", "luis": ""}, "ana@x.com", first=date(2026, 10, 7)).decode()
+    assert "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=WE;UNTIL=20261111T235959" in invite and "DTSTART:20261007T170000" in invite
+    assert "mailto:ana@x.com" in invite and "luis" not in invite and all(len(x.encode()) <= 75 for x in invite.split("\r\n"))
+    assert "BYDAY=-1FR" in rh.ics(r.get(monthly.id), {}).decode()
+    with pytest.raises(ValueError):
+        r.create(rh.STUDY, "no date", cert="SC-200")
+    with pytest.raises(ValueError):
+        r.create(rh.WEEKLY, "bad time", time="25:99")
+    aid = r.add_action(sid, "2026-10-07", "Share the Microsoft Learn path", "ana", "2026-10-10", by="ana")
+    agenda = dict(rh.agenda(conn, g, date(2026, 10, 14), [pack], [exam], cat))
+    assert any("Share the Microsoft Learn path" in x for x in next(v for k, v in agenda.items() if k.startswith("Open actions")))
+    assert "Readiness" in agenda and any("luis" in x for x in agenda["Readiness"])
+    r.set_done(aid)
+    assert r.actions(sid, open_only=True) == []
+    weekly = next(s for s in r.all() if s.kind == rh.WEEKLY)
+    assert "People to follow up" in dict(rh.agenda(conn, weekly, date(2026, 10, 8), [pack], [exam], cat))
+    assert "Demand against the bench" in dict(rh.agenda(conn, r.get(monthly.id), date(2026, 10, 30), [pack], [exam], cat))
+
+
+def test_rhythm_and_skills_render_in_the_app(tmp_path, monkeypatch):
+    from academy import rhythm as rh
+
+    at = _run(tmp_path, monkeypatch)
+    assert not at.exception and any("Rhythm" in x for x in _tab_labels(at))
+    at.button(key="rh_std").click().run()
+    assert not at.exception and len(rh.Rhythm(connect(tmp_path / "app.db")).all()) >= 2
+    assert any("Meeting room" in m.value for m in at.markdown) and any("Open actions" in m.value for m in at.markdown)
+    skills = _run(tmp_path, monkeypatch, ak_cert_view="skills")
+    assert not skills.exception and any("Register the skills" in m.value for m in skills.markdown)
+    assert any("Team skills matrix" in m.value for m in skills.markdown)  # Reports → Skills matrix (owner)

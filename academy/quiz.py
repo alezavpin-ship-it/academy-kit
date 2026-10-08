@@ -26,10 +26,10 @@ def glossary_question(glossary: list[dict], rng: random.Random, lang: str = "es"
     pool += rng.sample(others, 3 - len(pool))
     to_def = rng.random() < 0.5
     if to_def:
-        prompt = f"What does **{g['term']}** mean?" if lang == "en" else f"¿Qué significa **{g['term']}**?"
+        prompt = f"What does **{g['term']}** mean?"
         opts = [g["definition"]] + [x["definition"] for x in pool]
     else:
-        prompt = (f"Which term matches: _{g['definition']}_?" if lang == "en" else f"¿Qué término corresponde a: _{g['definition']}_?")
+        prompt = (f"Which term matches: _{g['definition']}_?")
         opts = [g["term"]] + [x["term"] for x in pool]
     order = list(range(4))
     rng.shuffle(order)

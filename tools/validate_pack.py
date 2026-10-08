@@ -17,23 +17,23 @@ from academy.pack import available_packs, load_pack, validate  # noqa: E402
 def check(path: str) -> bool:
     pack = load_pack(path)
     cat = load_catalog()
-    errs = validate(pack, cat) + ([f"[catálogo] {e}" for e in validate_catalog(cat)] if cat else [])
+    errs = validate(pack, cat) + ([f"[catalog] {e}" for e in validate_catalog(cat)] if cat else [])
     n_vid = sum(r.kind != "link" for r in pack.resources.values())
-    print(f"\n{pack.title} ({pack.id}) — {len(pack.lessons)} lecciones, {len(pack.glossary)} términos, "
-          f"{len(pack.resources)} recursos ({n_vid} videos)")
+    print(f"\n{pack.title} ({pack.id}) — {len(pack.lessons)} lessons, {len(pack.glossary)} terms, "
+          f"{len(pack.resources)} resources ({n_vid} videos)")
     for e in errs:
         print("  ✗", e)
-    print("  ✓ válido" if not errs else f"  {len(errs)} problema(s)")
+    print("  ✓ valid" if not errs else f"  {len(errs)} problem(s)")
     return not errs
 
 
 def check_exam(name: str) -> bool:
     exam = load_exam(name)
     errs = validate_exam(exam, load_catalog())
-    print(f"\n{exam.name} ({exam.id}) — {len(exam.modules)} módulos, {len(exam.questions)} preguntas, {len(exam.exercises())} ejercicios")
+    print(f"\n{exam.name} ({exam.id}) — {len(exam.modules)} modules, {len(exam.questions)} questions, {len(exam.exercises())} exercises")
     for e in errs:
         print("  ✗", e)
-    print("  ✓ válido" if not errs else f"  {len(errs)} problema(s)")
+    print("  ✓ valid" if not errs else f"  {len(errs)} problem(s)")
     return not errs
 
 

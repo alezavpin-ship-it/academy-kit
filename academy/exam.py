@@ -110,14 +110,12 @@ def _parse(data: dict) -> Exam:
 
 
 def load_exam(path: str | Path, lang: str | None = None) -> Exam:
-    """``lang``: use the translation exams/<id>/exam.<lang>.json when it exists (same ids and answers)."""
+    """Load exams/<id>/exam.json. ``lang`` is ignored: English only."""
     p = Path(path)
     if not p.exists():
         p = EXAMS_DIR / str(path)
     if p.is_dir():
         p = p / "exam.json"
-    if lang and (p.parent / f"exam.{lang}.json").exists():
-        p = p.parent / f"exam.{lang}.json"
     return _parse(json.loads(p.read_text(encoding="utf-8")))
 
 
@@ -132,53 +130,53 @@ def validate_exam(exam: Exam, catalog=None) -> list[str]:
     dom = {d["id"] for d in exam.domains}
     mods = {m.id for m in exam.modules}
     if abs(sum(float(d["weight"]) for d in exam.domains) - 100) > 0.01:
-        errs.append("Los pesos de los dominios deben sumar 100.")
+        errs.append("The domain weights must add up to 100.")
     if len(mods) != len(exam.modules):
-        errs.append("Hay módulos repetidos.")
+        errs.append("There are repeated modules.")
     qids = [q.id for q in exam.questions]
     if len(qids) != len(set(qids)):
-        errs.append("Hay ids de pregunta repetidos.")
+        errs.append("There are repeated question ids.")
     for m in exam.modules:
         if m.domain not in dom:
-            errs.append(f"[módulo {m.id}] dominio '{m.domain}' no existe.")
+            errs.append(f"[module {m.id}] domain '{m.domain}' does not exist.")
         if len(m.points) < 3:
-            errs.append(f"[módulo {m.id}] necesita al menos 3 puntos clave.")
+            errs.append(f"[module {m.id}] needs at least 3 key points.")
         if not m.materials:
-            errs.append(f"[módulo {m.id}] necesita al menos un material de apoyo.")
+            errs.append(f"[module {m.id}] needs at least one support material.")
         if not any(q.module == m.id for q in exam.questions):
-            errs.append(f"[módulo {m.id}] no tiene preguntas.")
+            errs.append(f"[module {m.id}] has no questions.")
         for mat in m.materials:
             if urlparse(mat.get("url", "")).scheme != "https" or not mat.get("title"):
-                errs.append(f"[módulo {m.id}] material sin título o sin URL https.")
+                errs.append(f"[module {m.id}] material without a title or an https URL.")
         for e in m.exercises:
             if e.type == "order" and len(e.steps) < 3:
-                errs.append(f"[ejercicio {e.id}] 'order' necesita al menos 3 pasos.")
+                errs.append(f"[exercise {e.id}] 'order' needs at least 3 steps.")
             elif e.type == "match" and (len(e.pairs) < 3 or len({p[1] for p in e.pairs}) != len(e.pairs)):
-                errs.append(f"[ejercicio {e.id}] 'match' necesita al menos 3 pares con respuestas distintas.")
+                errs.append(f"[exercise {e.id}] 'match' needs at least 3 pairs with distinct answers.")
             elif e.type == "lab" and len(e.steps) < 2:
-                errs.append(f"[ejercicio {e.id}] 'lab' necesita al menos 2 pasos.")
+                errs.append(f"[exercise {e.id}] 'lab' needs at least 2 steps.")
             elif e.type not in ("order", "match", "lab"):
-                errs.append(f"[ejercicio {e.id}] tipo '{e.type}' desconocido.")
+                errs.append(f"[exercise {e.id}] unknown type '{e.type}'.")
     for q in exam.questions:
         if q.module not in mods:
-            errs.append(f"[{q.id}] módulo '{q.module}' no existe.")
+            errs.append(f"[{q.id}] module '{q.module}' does not exist.")
         if len(q.options) != 4 or len(set(q.options)) != 4:
-            errs.append(f"[{q.id}] necesita 4 opciones distintas.")
+            errs.append(f"[{q.id}] needs 4 distinct options.")
         if not 0 <= q.answer < len(q.options):
-            errs.append(f"[{q.id}] 'answer' fuera de rango.")
+            errs.append(f"[{q.id}] 'answer' out of range.")
         if not q.why:
-            errs.append(f"[{q.id}] falta la explicación.")
+            errs.append(f"[{q.id}] the explanation is missing.")
     for d in exam.domains:
         have = sum(1 for q in exam.questions if q.module in mods and exam.domain_of(q) == d["id"])
         if have < quota(exam)[d["id"]]:
-            errs.append(f"[dominio {d['id']}] el banco tiene {have} preguntas y el simulacro pide {quota(exam)[d['id']]}.")
+            errs.append(f"[domain {d['id']}] the bank has {have} questions and the mock exam asks for {quota(exam)[d['id']]}.")
     if catalog is not None:
         fams = {f.id for f in catalog.families}
         if exam.family and exam.family not in fams:
-            errs.append(f"La familia '{exam.family}' no existe en el catálogo de skills.")
+            errs.append(f"The family '{exam.family}' does not exist in the skills catalog.")
         for s in exam.skills:
             if s not in catalog.skill_ids():
-                errs.append(f"La skill '{s}' no existe en el catálogo.")
+                errs.append(f"The skill '{s}' does not exist in the catalog.")
     return errs
 
 
@@ -246,7 +244,7 @@ class ExamTracker:
     """Exam activity for one learner, stored in the same events table as the courses (pack = 'exam:<id>')."""
 
     def __init__(self, conn: sqlite3.Connection, exam: Exam, learner: str):
-        self.conn, self.exam, self.learner = conn, exam, (learner.strip() or "yo")
+        self.conn, self.exam, self.learner = conn, exam, (learner.strip() or "me")
 
     def _record(self, kind: str, item: str, points: int, correct: bool, detail: str = "") -> None:
         with self.conn:

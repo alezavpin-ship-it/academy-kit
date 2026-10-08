@@ -82,11 +82,11 @@ def _read_csv(raw: bytes, columns: list[str]) -> tuple[list[dict], list[str]]:
     delim = ";" if first.count(";") > first.count(",") else ("\t" if first.count("\t") > first.count(",") else ",")
     rows = list(csv.reader(io.StringIO(text, newline=""), delimiter=delim))
     if not rows:
-        return [], ["El archivo está vacío. · The file is empty."]
+        return [], ["The file is empty."]
     head = [h.strip() for h in rows[0]]
     missing = [c for c in columns if c not in head]
     if missing:
-        return [], [f"Faltan columnas · missing columns: {', '.join(missing)}. Se esperan · expected: {', '.join(columns)}."]
+        return [], [f"Missing columns: {', '.join(missing)}. Expected: {', '.join(columns)}."]
     out = []
     for n, row in enumerate(rows[1:], start=2):
         if any(c.strip() for c in row):
@@ -181,23 +181,23 @@ class Certs:
         rows, problems = _read_csv(raw, RECORD_COLUMNS)
         out: dict[str, list[dict]] = {}
         for r in rows:
-            tag = f"[fila · row {r['_row']}]"
+            tag = f"[row {r['_row']}]"
             who = r["Learner"] or (only_learner or "")
             if not who or not r["Code"]:
-                problems.append(f"{tag} falta Learner o Code. · Learner or Code is missing.")
+                problems.append(f"{tag} Learner or Code is missing.")
                 continue
             if only_learner and who.lower() != only_learner.strip().lower():
-                problems.append(f"{tag} la fila es de «{who}»: solo puedes importar tus propias certificaciones. · that row belongs to someone else.")
+                problems.append(f"{tag} that row belongs to '{who}': you can only import your own certifications.")
                 continue
             if r["Status"].lower() not in _STATUS:
-                problems.append(f"{tag} Status debe ser current o desired. · Status must be current or desired.")
+                problems.append(f"{tag} Status must be current or desired.")
             for col in ("Obtained", "Expires"):
                 try:
                     _date(r[col])
                 except ValueError:
-                    problems.append(f"{tag} {col} = '{r[col]}' no es una fecha (usa AAAA-MM-DD). · is not a date (use YYYY-MM-DD).")
+                    problems.append(f"{tag} {col} = '{r[col]}' is not a date (use YYYY-MM-DD).")
             if r["CredentialUrl"] and not r["CredentialUrl"].startswith("https://"):
-                problems.append(f"{tag} CredentialUrl debe empezar con https://. · CredentialUrl must start with https://.")
+                problems.append(f"{tag} CredentialUrl must start with https://.")
             out.setdefault(only_learner.strip() if only_learner else who, []).append(r)
         return out, problems
 
@@ -207,15 +207,15 @@ class Certs:
         rows, problems = _read_csv(raw, REQUIREMENT_COLUMNS)
         out: dict[str, list[dict]] = {}
         for r in rows:
-            tag = f"[fila · row {r['_row']}]"
+            tag = f"[row {r['_row']}]"
             if not r["FamilyId"] or not r["Code"]:
-                problems.append(f"{tag} falta FamilyId o Code. · FamilyId or Code is missing.")
+                problems.append(f"{tag} FamilyId or Code is missing.")
             elif r["FamilyId"] not in known_families:
-                problems.append(f"{tag} FamilyId '{r['FamilyId']}' no existe en el catálogo. · is not in the catalog.")
+                problems.append(f"{tag} FamilyId '{r['FamilyId']}' is not in the catalog.")
             elif allowed is not None and r["FamilyId"] not in allowed:
-                problems.append(f"{tag} no administras la familia '{r['FamilyId']}'. · you do not run that family.")
+                problems.append(f"{tag} you do not run the family '{r['FamilyId']}'.")
             elif r["Level"].lower() not in _LEVEL:
-                problems.append(f"{tag} Level debe ser required o desirable. · Level must be required or desirable.")
+                problems.append(f"{tag} Level must be required or desirable.")
             else:
                 out.setdefault(r["FamilyId"], []).append(r)
         return out, problems
@@ -225,7 +225,6 @@ class Certs:
         """{"families": one row per family and certification it asks for, "people": one row per person, "expiring": [...]}.
 
         ``only``: the families a champion runs. ``roster``: everyone in the academy, so people without any record show up too."""
-        en = lang == "en"
         today = today or datetime.now(timezone.utc).date()
         recs = self.records()
         fam_name = {f.id: f.name for f in catalog.families} if catalog else {}
@@ -233,14 +232,14 @@ class Certs:
         wanting: dict[str, list[str]] = {}
         for r in recs:
             (holders if r["Status"] == CURRENT else wanting).setdefault(r["Code"], []).append(r["Learner"])
-        k = {"family": "Skill family" if en else "Familia de skills", "cert": "Certification" if en else "Certificación",
-             "level": "Level" if en else "Nivel", "have": "Hold it" if en else "La tienen", "want": "Aiming for it" if en else "La buscan",
-             "who": "Who holds it" if en else "Quién la tiene", "person": "Person" if en else "Persona",
-             "current": "Current certifications" if en else "Certificaciones actuales", "n": "Current" if en else "Actuales",
-             "desired": "Desired certifications" if en else "Certificaciones deseables", "exp": "Expires" if en else "Vence",
-             "next": "Next to expire" if en else "Próxima a vencer", "missing": "Required and missing" if en else "Requeridas que faltan",
-             "days": "Days left" if en else "Días restantes"}
-        level = {REQUIRED: "Required" if en else "Requerida", DESIRABLE: "Desirable" if en else "Deseable"}
+        k = {"family": "Skill family", "cert": "Certification",
+             "level": "Level", "have": "Hold it", "want": "Aiming for it",
+             "who": "Who holds it", "person": "Person",
+             "current": "Current certifications", "n": "Current",
+             "desired": "Desired certifications", "exp": "Expires",
+             "next": "Next to expire", "missing": "Required and missing",
+             "days": "Days left"}
+        level = {REQUIRED: "Required", DESIRABLE: "Desirable"}
         reqs = self.requirements(only)
         families = [{k["family"]: fam_name.get(r["FamilyId"], r["FamilyId"]), k["cert"]: f"{r['Code']} · {r['Name']}".rstrip(" ·"),
                      k["level"]: level[r["Level"]], k["have"]: len(holders.get(r["Code"], [])), k["want"]: len(wanting.get(r["Code"], [])),

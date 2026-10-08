@@ -98,7 +98,7 @@ def build_routes(catalog, materials: dict[str, list[dict]]) -> list[FamilyRoute]
 
 class RouteTracker:
     def __init__(self, conn: sqlite3.Connection, learner: str):
-        self.conn, self.learner = conn, (learner.strip() or "yo")
+        self.conn, self.learner = conn, (learner.strip() or "me")
 
     def done(self) -> dict[str, str]:
         """step key -> evidence link ('' if none)."""

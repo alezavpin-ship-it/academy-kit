@@ -1,255 +1,143 @@
-# Academy Kit
+# Academia - Cloud
 
-La Academia de AZP Trading Lab convertida en un módulo independiente para **cualquier práctica**: Cloud Security, IT,
-onboarding, upskilling de ingenieros… El motor es genérico; el contenido vive en un paquete JSON por tema.
+An upskilling academy for a practice (here: Microsoft Cloud Security). The engine is generic; every piece of content —
+courses, videos, learning paths, the skills catalog, the practice definition and the news sources — is data you edit in
+Excel, in CSV or in the app's **✏️ Edit mode**. Nothing is hard-coded. The app is **English only**.
 
-Incluye un ejemplo completo: **Academia de Cloud Security** — 4 niveles, 12 lecciones, 36 preguntas, 12 entregables
-de valor (VBD), 47 términos de glosario y 45 videos verificados con YouTube (de 2 a 5 por lección, varias fuentes,
-al menos uno en español en cada lección).
+## Run it (Windows)
+Double-click **`Academia Cloud.bat`**. The first time it prepares the environment (1–3 minutes) and leaves an
+«Academia Cloud» shortcut on the desktop. Close the black window to stop the app.
 
-## Qué hace
-
-- **Curso**: lección (resumen, puntos clave, práctica) + 3 preguntas con explicación + **panel de video compacto** al lado
-  (Mini/Chico/Mediano/Grande; se queda fijo mientras bajas por las preguntas y cambiar de video no borra tus respuestas) + **VBD** con criterios que se marcan y se entregan.
-- **Glosario**: quiz término ↔ definición y buscador.
-- **Videoteca**: todos los recursos por tema, filtro «solo en español», y en qué lecciones se usa cada uno.
-- **Progreso e insignias**: rangos con línea de medallas, insignias, ruta recomendada para tu rol, actividad reciente.
-- **Equipo**: progreso de cada persona (puntos, rango, lecciones, VBDs) descargable en CSV.
-- Interfaz en español o inglés; tema oscuro tipo terminal fintech (y claro).
-
-## Correrlo (Windows)
-
+Manual run:
 ```bat
-cd academy-kit
 py -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 streamlit run app.py
 ```
-Se abre en http://localhost:8501. El progreso se guarda en `data\academy.db`
-(para otra ruta: `set ACADEMY_DB=C:\ruta\academy.db`). Pruebas: `pip install pytest` y `pytest`.
+Progress is stored in `data\academy.db` (`set ACADEMY_DB=...` for another path). Tests: `pip install pytest` and `pytest`.
+If the PDF buttons are greyed out, close the app and run **`Install components.bat`** once.
 
-## Abrir con 1 clic
-Doble clic en **`Academia Cloud.bat`**. La primera vez prepara el entorno (1 a 3 minutos) y deja el acceso directo
-«Academia Cloud» en el Escritorio, con su icono. Cierra la ventana negra para apagar la app.
-
-## Mapa de skills (catálogo, brechas y champions)
-La pestaña «Mapa de skills» muestra las familias por brecha, su champion y qué lecciones cubren cada skill. El catálogo
-(`catalog/skills.json`) se carga de tres formas, todas en esta computadora:
-- **Importar de Excel**: lee solo la pestaña elegida (por omisión *Upskilling Plan*) y busca la tabla con
-  `Skill Family` y `Unaligned / Missing Skill`. Guarda cuántos roles tiene cada brecha, no cuáles.
-- **Pegar tabla**: copia las celdas en Excel (con encabezados) y pégalas.
-- **Editar a mano**: agrega, cambia o borra familias y skills, y asigna champions.
-
-Para probar sin el archivo real: `python tools\make_sample_xlsx.py` crea `catalog\ejemplo_upskilling_plan.xlsx` con roles ficticios.
-
-## Ruta de aprendizaje (formación oficial del proveedor)
-Primera pestaña. Por familia de skills, la ruta son los pasos de **Microsoft Learn** (módulos, rutas, cursos) de cada
-skill; para skills que no son de Microsoft se usa la ruta de carrera del fabricante (p. ej. Anthropic Academy para
-Claude Code). La persona abre el paso, lo completa en el sitio del proveedor y lo marca aquí (+15 pts), con enlace
-opcional a su logro. Los pasos salen de `catalog\materials.json`: cuenta como paso lo que tenga `kind` module, path,
-course, lab o tutorial; guías, documentos y videos quedan como material de consulta.
-
-Los cursos del portal interno (**Workday Learning / myLearning**) se agregan igual: el family skill lead pega el enlace
-en «Equipo → Cursos de mi familia» con proveedor «Workday Learning» y la app redirige al curso; cada persona entra con
-su propia sesión. La conexión automática con Workday está descrita en `INTEGRACION_POWERAPPS.md`.
-
-## Certificaciones (ruta de estudio, práctica y simulacro)
-La pestaña «Certificaciones» lee `exams\<id>\exam.json`. Incluye **AI-901: Microsoft Azure AI Fundamentals** como modelo:
-7 módulos, 35 preguntas originales y 8 ejercicios.
-- **Ruta de estudio**: por módulo, puntos clave, material de apoyo (Microsoft Learn) y ejercicios interactivos
-  (ordenar pasos, relacionar conceptos, práctica guiada con lista de verificación).
-- **Práctica**: una pregunta a la vez con explicación; «Mis puntos débiles» junta los módulos por debajo de 60 %.
-- **Simulacro**: 25 preguntas repartidas con los pesos oficiales de los dominios, 45 minutos, resultado sobre 1000
-  (se aprueba con 700), desglose por dominio y repaso de lo fallado.
-- **Historial**: intentos y evolución.
-Las preguntas son de práctica, escritas para la academia; no son preguntas del examen real.
-Validar: `python tools\validate_pack.py --all` revisa paquetes, catálogo y exámenes.
-
-## Material de apoyo por skill
-`catalog\materials.json` guarda enlaces a material existente (Microsoft Learn u otra fuente) por skill. Se ven en
-«Mapa de skills» y se editan en «Editar a mano». Importar un Excel nuevo no los borra.
-
-## Avisos con copia al champion
-En «Equipo → Avisos por enviar» la app prepara los mensajes: curso terminado, simulacro aprobado, 5 días sin actividad y
-7 días sin avance, cada uno con copia al champion de la familia. Sin conexión se abren en Outlook con un clic o se
-descarga la cola en CSV; en Microsoft 365 los enviará un flujo de Power Automate. El aprendiz ve el mismo mensaje al
-entrar. Los correos salen de «Tu correo» (barra lateral) y del correo del champion (en «Editar a mano»).
-
-## Vistas: usuario final y owner
-- **Usuario final** (por omisión): su curso, glosario, videoteca, su propio progreso, el mapa de skills sin las cifras de
-  brecha, y certificaciones. No ve nada de otras personas.
-- **Owner** (owners y líderes del equipo de desarrollo de skills): además ve la pestaña «Equipo» (mediciones de todo el
-  equipo, avisos por enviar, acceso), las cifras de brecha y la administración del catálogo.
-- **Champion** de una familia: la vista de usuario final más la pestaña «Equipo» limitada a quienes cursan **su
-  familia** (ruta, lecciones y certificaciones de esa familia), sus avisos y las cifras de brecha de esa familia.
-- Con el interruptor de la barra lateral, owners y champions pueden ver la app como usuario final.
-
-La primera vez, quien administra pulsa «Registrarme como owner». Después, en «Equipo → Acceso» se agregan más owners,
-un PIN opcional y el nombre del security group. La lista vive en `config\access.json`.
-**Sin conexión esto separa vistas, no es un control de seguridad** (la base de datos es un archivo local). El control
-real llega con Microsoft 365: la pertenencia al security group sustituye a esta lista.
-
-## Asistente de IA (Amethyst)
-El asistente interno de la compañía acompaña el estudio en cuatro puntos:
-- **Práctica**: al fallar una pregunta, «Que me lo explique el tutor de IA».
-- **Simulacro**: «Plan de estudio de 7 días con IA», armado con tu resultado por dominio y el material oficial.
-- **Ruta de aprendizaje**: «Prepárate para tu siguiente paso».
-- **Líderes** (owner y champion): borrador de preguntas nuevas por módulo, para revisar antes de agregarlas.
-
-Dos modos, según lo que esté configurado en «Equipo → Asistente de IA» (`config\assistant.json`):
-- **Copiar y abrir** (por omisión, funciona sin conexión ni credenciales): la academia escribe el mensaje con el contexto,
-  la persona lo copia y lo pega en Amethyst.
-- **API**: si la compañía entrega un endpoint para integraciones, se captura ahí y la llave se pone en la variable de
-  entorno `AMETHYST_API_KEY` (nunca en archivos). La respuesta aparece dentro de la academia.
-
-Los mensajes solo llevan contenido de estudio y el resultado de la propia persona; nunca datos de otras personas, cifras
-de brecha ni nada del reporte confidencial.
-
-## Llevarla a Power Apps + SharePoint
-Ver `INTEGRACION_POWERAPPS.md`. `python tools\export_sharepoint.py` genera en `export\sharepoint\` un CSV por lista.
-
-## Crear otra academia
-
-1. Copia `packs\_plantilla` a `packs\<tu-tema>` y llena `pack.json` (formato en `FORMATO_PACK.md`).
-2. `python tools\validate_pack.py packs\<tu-tema>` — revisa las reglas de la metodología.
-3. `python tools\audit_videos.py packs\<tu-tema>` — confirma cada video con YouTube (`--fix` actualiza títulos/canales).
-4. Reinicia la app: el tema aparece en el selector «Academia» de la barra lateral.
-
-O deja que Claude lo haga: usa los prompts de `PROMPT_PROYECTO.md`.
-
-## Archivos
-
-| Archivo | Para qué |
+## What learners see
+| Tab | What it does |
 |---|---|
-| `app.py` | Punto de entrada de Streamlit (barra lateral: idioma, academia, nombre, rol) |
-| `academy/pack.py` | Carga y **valida** paquetes |
-| `academy/page.py` | La página completa (pestañas, panel de video, VBD) |
-| `academy/progress.py` | Puntos, rangos, insignias, VBDs y vista de equipo (SQLite) |
-| `academy/quiz.py`, `videos.py`, `track.py`, `i18n.py` | Quiz, YouTube/oEmbed, línea de rangos, textos ES/EN |
-| `packs/cloud-security/` | Ejemplo terminado |
-| `packs/_plantilla/` | Esqueleto para un tema nuevo |
-| `tools/` | Validador y auditor de videos |
-| `METODOLOGIA.md`, `FORMATO_PACK.md`, `PROMPT_PROYECTO.md` | Para el nuevo proyecto de Claude |
+| Learning route | Per skill family: vendor → skill → class 1, 2, 3… (Microsoft Learn first, then the vendor's own path or Workday Learning). Mark each step done. |
+| Course | Lesson (summary, key points, practice) + 3 check questions + a compact video panel that stays in view. |
+| Glossary | Term ↔ definition quiz and search. |
+| Video library | Every video by topic and the lessons that use it. |
+| Progress & badges | Ranks, badges, the path for your role, recent activity. |
+| Skills map | Families by gap, their champion and which lessons cover each skill. |
+| Certifications | Your current and desired certifications; exam preparation (study, practice, mock exam). |
+| Forum | Ask the experts (SMEs) of a family; champions and owners run it. |
+| Rhythm | My next sessions (with Outlook invites), study groups to join, and the meeting room: an agenda built from the data plus action items. |
+| Knowledge exchange | A reading bank of security news from the sources the practice follows (Microsoft, cloud providers, vendors, NIST, CIS, ISO 27001, CISA…). |
 
-## Límites
-- El progreso es local (SQLite en la computadora donde corre). Para un equipo distribuido, publícalo en un servidor
-  interno con una ruta de base de datos compartida o cambia `progress.py` a una base de datos de red.
-- «Tu nombre» no es un inicio de sesión: sirve para separar progreso, no para controlar acceso.
-- Los videos son de terceros y pueden desaparecer: corre `audit_videos.py` cada pocos meses.
+When the app opens, a window shows the **latest Microsoft security news** (title, short summary, a medium-size image and
+links to the publisher). It closes with «Continue to the academy» and shows once per session.
 
+Owners and champions also get **Reports** (status by family, who keeps up with the career path, certifications; Excel and
+**PDF**) and **Demand** (what the role requests ask for against the practice and the courses, with the weekly trend; CSV
+and **PDF**). Owners get **Team** (measurements, notices, the content file, access, AI assistant).
 
-## Idiomas / Languages
+## Rhythm: the meetings that keep it alive
+| Series | Who | Default | The agenda brings |
+|---|---|---|---|
+| Monthly review | Owner lead + every champion | 1st Tuesday, 10:00, 60 min | Families in red, people behind, certifications expiring, **demand against the bench** (most requested practice skills, people at level 3+, whether a course exists), study groups running, open actions |
+| Family sync | The family's champion and members | Every Thursday, 30 min | The family's progress, people to follow up, forum questions waiting, a rotating 5-minute demo, the certifications the family asks for |
+| Study group | 4–8 people, one certification, **an exam date** | Weekly until the exam | Session n of N, this session's topic (the exam's modules spread over the sessions, then a mock exam and a final review), each member's best mock score against the pass mark |
 
-La app abre en inglés; el selector «Language / Idioma» de la barra lateral cambia a español.
+- Owners create the recommended rhythm with one button; champions create their family's sync and open study groups; anyone joins an open group (people who aim for that certification see it first).
+- Every series downloads as an **.ics invitation** (recurrence, attendees with e-mail, 15-minute reminder) to open in Outlook.
+- Every meeting ends with **actions** (what, who, by when); the open ones lead the next agenda. The agenda downloads as text to paste in Teams.
 
-- Textos de la interfaz: `academy/i18n.py` (par español / inglés por texto).
-- Contenido: cada paquete y examen tiene su versión en inglés junto al original, `packs/<tema>/pack.en.json` y
-  `exams/<id>/exam.en.json`. Llevan los mismos ids, el mismo orden de niveles y las mismas respuestas, así que el avance
-  se comparte entre idiomas. Si no existe la traducción, se muestra el archivo original.
-- Al cambiar una lección o pregunta, cámbiala en los dos archivos; las pruebas (`pytest`) avisan si dejan de coincidir.
-- En inglés solo se muestran los videos en inglés (si una lección no tuviera ninguno, se muestran todos).
+## Team inventory: certifications and skills
+- One collection file for the whole team: **`team_inventory_template.xlsx`** (drop-down lists and instructions) or **`.csv`**, one row per
+  certification or skill: `Person, Email, Type, Name, Code, Vendor, Level, Years, Status, Obtained, Expires, EvidenceUrl, Notes`.
+- `Type = certification` goes to the certification register (Code, current / desired, dates, Credly link); `Type = skill` goes to the skills
+  inventory with the same 1–5 scale for everyone: 1 Aware · 2 Basic · 3 Practitioner · 4 Advanced · 5 Expert.
+- Free skill names are matched to the catalog through the practice's aliases (KQL → Microsoft Sentinel, PowerShell → Automation…).
+- Reports → **Skills matrix**: download the template, import the filled file (replaces the inventory of the people in it), the person × skill
+  matrix, **«Who can take this role?»** (skills + minimum level → people, levels and certifications) and the champion's validation (✓).
+- Each person keeps theirs in Certifications → **My skills**; changing a level removes its validation.
 
-## Sonidos, animaciones y reportes
+## Edit mode (owners)
+Every section has a **✏️ Edit mode** switch at the top. On, the section shows the tables it is made of:
 
-- **Sonidos:** tonos cortos generados en el navegador (sin archivos de audio) al responder, completar un paso y terminar una
-  lección o un VBD. Se apagan con el interruptor «Sounds / Sonidos» de la barra lateral. Definidos en `academy/ui.py` (`SOUNDS`).
-- **Animaciones:** entrada de la tarjeta de siguiente paso, llenado de las barras de avance, puntos clave que aparecen uno a
-  uno y confeti al completar. Se desactivan solas si el sistema pide «reducir movimiento».
-- **Reportes por familia de skills:** pestaña «Equipo» (vista de owner: todas las familias; vista de champion: solo las suyas).
-  Estado por familia y seguimiento por persona, con descarga en Excel y en HTML para imprimir. Lógica en `academy/report.py`.
+| Section | Tables |
+|---|---|
+| Learning route / Skills map | LearningPaths, Skills, Families |
+| Course | Lessons, Questions, LessonResources (videos of each lesson), Levels, Courses |
+| Glossary | Glossary |
+| Video library | Resources, Topics |
+| Progress & badges | Ranks, Roles |
+| Certifications | What each family requires and everyone's register |
+| Reports | Families (champions, gap) |
+| Demand | PracticeSkills, PracticeRoles, Practice |
+| Knowledge exchange | NewsSources |
+| Team | Every table, by section |
 
-## Contenido de la academia en un solo archivo (CSV / Excel)
+- Columns that point to something else (course, lesson, video, topic, family, skill, level) are **drop-down lists** of what exists.
+- Fixed values (correct letter, kind, scope, severity, yes/no) are drop-down lists of those values.
+- Repeated free values (channel, provider, category, vendor, champion…) list the values already used; **➕ New option for a list** adds one.
+- Columns with several values (skills, aliases) take several choices and accept new ones typed in the cell.
+- Add rows at the bottom of a table; select rows to delete them. New rows get their id from their name when left empty.
+- **💾 Save changes** runs exactly the checks of an imported file. With a problem nothing is saved and the problems are
+  listed; otherwise the files are written (after a backup in `data\content_backups\`) and the Excel content file is rewritten.
 
-Todo lo que se estudia se edita en **un archivo**, sin tocar código:
+## The content file
+`content\academy_content.xlsx` holds everything, one tab per table, grouped by section (the tab color shows the section;
+the README tab is the index). Edit it in Excel, save, close Excel and reopen the app: it is checked in full and applied only
+if it is right. The same content travels as one CSV (`python tools\content.py export content.csv`, column `Table`).
 
-    content/academia_contenido.csv
+| Section | Tabs |
+|---|---|
+| Skills catalog | Families, Skills, LearningPaths |
+| Practice | Practice, PracticeSkills, PracticeRoles, NewsSources |
+| Courses | Courses, Levels, Ranks, Topics, Roles |
+| Lessons | Lessons, Questions |
+| Videos and links | Resources, LessonResources |
+| Glossary | Glossary |
 
-La app lo crea sola la primera vez (con el contenido que ya tiene) y lo mantiene al día cada vez que algo se cambia desde la
-propia app (Mapa de skills, cursos de una familia, importaciones).
+Rules: each lesson has 3 questions with 4 distinct options and `AnswerLetter` A–D, and at least 2 videos from 2 channels.
+Files from earlier versions (Spanish tab names, a `Lang` column, the retired `VBD` tab) are still read: only the English
+rows are kept.
 
-## Cómo se edita
-1. Abre `content/academia_contenido.csv` en Excel.
-2. Filtra por la columna **Tabla** para trabajar una tabla a la vez.
-3. Edita, guarda (como CSV) y cierra Excel.
-4. Vuelve a abrir la app. Revisa el archivo completo: si está bien, lo aplica y guarda un respaldo del contenido anterior en
-   `data/content_backups/`; si tiene errores **no cambia nada** y los lista en Equipo → «Contenido de la academia».
+## News sources (per practice)
+`catalog\news_sources.csv` — also the NewsSources tab and the Knowledge exchange edit mode:
 
-También se puede descargar y subir desde la app (pestaña Equipo, vista de owner), como CSV único o como libro de Excel con
-una hoja por tabla, o por comando: `python tools/content.py export | check <archivo> | import <archivo>`.
+`Name, Category, Url, FeedUrl, Splash, Enabled, Description`
 
-## Estructura: familia → vendor → skill → clases
-| Tabla | Qué contiene | Columnas clave |
-|---|---|---|
-| Familias | Las skill families principales (editables): brecha, roles afectados, champion | FamilyId, Name |
-| Skills | Las skills de cada familia, con su tecnología / vendor (Microsoft, AWS, GCP, Cisco, IBM…) y categoría opcional | SkillId, FamilyId, Vendor, Category |
-| LearningPaths | La ruta de carrera de cada skill: **Class** 1, 2, 3… y la fuente en **Provider** (Microsoft Learn, el fabricante, Workday Learning…) | SkillId, Class, Title, Url, Kind, Provider |
-| Cursos, Niveles, Rangos, Temas, Roles | Datos generales de cada curso, por idioma | PackId, Lang |
-| Lecciones, Preguntas, VBD | Lecciones con sus puntos clave, 3 preguntas y el entregable de valor | PackId, Lang, LessonId |
-| Recursos, LeccionRecursos | Videos y enlaces (URL, canal, idioma) y en qué lección se muestran | ResourceKey, Url |
-| Glosario | Términos y definiciones | Term |
+- `FeedUrl` is the RSS / Atom feed; without one (or when it does not answer) the card shows the site's own preview.
+- `Splash = yes` marks the source whose latest item opens the academy (Microsoft Security Insider; its items come from the
+  Microsoft Security blog feed).
+- Readings are cached for an hour and the last good one is kept in `data\news_cache.json`, so the bank works offline.
+  Text from the internet is shown as plain text; only https links and images are used.
 
-Reglas que revisa la importación:
-- En LearningPaths, `Kind` = path, module, course, lab o tutorial cuenta como clase de la ruta; doc, guide y video son material de consulta.
-  Las columnas Family, Vendor y Skill de esa tabla son informativas (se toman de Skills).
-- Si `Vendor` se deja vacío, la app lo deduce del nombre de la skill o de la fuente de su formación; si no puede, usa «Vendor-neutral».
-- Cada lección necesita 3 preguntas con 4 opciones y `AnswerLetter` A–D, al menos 2 videos de 2 canales y un VBD con 3 criterios o más.
-- El mismo curso en español e inglés lleva las mismas lecciones, en el mismo orden y con la misma respuesta correcta
-  (el avance se comparte entre idiomas).
-- Los nombres de los roles del reporte de brechas nunca viajan en el archivo: solo cuántos roles tiene cada brecha.
+Another practice (ServiceNow, SAP…) replaces the catalog, the practice tables and this CSV; the engine stays the same.
 
-En la app, la pestaña «Ruta de aprendizaje» sigue esa estructura: se elige la familia, se filtra por tecnología / vendor y cada
-skill muestra sus clases en orden. El curso de Cloud Security usa ejemplos, enlaces y videos de Microsoft (Azure, Entra,
-Defender, Sentinel).
+## Demand analysis
+Reads `content\demand_roles.csv` (or an uploaded file) with the 35 columns of the roles report; only Role ID, Role Title
+and Role Primary Skill are mandatory. Every upload is kept by date in `content\demand_history\` to draw the trend.
+`content\demand_roles_sample.csv` has 48 made-up roles to try it. Client data stays on this computer.
 
-### Foro, reportes, certificaciones y análisis de demanda
+## English only
+Earlier versions kept Spanish and English side by side. On the first start, `academy/english.py` converts once: the
+English course and exam become the only files, Spanish videos are dropped, and the content and demand files get their
+English names. Everything replaced is copied first to `data\content_backups\<date>-english\`. Progress is kept (lessons
+and questions have the same ids).
 
-Cuatro módulos que se apoyan en la misma estructura (familia de skills → vendor → skill → clases) y en los mismos roles:
-**owner** (todo), **champion** (sus familias), **SME** (experto de una familia) y **aprendiz**.
-
-### Foro (pestaña «Foro»)
-- Cada pregunta pertenece a una familia de skills (y opcionalmente a una skill).
-- Cualquiera puede responder. La respuesta de un SME, del champion o de un owner lleva insignia, y con ella la pregunta cuenta como contestada.
-- Lo administran los owners (todas las familias) y cada champion (las suyas): nombran a los SME de la familia, marcan la respuesta aceptada,
-  fijan, cierran o reabren y ocultan lo que no corresponde. Lo oculto no se borra.
-- Los expertos ven arriba de la app cuántas preguntas de sus familias esperan respuesta. Exportable a CSV.
-
-### Reportes (pestaña «Reportes», owners y champions)
-- **Familias de skills:** estado por familia (champion, brecha, contenido, personas, avance, preguntas del foro sin contestar).
-- **Personas y ruta de carrera:** una fila por persona y otra por familia y persona, con estado: No está cumpliendo (7 días o más sin actividad),
-  En riesgo (5 a 6 días), Sin iniciar, Al corriente, Cumplido. Incluye a quien está registrado y no ha empezado.
-- **Certificaciones:** por familia (quién la tiene, quién la busca), por persona (actuales, deseables, requeridas que faltan) y por vencer en 90 días.
-- Descarga todo en Excel o en HTML para imprimir.
-
-### Registro de certificaciones
-- Cada persona registra en «Certificaciones → Mis certificaciones» las que tiene (`current`) y las que quiere (`desired`).
-- El champion / owner define las que pide cada familia (requerida o deseable) y puede corregir el registro de cualquiera o ponerle deseables.
-- Todo entra y sale por CSV:
-  - Registro: `Learner, Code, Name, Vendor, Status, Obtained, Expires, CredentialUrl`. Importar reemplaza las certificaciones de las personas del archivo.
-  - Requisitos por familia: `FamilyId, Code, Name, Vendor, Level, Url`. Importar reemplaza los de las familias del archivo.
-
-### Análisis de demanda (pestaña «Demanda», owners y champions)
-- Lee `content/demanda_roles.csv` (o un Excel subido) con las 35 columnas del reporte de roles; solo son obligatorias
-  Role ID, Role Title y Role Primary Skill. `content/demanda_roles_ejemplo.csv` trae 48 roles ficticios para probar.
-- Cada skill pedido se compara con la definición de la práctica: de la práctica, otros vendors que manejamos, foco nuevo o fuera de la práctica.
-- Muestra los skills, skills primarios y títulos de rol más pedidos, los roles fuera de la práctica y el cruce con los cursos:
-  qué skills de la práctica con demanda no tienen lecciones (cursos por crear) y cuáles ni siquiera están en el catálogo.
-- Exporta un reporte HTML con gráficos, los skills pedidos en CSV y las skills nuevas como filas listas para pegar en el archivo de contenido.
-
-### La práctica es un dato, no código
-La definición de la práctica vive en el archivo de contenido (`content/academia_contenido.csv`):
-- `Practica`: nombre y descripción.
-- `PracticaSkills`: `Term` (como lo escribe la demanda), `Aliases` (separados por `;`), `SkillId`, `FamilyId`, `Vendor`, `Scope` (core | third-party | emerging).
-- `PracticaRoles`: títulos de rol que la práctica puede cubrir, con alias.
-
-Para usar la academia en otra práctica (por ejemplo ServiceNow) se reemplazan esas tablas y las de Familias, Skills y LearningPaths.
-
-### Tendencia de la demanda y PDF
-- Cada archivo de roles que se carga se guarda con su fecha en `content/demanda_historial/demanda_AAAA-MM-DD.csv`. La pestaña «Demanda → Tendencia»
-  compara las cargas: roles por alcance en cada fecha, skills que más crecen y más bajan frente a la carga anterior, roles nuevos y roles que ya no vienen.
-- Si reemplazas `content/demanda_roles.csv` a mano, la app lo registra como una carga más (fecha = el Timestamp más reciente del archivo).
-- El reporte se descarga en PDF o en HTML, con la tendencia incluida. El PDF necesita el componente `reportlab`: si el botón sale apagado,
-  cierra la app y ejecuta `Instalar componentes.bat` una vez.
-
-## Derechos de autor
-© 2026 Alejandro Zavala. Todos los derechos reservados (ver `LICENSE`). El aviso aparece al pie de cada página y en la barra lateral; está fijo en `academy/legal.py`, no hay pantalla ni ajuste que lo cambie, y la app no abre si se altera.
+## Files
+| Path | What it is |
+|---|---|
+| `app.py` | Entry point (sidebar, views, content sync, English migration) |
+| `academy/page.py` | The page: tabs and sections |
+| `academy/editor.py` | ✏️ Edit mode |
+| `academy/content_xlsx.py`, `content_sync.py` | The content workbook: export, import, checks, sync |
+| `academy/news.py`, `news_page.py` | News sources, feed reading, opening window, Knowledge exchange |
+| `academy/report.py`, `report_pdf.py` | Reports by family and their Excel / PDF |
+| `academy/demand.py`, `demand_page.py`, `demand_pdf.py` | Demand analysis, trend and PDF |
+| `academy/progress.py`, `route.py`, `exam.py` | Points, ranks, badges; learning route; certification prep |
+| `academy/forum.py`, `certs.py` | Forum; certification register |
+| `packs/<id>/pack.json` | A course (`packs/_template/` is the skeleton for a new one) |
+| `catalog/` | `skills.json`, `materials.json` (learning paths), `practice.json`, `news_sources.csv` |
+| `tools/` | `content.py` (export / check / import), `validate_pack.py`, `audit_videos.py`, `export_sharepoint.py` |

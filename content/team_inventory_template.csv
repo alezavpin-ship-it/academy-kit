@@ -1,0 +1,11 @@
+﻿Person,Email,Type,Name,Code,Vendor,Level,Years,Status,Obtained,Expires,EvidenceUrl,Notes
+Alejandro Zavala,alejandro.zavala@company.com,certification,Azure Fundamentals,AZ-900,Microsoft,,,current,,,,
+Alejandro Zavala,alejandro.zavala@company.com,certification,Security Operations Analyst,SC-200,Microsoft,,,current,,,,
+Alejandro Zavala,alejandro.zavala@company.com,certification,Azure Security Engineer Associate,AZ-500,Microsoft,,,current,,,,
+Alejandro Zavala,alejandro.zavala@company.com,certification,Azure AI Fundamentals,AI-901,Microsoft,,,current,,,,
+Alejandro Zavala,alejandro.zavala@company.com,skill,Cisco CCNA (routing and switching),,Cisco,,,current,,,,"Experience, not certified"
+Alejandro Zavala,alejandro.zavala@company.com,skill,ServiceNow,,ServiceNow,,,current,,,,
+Alejandro Zavala,alejandro.zavala@company.com,skill,Microsoft 365 / Office 365,,Microsoft,,,current,,,,
+Alejandro Zavala,alejandro.zavala@company.com,skill,PowerShell,,Microsoft,,,current,,,,
+Alejandro Zavala,alejandro.zavala@company.com,skill,KQL,,Microsoft,,,current,,,,
+Alejandro Zavala,alejandro.zavala@company.com,skill,SQL,,Vendor-neutral,,,current,,,,

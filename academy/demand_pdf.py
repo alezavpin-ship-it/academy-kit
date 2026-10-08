@@ -1,7 +1,7 @@
 """The demand analysis as a PDF (charts and tables), built with reportlab so it works offline on any computer.
 
 ``available()`` says whether reportlab is installed; ``to_pdf`` returns the file's bytes. Same content and colors as the
-HTML report (academy/demand.py).
+charts in the app (academy/demand.py).
 """
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from __future__ import annotations
 import io
 from xml.sax.saxutils import escape
 
-from academy.demand import COLOR, SCOPE_NAME, _l, visible
+from academy.demand import COLOR, SCOPE_NAME, visible
 from academy.practice import CORE, EMERGING, OUTSIDE, THIRD, Practice
 
 INK, MUTED, LINE, ORANGE = "#1C1C1E", "#55524E", "#E4E0DB", "#FF5800"
@@ -62,7 +62,7 @@ def _share(scope_roles: dict, width: float, lang: str):
         x += w + 2
     x = 0.0
     for s in (CORE, THIRD, EMERGING, OUTSIDE):  # legend: identity is never color alone
-        name = _l(lang, SCOPE_NAME[s])
+        name = SCOPE_NAME[s]
         d.add(Rect(x, 2, 7, 7, fillColor=HexColor(COLOR[s]), strokeColor=None))
         d.add(String(x + 10, 2.5, name, fontName="Helvetica", fontSize=7.5, fillColor=HexColor(MUTED)))
         x += 16 + 4.2 * len(name)
@@ -98,7 +98,7 @@ def _lines(points: list[dict], width: float, lang: str, height: float = 150):
         while any(abs(ly - u) < 9 for u in used):
             ly -= 9
         used.append(ly)
-        d.add(String(pts[-1][0] + 7, ly, f"{_l(lang, SCOPE_NAME[s])}: {points[-1][s]}", fontName="Helvetica", fontSize=7.5, fillColor=HexColor(INK)))
+        d.add(String(pts[-1][0] + 7, ly, f"{SCOPE_NAME[s]}: {points[-1][s]}", fontName="Helvetica", fontSize=7.5, fillColor=HexColor(INK)))
     return d
 
 
@@ -110,8 +110,6 @@ def to_pdf(a: dict, practice: Practice, generated: str = "", tr: dict | None = N
     from reportlab.platypus import KeepTogether, PageBreak, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
     lang, k, s = a["lang"], a["keys"], a["summary"]
-    en = lang == "en"
-    h = (lambda es, en_: en_ if en else es)
     page = landscape(A4)
     margin = 14 * mm
     width = page[0] - 2 * margin
@@ -146,9 +144,9 @@ def to_pdf(a: dict, practice: Practice, generated: str = "", tr: dict | None = N
         t.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 10)]))
         return t
 
-    kp = [("Roles", s["roles"]), (h("En la práctica", "In the practice"), f"{s['in_practice']} · {s['in_practice_pct']} %"),
-          (h("Fuera de la práctica", "Outside the practice"), s["outside"]), (h("Clientes", "Clients"), s["clients"]),
-          (h("Skills distintos", "Distinct skills"), s["skills"]), (h("Skills de la práctica sin curso", "Practice skills without a course"), s["no_course"])]
+    kp = [("Roles", s["roles"]), ("In the practice", f"{s['in_practice']} · {s['in_practice_pct']} %"),
+          ("Outside the practice", s["outside"]), ("Clients", s["clients"]),
+          ("Distinct skills", s["skills"]), ("Practice skills without a course", s["no_course"])]
     kpis = Table([[[Paragraph(escape(str(v)), st["kpi"]), Paragraph(escape(n), st["kpil"])] for n, v in kp]], colWidths=[width / len(kp)] * len(kp))
     kpis.setStyle(TableStyle([("BOX", (i, 0), (i, 0), 0.6, colors.HexColor(LINE)) for i in range(len(kp))]
                              + [("TOPPADDING", (0, 0), (-1, -1), 7), ("BOTTOMPADDING", (0, 0), (-1, -1), 7), ("LEFTPADDING", (0, 0), (-1, -1), 8)]))
@@ -162,59 +160,57 @@ def to_pdf(a: dict, practice: Practice, generated: str = "", tr: dict | None = N
     rule.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), colors.HexColor(ORANGE))]))
     rule.hAlign = "LEFT"
     story = [rule, Spacer(1, 8),
-             Paragraph(escape(f"{h('Análisis de demanda de roles', 'Role demand analysis')} · {practice.name}"), st["h1"]),
-             Paragraph(escape(f"Academia - Cloud · {h('Generado', 'Generated')}: {generated} · "
-                              + h("Los conteos son roles: un skill cuenta una vez por cada rol que lo pide.",
-                                  "Counts are roles: a skill counts once per role that asks for it.")), st["meta"]),
+             Paragraph(escape(f"{'Role demand analysis'} · {practice.name}"), st["h1"]),
+             Paragraph(escape(f"Academia - Cloud · {'Generated'}: {generated} · "
+                              + "Counts are roles: a skill counts once per role that asks for it."), st["meta"]),
              Spacer(1, 10), kpis,
-             Paragraph(escape(h("¿Cuánto de la demanda es de nuestra práctica?", "How much of the demand belongs to our practice?")), st["h2"]),
+             Paragraph(escape("How much of the demand belongs to our practice?"), st["h2"]),
              _share(a["scope_roles"], width, lang),
-             Paragraph(escape(h("Qué se está pidiendo", "What is being requested")), st["h2"]),
-             pair(chart(h(f"Los {top} skills más solicitados (roles que piden cada uno)", f"Top {top} most requested skills (roles that ask for each)"), skills, half),
-                  chart(h("Skills primarios más solicitados", "Most requested primary skills"), primary, half)),
+             Paragraph(escape("What is being requested"), st["h2"]),
+             pair(chart(f"Top {top} most requested skills (roles that ask for each)", skills, half),
+                  chart("Most requested primary skills", primary, half)),
              PageBreak(),
-             pair(chart(h("Títulos de rol más solicitados", "Most requested role titles"), titles, half),
-                  chart(h("Skills más solicitados fuera de la práctica", "Most requested skills outside the practice"), outside, half)),
+             pair(chart("Most requested role titles", titles, half),
+                  chart("Most requested skills outside the practice", outside, half)),
              PageBreak(),
-             Paragraph(escape(h("Demanda contra cursos existentes", "Demand against existing courses")), st["h2"]),
-             Paragraph(escape(h("Skills de la práctica que se piden y todavía no tienen lecciones en la academia: son los cursos por crear, del más pedido al menos pedido.",
-                                "Practice skills in demand that still have no lessons in the academy: the courses to build, most requested first.")), st["meta"]),
-             Spacer(1, 6), KeepTogether(chart(h("Skills de la práctica con demanda y sin curso", "Practice skills in demand without a course"), backlog, width * 0.62)),
+             Paragraph(escape("Demand against existing courses"), st["h2"]),
+             Paragraph(escape("Practice skills in demand that still have no lessons in the academy: the courses to build, most requested first."), st["meta"]),
+             Spacer(1, 6), KeepTogether(chart("Practice skills in demand without a course", backlog, width * 0.62)),
              PageBreak()]
     if tr and len(tr["dates"]) > 1:
         tk = tr["keys"]
         up = sorted((r for r in tr["skills"] if r["_delta"] > 0), key=lambda r: -r["_delta"])[:10]
         down = sorted((r for r in tr["skills"] if r["_delta"] < 0), key=lambda r: r["_delta"])[:10]
-        story += [Paragraph(escape(f"{h('Tendencia de la demanda', 'Demand trend')} · {tr['dates'][0]} → {tr['dates'][-1]}"), st["h2"]),
-                  Paragraph(escape(h("Roles por carga, según alcance", "Roles per upload, by scope")), st["h3"]), _lines(tr["points"], width * 0.8, lang),
+        story += [Paragraph(escape(f"{'Demand trend'} · {tr['dates'][0]} → {tr['dates'][-1]}"), st["h2"]),
+                  Paragraph(escape("Roles per upload, by scope"), st["h3"]), _lines(tr["points"], width * 0.8, lang),
                   Spacer(1, 10),
-                  pair(chart(h("Skills que más crecen (roles de más frente a la carga anterior)", "Skills growing the most (more roles than in the previous upload)"),
+                  pair(chart("Skills growing the most (more roles than in the previous upload)",
                              [(r[tk["skill"]], r["_delta"], r["_scope"]) for r in up], half),
-                       chart(h("Skills que más bajan (roles de menos frente a la carga anterior)", "Skills dropping the most (fewer roles than in the previous upload)"),
+                       chart("Skills dropping the most (fewer roles than in the previous upload)",
                              [(r[tk["skill"]], -r["_delta"], r["_scope"]) for r in down], half)),
                   PageBreak(),
-                  Paragraph(escape(h("Skills más solicitados en cada carga", "Most requested skills in every upload")), st["h2"]), table(tr["skills"]),
-                  Paragraph(escape(h(f"Roles nuevos desde la carga anterior ({len(tr['new_roles'])})", f"New roles since the previous upload ({len(tr['new_roles'])})")), st["h2"]),
+                  Paragraph(escape("Most requested skills in every upload"), st["h2"]), table(tr["skills"]),
+                  Paragraph(escape(f"New roles since the previous upload ({len(tr['new_roles'])})"), st["h2"]),
                   table(tr["new_roles"]),
-                  Paragraph(escape(h(f"Roles que ya no vienen en el archivo ({len(tr['gone_roles'])})", f"Roles no longer in the file ({len(tr['gone_roles'])})")), st["h2"]),
+                  Paragraph(escape(f"Roles no longer in the file ({len(tr['gone_roles'])})"), st["h2"]),
                   table(tr["gone_roles"]), PageBreak()]
     story += [
-             Paragraph(escape(h("Cursos por crear (detalle)", "Courses to build (detail)")), st["h2"]), table(a["backlog"]),
-             Paragraph(escape(h("Skills solicitados", "Requested skills")), st["h2"]), table(a["skills"]),
-             Paragraph(escape(h("Títulos de rol", "Role titles")), st["h2"]), table(a["titles"]),
-             Paragraph(escape(h("Título de rol y skill primario", "Role title and primary skill")), st["h2"]), table(a["combos"]),
-             Paragraph(escape(h("Roles fuera de la práctica", "Roles outside the practice")), st["h2"]), table(a["outside_roles"])]
+             Paragraph(escape("Courses to build (detail)"), st["h2"]), table(a["backlog"]),
+             Paragraph(escape("Requested skills"), st["h2"]), table(a["skills"]),
+             Paragraph(escape("Role titles"), st["h2"]), table(a["titles"]),
+             Paragraph(escape("Role title and primary skill"), st["h2"]), table(a["combos"]),
+             Paragraph(escape("Roles outside the practice"), st["h2"]), table(a["outside_roles"])]
 
     def footer(canvas, doc):
         canvas.saveState()
         canvas.setFont("Helvetica", 7.5)
         canvas.setFillColor(colors.HexColor(MUTED))
         canvas.drawString(margin, 8 * mm, f"Academia - Cloud · {practice.name}")
-        canvas.drawRightString(page[0] - margin, 8 * mm, f"{h('Página', 'Page')} {doc.page}")
+        canvas.drawRightString(page[0] - margin, 8 * mm, f"{'Page'} {doc.page}")
         canvas.restoreState()
 
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=page, leftMargin=margin, rightMargin=margin, topMargin=12 * mm, bottomMargin=14 * mm,
-                            title=f"{h('Análisis de demanda', 'Demand analysis')} · {practice.name}", author="Academia - Cloud")
+                            title=f"{'Demand analysis'} · {practice.name}", author="Academia - Cloud")
     doc.build(story, onFirstPage=footer, onLaterPages=footer)
     return buf.getvalue()

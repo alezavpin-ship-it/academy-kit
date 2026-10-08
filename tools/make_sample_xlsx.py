@@ -1,8 +1,8 @@
-"""Write catalog/ejemplo_upskilling_plan.xlsx: a workbook with FICTITIOUS roles in the layout the importer expects.
+"""Write catalog/sample_upskilling_plan.xlsx: a workbook with FICTITIOUS roles in the layout the importer expects.
 
     python tools/make_sample_xlsx.py
 
-Use it to try «Mapa de skills → Importar de Excel» without touching the real (confidential) report.
+Use it to try «Skills map → Import from Excel» without touching the real (confidential) report.
 """
 
 import sys
@@ -24,7 +24,7 @@ def build(path: Path) -> Path:
     wb = Workbook()
     other = wb.active
     other.title = "Sheet4 editable"
-    other.append(["Esta pestaña no se lee: el importador solo abre la que elijas."])
+    other.append(["This tab is not read: the importer only opens the one you choose."])
     ws = wb.create_sheet("Upskilling Plan")
     ws["A1"] = "Cloud Security Upskilling & Gap Remediation Requirement"
     ws["A4"], ws["A5"] = "Remediation Urgency", "High"
@@ -32,7 +32,7 @@ def build(path: Path) -> Path:
     for j, h in enumerate(HEADERS, start=1):
         ws.cell(row=15, column=j, value=h)
     for i, s in enumerate(cat.skills):
-        roles = "; ".join(f"Rol de ejemplo {k + 1}" for k in range(2 + i % 4))
+        roles = "; ".join(f"Sample role {k + 1}" for k in range(2 + i % 4))
         fam = names[s.family]
         row = [fam, s.name, ["High", "Medium", "Low"][i % 3], roles, ["P3 - Advanced", "P2 - Intermediate"][i % 2], f"{fam} Champion"]
         for j, v in enumerate(row, start=1):
@@ -47,4 +47,4 @@ def build(path: Path) -> Path:
 
 
 if __name__ == "__main__":
-    print(build(CATALOG_PATH.parent / "ejemplo_upskilling_plan.xlsx"))
+    print(build(CATALOG_PATH.parent / "sample_upskilling_plan.xlsx"))

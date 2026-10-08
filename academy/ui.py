@@ -11,7 +11,6 @@ import html
 import streamlit as st
 
 from academy import legal
-from academy.i18n import L
 from academy.pack import Lesson, Pack
 from academy.progress import Tracker
 
@@ -91,7 +90,7 @@ SOUNDS = {
     "bad": [(233.08, .16, "triangle"), (196.0, .26, "triangle")],  # wrong answer: two soft notes down
     "step": [(783.99, .1, "sine")],  # a step marked as done
     "go": [(523.25, .08, "sine"), (659.25, .12, "sine")],  # start / continue a lesson
-    "win": [(523.25, .12, "triangle"), (659.25, .12, "triangle"), (783.99, .12, "triangle"), (1046.5, .34, "triangle")],  # lesson, VBD, exam
+    "win": [(523.25, .12, "triangle"), (659.25, .12, "triangle"), (783.99, .12, "triangle"), (1046.5, .34, "triangle")],  # lesson, exam
 }
 _JS = """<script>(function(){try{var A=window.AudioContext||window.webkitAudioContext;if(!A)return;
 var c=window.__akAudio||(window.__akAudio=new A());if(c.state==='suspended'){c.resume();}
@@ -180,54 +179,52 @@ def hero(pack: Pack, tr: Tracker, lang: str, role: str | None = None) -> None:
     les = next_lesson(pack, tr, role)
     pct = 100 * done / total if total else 0
     left = total - done
-    foot = (L(lang, f"Faltan {left} lecciones para completar la ruta", f"{left} lessons left to finish the route") if left
-            else L(lang, "Ruta completa", "Route complete"))
-    progress = bar_html(pct, L(lang, "Avance total de tu ruta", "Your overall progress"),
-                        L(lang, f"· {done} de {total} lecciones completadas", f"· {done} of {total} lessons completed"), foot)
+    foot = (f"{left} lessons left to finish the route" if left
+            else "Route complete")
+    progress = bar_html(pct, "Your overall progress",
+                        f"· {done} of {total} lessons completed", foot)
     pts = tr.total_points()
     cur, need = tr.rank(pts)
-    to_next = (L(lang, f"faltan {need} para {pack.ranks[cur + 1].name}", f"{need} to reach {pack.ranks[cur + 1].name}") if need is not None
-               else L(lang, "rango máximo", "top rank"))
-    vbds, vbd_total = len(tr.vbds_done()), sum(1 for x in pack.lessons if x.vbd)
+    to_next = (f"{need} to reach {pack.ranks[cur + 1].name}" if need is not None
+               else "top rank")
+    right_q, total_q = len(tr.correct_items()), sum(len(x.quiz) for x in pack.lessons)
     tiles = "".join(f'<div class="ak-tile"><b>{html.escape(str(v))}</b><span>{html.escape(k)}</span><small>{html.escape(note)}</small></div>'
-                    for k, v, note in ((L(lang, "Lecciones completadas", "Lessons completed"), f"{done} / {total}", ""),
-                                       (L(lang, "Entregables de valor", "Value deliverables"), f"{vbds} / {vbd_total}", ""),
-                                       (L(lang, "Puntos", "Points"), f"{pts:,}", to_next),
-                                       (L(lang, "Rango", "Rank"), pack.ranks[cur].name, "")))
+                    for k, v, note in (("Lessons completed", f"{done} / {total}", ""),
+                                       ("Questions answered right", f"{right_q} / {total_q}", ""),
+                                       ("Points", f"{pts:,}", to_next),
+                                       ("Rank", pack.ranks[cur].name, "")))
     with st.container(key="ak_hero"):
         left, right = st.columns([3, 2], gap="large")
         with right:
             st.markdown(f'<div class="ak-tiles">{tiles}</div>', unsafe_allow_html=True)
         with left:
             if les is None:
-                st.markdown(f'<div class="ak-eyebrow"><b class="ak-pill">{L(lang, "Ruta completa", "Route complete")}</b></div>'
-                            f'<h2 class="ak-hero-title">{L(lang, "Completaste todas las lecciones.", "You completed every lesson.")}</h2>'
-                            f'<p class="ak-hero-sum">{L(lang, "Revisa tus entregables de valor pendientes o prepara una certificación.", "Review your pending value deliverables or prepare a certification.")}</p>',
+                st.markdown(f'<div class="ak-eyebrow"><b class="ak-pill">{"Route complete"}</b></div>'
+                            f'<h2 class="ak-hero-title">{"You completed every lesson."}</h2>'
+                            f'<p class="ak-hero-sum">{"Review the glossary or prepare a certification."}</p>',
                             unsafe_allow_html=True)
             else:
                 n = [x.id for x in pack.lessons].index(les.id) + 1
                 started = bool(tr.correct_items(les.id))
-                st.markdown(f'<div class="ak-eyebrow"><b class="ak-pill">{L(lang, "Tu siguiente paso", "Your next step")}</b>'
-                            f'<span>{html.escape(les.level)} · {L(lang, "Lección", "Lesson")} {n} {L(lang, "de", "of")} {total}</span></div>'
+                st.markdown(f'<div class="ak-eyebrow"><b class="ak-pill">{"Your next step"}</b>'
+                            f'<span>{html.escape(les.level)} · {"Lesson"} {n} {"of"} {total}</span></div>'
                             f'<h2 class="ak-hero-title">{html.escape(les.title)}</h2>'
                             f'<p class="ak-hero-sum">{html.escape(les.summary)}</p>', unsafe_allow_html=True)
-                st.button(L(lang, "Continuar lección →", "Continue lesson →") if started else L(lang, "Empezar lección →", "Start lesson →"),
+                st.button("Continue lesson →" if started else "Start lesson →",
                           key="ak_hero_go", type="primary", on_click=_go_to, args=(les.level, les.id))
         st.markdown(progress, unsafe_allow_html=True)
 
 
 def lesson_progress(tr: Tracker, les: Lesson, lang: str) -> None:
-    """Progress inside one lesson: one segment per check question, plus one for the value deliverable (VBD)."""
+    """Progress inside one lesson: one segment per check question."""
     ok = tr.correct_items(les.id)
     marks = [f"{les.id}:{k}" in ok for k in range(len(les.quiz))]
-    if les.vbd is not None:
-        marks.append(les.id in tr.vbds_done())
     if not marks:
         return
     got, total = sum(marks), len(marks)
     segs = "".join(f'<i class="{"on" if m else ""}"></i>' for m in marks)
-    title = L(lang, "Avance de esta lección", "Progress in this lesson")
-    right = L(lang, f"{got} de {total} pasos", f"{got} of {total} steps")
+    title = "Progress in this lesson"
+    right = f"{got} of {total} steps"
     st.markdown(f'<div class="ak-card"><div class="ak-prog-head"><b>{title}</b><span>{right}</span></div>'
                 f'<div class="ak-segs" role="progressbar" aria-label="{title}" aria-valuemin="0" aria-valuemax="{total}" '
                 f'aria-valuenow="{got}">{segs}</div></div>', unsafe_allow_html=True)

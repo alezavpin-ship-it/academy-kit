@@ -126,7 +126,7 @@ def to_dict(cat: Catalog, source: str = "", updated: str = "") -> dict:
         d.update({k: v for k, v in (("vendor", s.vendor), ("category", s.category), ("severity", s.severity), ("target", s.target),
                                     ("impacted_roles", s.impacted_roles), ("roles", s.roles)) if v not in ("", None, [])})
         skills.append(d)
-    return {"meta": {"title": "Catálogo de skills", "updated": updated, "source": source},
+    return {"meta": {"title": "Skills catalog", "updated": updated, "source": source},
             "families": [{"id": f.id, "name": f.name, "gap_volume": f.gap_volume, "role_impact": f.role_impact, "champion": f.champion,
                           "champion_email": f.champion_email}
                          for f in cat.families],
@@ -145,18 +145,18 @@ def validate_catalog(cat: Catalog) -> list[str]:
     fids = [f.id for f in cat.families]
     sids = [s.id for s in cat.skills]
     if not fids or not sids:
-        errs.append("El catálogo necesita al menos una familia y una skill.")
+        errs.append("The catalog needs at least one family and one skill.")
     if len(fids) != len(set(fids)):
-        errs.append("Hay familias repetidas.")
+        errs.append("There are repeated families.")
     if len(sids) != len(set(sids)):
         dup = sorted({x for x in sids if sids.count(x) > 1})
-        errs.append("Hay skills repetidas: " + ", ".join(dup) + ".")
+        errs.append("There are repeated skills: " + ", ".join(dup) + ".")
     for s in cat.skills:
         if s.family not in fids:
-            errs.append(f"[skill {s.id}] la familia '{s.family}' no existe.")
+            errs.append(f"[skill {s.id}] the family '{s.family}' does not exist.")
     for f in cat.families:
         if not cat.in_family(f.id):
-            errs.append(f"[familia {f.id}] no tiene skills.")
+            errs.append(f"[family {f.id}] has no skills.")
     return errs
 
 
@@ -247,7 +247,7 @@ def parse_grid(rows: list[list], keep_roles: bool = False, previous: Catalog | N
     """
     found = _find_header(rows)
     if not found:
-        return None, {"error": "No encontré una tabla con las columnas «Skill Family» y «Unaligned / Missing Skill»."}
+        return None, {"error": 'I could not find a table with the columns "Skill Family" and "Unaligned / Missing Skill".'}
     hdr, cols = found
 
     def cell(r, key):
@@ -287,7 +287,7 @@ def parse_grid(rows: list[list], keep_roles: bool = False, previous: Catalog | N
         fam_roles.setdefault(family, set()).update(role_list)
         fam_gap[family] = fam_gap.get(family, 0) + len(role_list)
     if not skills:
-        return None, {"error": "Encontré los encabezados, pero ninguna fila con skills debajo."}
+        return None, {"error": "I found the headers, but no rows with skills below them."}
     summary = _find_summary(rows)
     old = {f.id: f.champion for f in previous.families} if previous else {}
     old_mail = {f.id: f.champion_email for f in previous.families} if previous else {}
@@ -362,8 +362,8 @@ def validate_materials(materials: dict[str, list[dict]], cat: Catalog | None = N
     known = cat.skill_ids() if cat else None
     for sid, items in materials.items():
         if known is not None and sid not in known:
-            errs.append(f"[material] la skill '{sid}' no existe en el catálogo.")
+            errs.append(f"[material] the skill '{sid}' does not exist in the catalog.")
         for m in items:
             if not m.get("title") or not str(m.get("url", "")).startswith("https://"):
-                errs.append(f"[material de {sid}] falta el título o la URL no es https.")
+                errs.append(f"[material of {sid}] the title is missing or the URL is not https.")
     return errs

@@ -1,1987 +1,1665 @@
 {
-  "meta": {
-    "id": "cloud-security",
-    "title": "Academia de Cloud Security",
-    "subtitle": "De los fundamentos a la respuesta a incidentes: 12 lecciones, 36 preguntas, 12 entregables de valor.",
-    "language": "es",
-    "version": "2.0",
-    "updated": "2026-10-02",
-    "disclaimer": "Material educativo. Practica en cuentas de prueba; no ejecutes cambios en producción sin autorización.",
-    "ranks": [
-      {
-        "name": "Recluta",
-        "points": 0,
-        "emoji": "🔰",
-        "color": "#8A99AD"
-      },
-      {
-        "name": "Practicante",
-        "points": 100,
-        "emoji": "🛡️",
-        "color": "#FFB414"
-      },
-      {
-        "name": "Ingeniero",
-        "points": 300,
-        "emoji": "🔐",
-        "color": "#FF8A4C"
-      },
-      {
-        "name": "Arquitecto",
-        "points": 600,
-        "emoji": "🏰",
-        "color": "#FF5800"
-      },
-      {
-        "name": "Guardián",
-        "points": 1000,
-        "emoji": "🦉",
-        "color": "#CE0569"
-      }
-    ]
-  },
-  "levels": [
-    "Fundamentos",
-    "Identidad y acceso",
-    "Datos y red",
-    "Detección y respuesta"
+ "meta": {
+  "id": "cloud-security",
+  "title": "Cloud Security Academy",
+  "subtitle": "From the fundamentals to incident response: 12 lessons, 36 questions.",
+  "language": "en",
+  "version": "2.0",
+  "updated": "2026-10-08",
+  "disclaimer": "Educational material. Practice in test accounts; do not make changes in production without authorization.",
+  "ranks": [
+   {
+    "name": "Recruit",
+    "points": 0,
+    "emoji": "🔰",
+    "color": "#8A99AD"
+   },
+   {
+    "name": "Practitioner",
+    "points": 100,
+    "emoji": "🛡️",
+    "color": "#FFB414"
+   },
+   {
+    "name": "Engineer",
+    "points": 300,
+    "emoji": "🔐",
+    "color": "#FF8A4C"
+   },
+   {
+    "name": "Architect",
+    "points": 600,
+    "emoji": "🏰",
+    "color": "#FF5800"
+   },
+   {
+    "name": "Guardian",
+    "points": 1000,
+    "emoji": "🦉",
+    "color": "#CE0569"
+   }
+  ]
+ },
+ "levels": [
+  "Fundamentals",
+  "Identity and access",
+  "Data and network",
+  "Detection and response"
+ ],
+ "roles": {
+  "Cloud Engineer": [
+   "fundamentals",
+   "configuration",
+   "iam",
+   "identity",
+   "secrets",
+   "encryption",
+   "network",
+   "logging"
   ],
-  "roles": {
-    "Cloud Engineer": [
-      "fundamentos",
-      "configuracion",
-      "iam",
-      "identidad",
-      "secretos",
-      "cifrado",
-      "red",
-      "logging"
-    ],
-    "DevOps / SRE": [
-      "fundamentos",
-      "configuracion",
-      "secretos",
-      "contenedores",
-      "red",
-      "logging",
-      "respuesta"
-    ],
-    "Analista de seguridad (SOC)": [
-      "fundamentos",
-      "riesgo",
-      "identidad",
-      "logging",
-      "deteccion",
-      "respuesta"
-    ],
-    "Arquitecto cloud": [
-      "fundamentos",
-      "riesgo",
-      "configuracion",
-      "iam",
-      "cifrado",
-      "red",
-      "contenedores",
-      "deteccion"
-    ]
-  },
-  "topics": {
-    "fundamentos": "Fundamentos y riesgo",
-    "identidad": "Identidad, accesos y secretos",
-    "datos_red": "Datos, red y contenedores",
-    "deteccion": "Detección y respuesta",
-    "referencias": "Referencias oficiales"
-  },
-  "lessons": [
-    {
-      "id": "f1",
-      "level": "Fundamentos",
-      "title": "El modelo de responsabilidad compartida",
-      "summary": "El proveedor asegura la infraestructura de la nube; tú aseguras lo que pones y configuras en ella. La mayoría de los incidentes ocurren en tu lado de la línea.",
-      "points": [
-        "El proveedor (Microsoft Azure; igual en AWS o GCP) protege la seguridad «DE la nube»: centros de datos, hardware, red física, hipervisor.",
-        "Tú proteges la seguridad «EN la nube»: identidades y permisos, datos, configuración de servicios, red virtual, sistemas operativos que administres.",
-        "La línea se mueve según el servicio: en IaaS (una VM) te toca parchar el sistema operativo; en PaaS o SaaS el proveedor hace más, pero identidades, datos y configuración siempre son tuyos.",
-        "Regla práctica: si puedes cambiarlo desde tu consola, es tu responsabilidad asegurarlo."
-      ],
-      "skills": [
-        "fundamentos"
-      ],
-      "catalog_skills": [
-        "microsoft-azure-security"
-      ],
-      "practice": {
-        "label": "Ruta gratuita en Microsoft Learn: conceptos de seguridad, cumplimiento e identidad",
-        "url": "https://learn.microsoft.com/training/paths/describe-concepts-of-security-compliance-identity/"
-      },
-      "quiz": [
-        {
-          "q": "Una empresa sube datos de clientes a un contenedor de Azure Blob Storage y lo deja con acceso anónimo por error. ¿De quién es la responsabilidad?",
-          "options": [
-            "De Microsoft, porque la cuenta de almacenamiento vive en su infraestructura",
-            "De la empresa: la configuración y los datos son su parte del modelo",
-            "Compartida 50/50 por contrato",
-            "Del proveedor de internet"
-          ],
-          "answer": 1,
-          "why": "Configuración de servicios y datos son «seguridad en la nube»: siempre del cliente, en cualquier tipo de servicio."
-        },
-        {
-          "q": "¿En cuál de estos servicios te toca parchar el sistema operativo?",
-          "options": [
-            "Una base de datos administrada (Azure SQL Database)",
-            "Una máquina virtual de Azure",
-            "Un servicio SaaS como Microsoft 365",
-            "Ninguno: el proveedor siempre parcha"
-          ],
-          "answer": 1,
-          "why": "En IaaS tú administras el sistema operativo de la VM, incluidos sus parches. En PaaS/SaaS lo hace el proveedor."
-        },
-        {
-          "q": "¿Qué responsabilidad conservas incluso en un servicio SaaS?",
-          "options": [
-            "El hardware de los servidores",
-            "La seguridad física del centro de datos",
-            "Las identidades, permisos y los datos que guardas",
-            "El hipervisor"
-          ],
-          "answer": 2,
-          "why": "Identidades, accesos y datos nunca se transfieren al proveedor: por eso MFA y permisos son tu primera defensa."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Una matriz de responsabilidad (RACI) de 1 página para 3 servicios cloud que use tu equipo.",
-        "done_when": [
-          "3 servicios reales listados con su tipo (IaaS, PaaS o SaaS)",
-          "Para cada uno: qué asegura el proveedor y qué asegura tu equipo",
-          "Un responsable con nombre para cada control que es de tu lado",
-          "Revisada con tu líder o con el dueño del servicio"
-        ],
-        "value": "Nadie asume que «la nube ya lo protege»: cada control de tu lado tiene dueño.",
-        "where": {
-          "label": "Usa el modelo oficial de Microsoft como referencia",
-          "url": "https://learn.microsoft.com/azure/security/fundamentals/shared-responsibility"
-        }
-      },
-      "resources": [
-        "shared_az900",
-        "shared_es_azure",
-        "shared_sc900"
-      ],
-      "resource_notes": {
-        "shared_es_azure": "Mismo modelo en Azure: útil si tu empresa usa varias nubes."
-      }
-    },
-    {
-      "id": "f2",
-      "level": "Fundamentos",
-      "title": "Riesgo y modelado de amenazas",
-      "summary": "Antes de elegir controles, pregúntate qué puede salir mal. STRIDE da seis categorías de amenaza para revisar cualquier diseño.",
-      "points": [
-        "Riesgo = probabilidad × impacto. No todo se protege igual: prioriza lo que más daño haría.",
-        "La triada CIA resume qué protegemos: Confidencialidad, Integridad y Disponibilidad.",
-        "STRIDE: Spoofing (suplantación), Tampering (alteración), Repudiation (repudio), Information disclosure (fuga), Denial of service (denegación) y Elevation of privilege (escalada).",
-        "Modelar amenazas es un ejercicio en equipo sobre un diagrama: ¿qué construimos?, ¿qué puede salir mal?, ¿qué haremos?, ¿lo hicimos bien?"
-      ],
-      "skills": [
-        "riesgo"
-      ],
-      "catalog_skills": [
-        "security-architecture"
-      ],
-      "practice": {
-        "label": "Dibuja el diagrama de una app de tu equipo y revísala con STRIDE"
-      },
-      "quiz": [
-        {
-          "q": "Un atacante usa credenciales robadas para entrar como otro usuario. ¿Qué categoría de STRIDE es?",
-          "options": [
-            "Tampering",
-            "Spoofing",
-            "Denial of service",
-            "Repudiation"
-          ],
-          "answer": 1,
-          "why": "Spoofing es hacerse pasar por otra identidad. Se mitiga con autenticación fuerte (MFA)."
-        },
-        {
-          "q": "¿Qué propiedad de la triada CIA se pierde si alguien modifica registros de una base de datos sin permiso?",
-          "options": [
-            "Confidencialidad",
-            "Integridad",
-            "Disponibilidad",
-            "Ninguna"
-          ],
-          "answer": 1,
-          "why": "Integridad = que los datos no se alteren sin autorización."
-        },
-        {
-          "q": "¿Cuál es la mejor forma de priorizar amenazas?",
-          "options": [
-            "Atender primero las más nuevas en las noticias",
-            "Por probabilidad × impacto sobre lo que más importa al negocio",
-            "Por orden alfabético de STRIDE",
-            "Atenderlas todas a la vez"
-          ],
-          "answer": 1,
-          "why": "Riesgo = probabilidad × impacto: concentra el esfuerzo donde el daño potencial es mayor."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un modelo de amenazas STRIDE de una aplicación o flujo real de tu equipo.",
-        "done_when": [
-          "Diagrama con componentes, flujos de datos y límites de confianza",
-          "Al menos una amenaza revisada por cada letra de STRIDE",
-          "Las 3 amenazas de mayor riesgo con su control propuesto y responsable",
-          "Guardado donde el equipo lo encuentre (wiki, repo)"
-        ],
-        "value": "Los controles se eligen por riesgo real del sistema, no por costumbre.",
-        "where": {}
-      },
-      "resources": [
-        "stride_shostack",
-        "tm_ms_stride",
-        "tm_tool",
-        "stride_es",
-        "stride_cmp"
-      ]
-    },
-    {
-      "id": "f3",
-      "level": "Fundamentos",
-      "title": "Configuraciones erróneas: la causa número uno",
-      "summary": "La mayoría de las fugas en la nube no vienen de ataques sofisticados, sino de algo mal configurado: datos públicos, permisos de más, puertos abiertos.",
-      "points": [
-        "Errores típicos: contenedores de blobs con acceso anónimo, grupos de seguridad de red (NSG) abiertos a internet, roles con permisos de más, registros de diagnóstico apagados.",
-        "El patrón se repite en cualquier nube: un fallo pequeño en una app se vuelve fuga masiva cuando la identidad de esa app (su identidad administrada o entidad de servicio) puede leer mucho más de lo que necesita.",
-        "Prevenir es más barato que detectar: deshabilita el acceso anónimo a blobs en la cuenta de almacenamiento, usa Azure Policy para impedir configuraciones inseguras y despliega con plantillas revisadas (Bicep o Terraform).",
-        "El Microsoft cloud security benchmark (MCSB) y el CIS Microsoft Azure Foundations Benchmark listan la configuración segura recomendada; Microsoft Defender for Cloud mide tu entorno contra ellos."
-      ],
-      "skills": [
-        "configuracion"
-      ],
-      "catalog_skills": [
-        "microsoft-azure-security",
-        "defender-for-cloud"
-      ],
-      "practice": {
-        "label": "Revisa el Microsoft cloud security benchmark",
-        "url": "https://learn.microsoft.com/security/benchmark/azure/overview"
-      },
-      "quiz": [
-        {
-          "q": "Una app web tiene una vulnerabilidad que deja a un atacante actuar con la identidad administrada de la app. ¿Qué convierte ese fallo en una fuga masiva?",
-          "options": [
-            "Un cifrado débil",
-            "Que la identidad tenga más permisos de los necesarios sobre el almacenamiento",
-            "Un ataque de fuerza bruta a contraseñas",
-            "Un fallo físico del centro de datos"
-          ],
-          "answer": 1,
-          "why": "El atacante hereda lo que la identidad puede hacer: si solo podía leer un contenedor, el daño queda acotado; si podía leerlo todo, se pierde todo."
-        },
-        {
-          "q": "¿Qué control evita que cualquier contenedor de una cuenta de almacenamiento quede público?",
-          "options": [
-            "Cifrado con claves administradas por Microsoft",
-            "Deshabilitar «Permitir acceso anónimo a blobs» en la cuenta de almacenamiento",
-            "Control de versiones de blobs",
-            "Azure Front Door"
-          ],
-          "answer": 1,
-          "why": "Con el acceso anónimo deshabilitado en la cuenta, ningún contenedor puede hacerse público aunque alguien lo intente por error."
-        },
-        {
-          "q": "Un NSG permite RDP (puerto 3389) desde «Any» o «Internet». ¿Qué significa?",
-          "options": [
-            "Que solo la red interna puede entrar",
-            "Que cualquier dirección de internet puede intentar conectarse por RDP",
-            "Que RDP está deshabilitado",
-            "Que solo Microsoft puede conectarse"
-          ],
-          "answer": 1,
-          "why": "«Any» o «Internet» es todo internet. Restringe a IPs conocidas o usa acceso sin puertos expuestos: Azure Bastion o el acceso just-in-time de Defender for Cloud."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un reporte de 5 configuraciones de riesgo encontradas en una suscripción de pruebas o de tu equipo.",
-        "done_when": [
-          "Revisión de almacenamiento público, puertos abiertos a internet, MFA y logs",
-          "Cada hallazgo con severidad (alta/media/baja) y el control relacionado del benchmark (MCSB o CIS)",
-          "Al menos 1 hallazgo corregido o con ticket abierto",
-          "Compartido con el dueño de la suscripción"
-        ],
-        "value": "Cierras las puertas que más fugas causan antes de que alguien las encuentre.",
-        "where": {
-          "label": "Microsoft cloud security benchmark",
-          "url": "https://learn.microsoft.com/security/benchmark/azure/overview"
-        }
-      },
-      "resources": [
-        "stg_cqure",
-        "stg_defender",
-        "mdc_es_itqs"
-      ]
-    },
-    {
-      "id": "i1",
-      "level": "Identidad y acceso",
-      "title": "Identidad y mínimo privilegio con Entra ID y Azure RBAC",
-      "summary": "La identidad es el nuevo perímetro: cada persona y cada servicio debe tener solo los permisos que necesita, ni uno más.",
-      "points": [
-        "Mínimo privilegio: conceder solo las acciones y recursos necesarios para la tarea, y quitarlos cuando ya no se usan.",
-        "Prefiere identidades administradas y acceso just-in-time con PIM sobre secretos de larga duración y permisos permanentes.",
-        "Asigna roles a grupos y en el ámbito más pequeño posible (recurso o grupo de recursos), no persona por persona en toda la suscripción.",
-        "Mide lo que se usa de verdad con revisiones de acceso y registros de inicio de sesión, y recorta lo que sobra."
-      ],
-      "skills": [
-        "iam"
-      ],
-      "catalog_skills": [
-        "identity-governance",
-        "pim-pam"
-      ],
-      "practice": {
-        "label": "Buenas prácticas de Azure RBAC en Microsoft Learn",
-        "url": "https://learn.microsoft.com/azure/role-based-access-control/best-practices"
-      },
-      "quiz": [
-        {
-          "q": "Una aplicación en una máquina virtual de Azure necesita leer un solo contenedor de blobs. ¿Qué es lo correcto?",
-          "options": [
-            "Guardar en el servidor la clave de acceso de la cuenta de almacenamiento",
-            "Una identidad administrada con el rol Storage Blob Data Reader solo sobre ese contenedor",
-            "Darle el rol Contributor en toda la suscripción para no tener problemas",
-            "Hacer el contenedor público"
-          ],
-          "answer": 1,
-          "why": "Identidad administrada (sin secreto que guardar) + rol mínimo + ámbito específico = mínimo privilegio."
-        },
-        {
-          "q": "¿Por qué se prefieren las identidades administradas y los tokens de corta duración?",
-          "options": [
-            "Son más rápidos",
-            "No hay secreto que guardar y los tokens expiran solos: si se filtran, sirven poco tiempo",
-            "No requieren roles",
-            "Son gratis"
-          ],
-          "answer": 1,
-          "why": "Una clave o secreto de larga duración filtrado sirve hasta que alguien lo revoque; un token expira en minutos u horas."
-        },
-        {
-          "q": "¿Qué ayuda a recortar accesos que ya nadie necesita?",
-          "options": [
-            "Las revisiones de acceso de Microsoft Entra ID Governance",
-            "Azure Front Door",
-            "Azure Archive Storage",
-            "Azure DNS"
-          ],
-          "answer": 0,
-          "why": "Las revisiones de acceso piden confirmar cada cierto tiempo quién sigue necesitando un rol o un grupo, y retiran lo que no se confirma."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Una revisión de permisos de 5 identidades (personas o servicios) con un plan de recorte.",
-        "done_when": [
-          "5 identidades revisadas con sus asignaciones de roles actuales",
-          "Permisos sin uso en 90 días identificados",
-          "Asignaciones propuestas con rol y ámbito específicos (sin Owner o Contributor innecesarios)",
-          "Al menos 1 cambio aplicado o aprobado"
-        ],
-        "value": "Si una credencial se filtra, el daño posible queda acotado.",
-        "where": {
-          "label": "Buenas prácticas de Azure RBAC",
-          "url": "https://learn.microsoft.com/azure/role-based-access-control/best-practices"
-        }
-      },
-      "resources": [
-        "rbac_marczak",
-        "rbac_knowops",
-        "pim_savill"
-      ]
-    },
-    {
-      "id": "i2",
-      "level": "Identidad y acceso",
-      "title": "MFA, SSO y las cuentas de administrador global",
-      "summary": "Una contraseña robada no debe bastar para entrar. MFA resistente a phishing, inicio de sesión único y cuentas de administrador global guardadas bajo llave.",
-      "points": [
-        "MFA bloquea la gran mayoría de los ataques de robo de contraseñas; actívala para todos, empezando por administradores.",
-        "No todo MFA es igual: SMS < app de códigos < notificación con número < llaves FIDO2/passkeys (resistentes a phishing).",
-        "El SSO con Microsoft Entra ID centraliza altas, bajas y MFA: cuando alguien deja la empresa se desactiva en un solo lugar; el acceso condicional decide cuándo pedir más pruebas.",
-        "Administrador global: pocas cuentas, con MFA resistente a phishing y activadas con PIM solo cuando hacen falta; más dos cuentas de acceso de emergencia vigiladas con alertas."
-      ],
-      "skills": [
-        "identidad"
-      ],
-      "catalog_skills": [
-        "microsoft-entra-id",
-        "conditional-access"
-      ],
-      "practice": {
-        "label": "Módulos gratuitos en Microsoft Learn",
-        "url": "https://learn.microsoft.com/training/"
-      },
-      "quiz": [
-        {
-          "q": "¿Qué tipo de MFA resiste mejor el phishing?",
-          "options": [
-            "SMS",
-            "Código por correo",
-            "Llave de seguridad FIDO2 / passkey",
-            "Preguntas de seguridad"
-          ],
-          "answer": 2,
-          "why": "FIDO2 verifica el dominio real del sitio: un sitio falso no puede reutilizar la respuesta."
-        },
-        {
-          "q": "¿Cuál es el uso correcto de una cuenta de acceso de emergencia (break-glass)?",
-          "options": [
-            "Para el trabajo diario del administrador",
-            "Solo emergencias reales, con credenciales resistentes a phishing y una alerta cada vez que se usa",
-            "Para las aplicaciones de producción",
-            "Compartida por el equipo de TI para el día a día"
-          ],
-          "answer": 1,
-          "why": "Es la última puerta cuando falla el inicio de sesión normal: se guarda aparte, casi no se usa y cada uso se investiga."
-        },
-        {
-          "q": "¿Qué ventaja da el SSO al dar de baja a una persona?",
-          "options": [
-            "Ninguna",
-            "Se desactiva en un solo lugar y pierde acceso a todas las cuentas y apps conectadas",
-            "Borra sus archivos",
-            "Cambia todas las contraseñas de la empresa"
-          ],
-          "answer": 1,
-          "why": "Sin SSO hay que borrar usuarios en cada sistema y alguno se olvida."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un inventario de MFA de tu equipo con plan para cerrar las brechas.",
-        "done_when": [
-          "Lista de cuentas privilegiadas y su tipo de MFA",
-          "Cuentas de administrador global verificadas: pocas, con MFA resistente a phishing y activación con PIM",
-          "Cuentas sin MFA o con SMS identificadas con fecha de cambio",
-          "Alerta configurada (o solicitada) para cuando se use una cuenta de acceso de emergencia"
-        ],
-        "value": "Una contraseña filtrada deja de ser suficiente para tomar tu tenant.",
-        "where": {
-          "label": "Cuentas de acceso de emergencia (Microsoft Learn)",
-          "url": "https://learn.microsoft.com/entra/identity/role-based-access-control/security-emergency-access"
-        }
-      },
-      "resources": [
-        "zt_identity",
-        "passkeys_entra",
-        "prmfa_malone",
-        "ca_es",
-        "mfa_es_red"
-      ]
-    },
-    {
-      "id": "i3",
-      "level": "Identidad y acceso",
-      "title": "Secretos: llaves, contraseñas y tokens",
-      "summary": "Un secreto en el código o en un chat termina filtrándose. Guárdalo en un gestor, dale acceso mínimo y rótalo.",
-      "points": [
-        "Nunca en el código, en repositorios, en tickets o en chats: los repositorios se clonan y el historial de git no olvida.",
-        "Usa Azure Key Vault como gestor de secretos: cifrado, control de acceso con RBAC y auditoría. Mejor aún, usa identidades administradas para no tener secreto que guardar.",
-        "Rotación: cambia los secretos periódicamente y de inmediato si hay sospecha de fuga; mejor si es automática.",
-        "Escanea repositorios (GitHub secret scanning, Gitleaks) para detectar claves antes de que lleguen a producción."
-      ],
-      "skills": [
-        "secretos"
-      ],
-      "catalog_skills": [
-        "encryption-key-vault-hsm"
-      ],
-      "practice": {
-        "label": "Ejecuta un escáner de secretos (p. ej. Gitleaks) sobre un repositorio de tu equipo"
-      },
-      "quiz": [
-        {
-          "q": "Subiste por error la clave de una cuenta de almacenamiento a un repositorio público y la borraste en el siguiente commit. ¿Qué haces?",
-          "options": [
-            "Nada, ya se borró",
-            "Regenerar la clave de inmediato y revisar su uso en los registros",
-            "Hacer el repositorio privado y listo",
-            "Cambiar el nombre del archivo"
-          ],
-          "answer": 1,
-          "why": "La clave sigue en el historial y los bots escanean GitHub en minutos: regénerala y revisa qué se hizo con ella."
-        },
-        {
-          "q": "¿Qué aporta Azure Key Vault frente a un archivo .env en el servidor?",
-          "options": [
-            "Nada",
-            "Cifrado, permisos por identidad, auditoría de quién lo leyó y rotación",
-            "Que el secreto sea más corto",
-            "Que no expire nunca"
-          ],
-          "answer": 1,
-          "why": "Key Vault centraliza y registra el acceso; un archivo suelto no dice quién lo leyó."
-        },
-        {
-          "q": "¿Cuál es la mejor práctica de rotación?",
-          "options": [
-            "Nunca rotar para no romper nada",
-            "Rotar periódicamente y de inmediato ante sospecha, idealmente automatizado",
-            "Rotar solo cuando alguien renuncia",
-            "Rotar una vez al año a mano"
-          ],
-          "answer": 1,
-          "why": "La rotación automática reduce la ventana de uso de un secreto filtrado sin depender de la memoria de alguien."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un inventario de secretos de una aplicación con su migración a Azure Key Vault.",
-        "done_when": [
-          "Escaneo de secretos ejecutado sobre el repositorio, con resultados",
-          "Cada secreto listado con dónde vive hoy y quién lo usa",
-          "Al menos 1 secreto migrado a Key Vault y leído desde la app con una identidad administrada",
-          "Política de rotación definida (frecuencia y responsable)"
-        ],
-        "value": "Las llaves dejan de vivir en lugares donde cualquiera puede copiarlas.",
-        "where": {}
-      },
-      "resources": [
-        "kv_savill",
-        "kv_es"
-      ]
-    },
-    {
-      "id": "d1",
-      "level": "Datos y red",
-      "title": "Cifrado en reposo y en tránsito",
-      "summary": "Cifra los datos guardados y los que viajan. Lo difícil no es cifrar: es administrar bien las llaves.",
-      "points": [
-        "En tránsito: TLS (HTTPS) en todas las conexiones, también las internas; desactiva protocolos viejos (TLS 1.0/1.1).",
-        "En reposo: Azure cifra por defecto el almacenamiento y los discos administrados; decide dónde necesitas claves administradas por el cliente (CMK).",
-        "Azure Key Vault (o Managed HSM) guarda las claves; el cifrado de sobre usa una clave de datos por objeto, protegida por una clave de cifrado de claves (KEK).",
-        "Quien controla la clave controla el dato: limita quién puede usar cada clave y registra su uso."
-      ],
-      "skills": [
-        "cifrado"
-      ],
-      "catalog_skills": [
-        "encryption-key-vault-hsm"
-      ],
-      "practice": {
-        "label": "Introducción al cifrado en Azure (Microsoft Learn)",
-        "url": "https://learn.microsoft.com/azure/security/fundamentals/encryption-overview"
-      },
-      "quiz": [
-        {
-          "q": "¿Qué protege el cifrado en tránsito?",
-          "options": [
-            "Los datos guardados en el disco",
-            "Los datos mientras viajan por la red",
-            "Las contraseñas de los usuarios únicamente",
-            "Los logs"
-          ],
-          "answer": 1,
-          "why": "TLS protege la comunicación contra lectura o alteración en el camino."
-        },
-        {
-          "q": "En el cifrado de sobre, ¿qué cifra la clave que vive en Key Vault (KEK)?",
-          "options": [
-            "Todos los archivos directamente",
-            "La clave de datos que a su vez cifró el archivo",
-            "Las contraseñas de Entra ID",
-            "Nada"
-          ],
-          "answer": 1,
-          "why": "La clave de Key Vault no sale del servicio; cifra claves de datos pequeñas, que son las que cifran los datos."
-        },
-        {
-          "q": "¿Por qué importa quién puede usar una clave de Key Vault?",
-          "options": [
-            "No importa si el dato está cifrado",
-            "Quien puede usar la clave puede descifrar el dato",
-            "Solo afecta al costo",
-            "Para cumplir con el idioma"
-          ],
-          "answer": 1,
-          "why": "El cifrado traslada el control de acceso a la clave: sus permisos son tan importantes como los del dato."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un mapa de cifrado de los datos sensibles de un sistema.",
-        "done_when": [
-          "Almacenes con datos sensibles listados (bases de datos, cuentas de almacenamiento, discos, backups)",
-          "Estado de cifrado en reposo y en tránsito de cada uno",
-          "Quién puede usar cada clave, revisado",
-          "Brechas con plan y responsable"
-        ],
-        "value": "Sabes qué datos quedarían legibles si un disco, backup o conexión se expone.",
-        "where": {}
-      },
-      "resources": [
-        "enc_savill",
-        "crypto_es_root",
-        "crypto_es_andr"
-      ]
-    },
-    {
-      "id": "d2",
-      "level": "Datos y red",
-      "title": "Seguridad de red y Zero Trust",
-      "summary": "Segmenta la red para limitar el movimiento del atacante y deja de confiar en algo solo porque está «dentro».",
-      "points": [
-        "Segmenta: subredes públicas solo para lo que debe recibir tráfico de internet; bases de datos y servicios internos en subredes privadas.",
-        "Los grupos de seguridad de red (NSG) filtran con estado por subred o por interfaz de red; Azure Firewall inspecciona de forma centralizada. Usa reglas mínimas.",
-        "Evita abrir puertos de administración: usa Azure Bastion, acceso just-in-time o VPN con MFA, y publica los servicios PaaS con private endpoints.",
-        "Zero Trust: verificar siempre identidad, dispositivo y contexto en cada acceso; nunca confiar solo por la ubicación en la red."
-      ],
-      "skills": [
-        "red"
-      ],
-      "catalog_skills": [
-        "zero-trust",
-        "azure-network-controls"
-      ],
-      "practice": {
-        "label": "Lee la guía de Zero Trust de Microsoft",
-        "url": "https://learn.microsoft.com/security/zero-trust/zero-trust-overview"
-      },
-      "quiz": [
-        {
-          "q": "¿Dónde debería vivir una base de datos de producción?",
-          "options": [
-            "En una subred pública con IP pública",
-            "En una subred privada o detrás de un private endpoint, accesible solo desde la app",
-            "En cualquier subred si tiene contraseña",
-            "Fuera de la red virtual"
-          ],
-          "answer": 1,
-          "why": "Una base de datos no necesita recibir tráfico de internet: aislarla reduce drásticamente su exposición."
-        },
-        {
-          "q": "¿Qué significa que un NSG sea «con estado» (stateful)?",
-          "options": [
-            "Que guarda una copia del tráfico",
-            "Que la respuesta a una conexión permitida pasa automáticamente, sin una regla en sentido contrario",
-            "Que cifra el tráfico",
-            "Que solo funciona con IPv6"
-          ],
-          "answer": 1,
-          "why": "El NSG recuerda cada flujo permitido: la respuesta a una conexión de entrada permitida no necesita una regla de salida."
-        },
-        {
-          "q": "¿Qué afirma el principio de Zero Trust?",
-          "options": [
-            "Todo lo que está dentro de la red corporativa es confiable",
-            "Nunca confiar por defecto: verificar cada acceso con identidad y contexto",
-            "No usar firewalls",
-            "Desconfiar del proveedor cloud y no usarlo"
-          ],
-          "answer": 1,
-          "why": "Zero Trust cambia la confianza de «estar en la red» a «demostrar quién eres y en qué condiciones» en cada acceso."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un diagrama de red de un sistema con sus reglas de exposición revisadas.",
-        "done_when": [
-          "Diagrama con subredes públicas/privadas y flujos permitidos",
-          "Reglas abiertas a «Any» o «Internet» justificadas o eliminadas",
-          "Acceso administrativo sin puertos abiertos a internet (o plan para lograrlo)",
-          "Revisado con quien opera la red"
-        ],
-        "value": "Un servidor comprometido ya no alcanza todo lo demás.",
-        "where": {
-          "label": "NIST SP 800-207",
-          "url": "https://csrc.nist.gov/pubs/sp/800/207/final"
-        }
-      },
-      "resources": [
-        "zt_network",
-        "vnet_savill",
-        "nsg_marczak",
-        "nsg_es",
-        "zt_es_hoy"
-      ]
-    },
-    {
-      "id": "d3",
-      "level": "Datos y red",
-      "title": "Contenedores y Kubernetes",
-      "summary": "Un contenedor es tan seguro como su imagen, sus permisos y el cluster donde corre.",
-      "points": [
-        "Imágenes: base mínima y oficial, escaneo de vulnerabilidades en el pipeline y en Azure Container Registry (Defender for Containers), sin secretos dentro.",
-        "Ejecución: no correr como root, sistema de archivos de solo lectura cuando se pueda, sin contenedores privilegiados.",
-        "Kubernetes (AKS): autenticación con Microsoft Entra ID, RBAC con mínimo privilegio, namespaces, políticas de red y secretos fuera de la imagen.",
-        "El plano de control (API server) nunca expuesto a internet sin autenticación fuerte; en AKS considera un clúster privado o rangos de IP autorizados."
-      ],
-      "skills": [
-        "contenedores"
-      ],
-      "catalog_skills": [
-        "container-security"
-      ],
-      "practice": {
-        "label": "Escanea una imagen de tu equipo (Defender for Containers en Azure Container Registry, o Trivy)"
-      },
-      "quiz": [
-        {
-          "q": "¿Por qué es riesgoso correr un contenedor como privilegiado?",
-          "options": [
-            "Consume más memoria",
-            "Puede tomar control del nodo anfitrión si el contenedor se compromete",
-            "Tarda más en arrancar",
-            "No tiene ningún riesgo"
-          ],
-          "answer": 1,
-          "why": "Un contenedor privilegiado tiene casi los mismos poderes que el host: un escape compromete todo el nodo."
-        },
-        {
-          "q": "¿Dónde deben ir las contraseñas que usa una aplicación en Kubernetes?",
-          "options": [
-            "Dentro de la imagen",
-            "En variables escritas en el Dockerfile",
-            "En Azure Key Vault o en Secrets de Kubernetes con acceso restringido",
-            "En el README"
-          ],
-          "answer": 2,
-          "why": "La imagen se copia a registros y máquinas; los secretos deben inyectarse en ejecución con acceso controlado."
-        },
-        {
-          "q": "¿Qué controla RBAC en Kubernetes?",
-          "options": [
-            "El tráfico de red entre pods",
-            "Qué usuarios y cuentas de servicio pueden hacer qué acciones sobre qué recursos",
-            "El tamaño de las imágenes",
-            "El cifrado de discos"
-          ],
-          "answer": 1,
-          "why": "RBAC es el IAM de Kubernetes: aplica mínimo privilegio también dentro del cluster."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un checklist de seguridad aplicado a un servicio en contenedores de tu equipo.",
-        "done_when": [
-          "Imagen escaneada, con vulnerabilidades críticas y altas listadas",
-          "Verificado: no corre como root ni privilegiado",
-          "Secretos fuera de la imagen",
-          "Permisos RBAC del servicio revisados"
-        ],
-        "value": "Una vulnerabilidad en la app no se convierte en control del cluster.",
-        "where": {}
-      },
-      "resources": [
-        "aks_sec",
-        "mdc_containers",
-        "cont_basics",
-        "k8s_es_terror",
-        "aks_es"
-      ]
-    },
-    {
-      "id": "r1",
-      "level": "Detección y respuesta",
-      "title": "Logs y monitoreo",
-      "summary": "Sin logs no hay investigación posible. Registra quién hizo qué, protégelo contra borrado y centralízalo.",
-      "points": [
-        "Envía el registro de actividad de Azure y los registros de Microsoft Entra ID (inicios de sesión y auditoría) a un área de trabajo de Log Analytics con una configuración de diagnóstico.",
-        "Protege los logs: área de trabajo o suscripción separada, o almacenamiento inmutable; un atacante suele intentar borrarlos primero.",
-        "Centraliza en Microsoft Sentinel (SIEM) para correlacionar eventos de varias fuentes y alertar.",
-        "Define la retención según requisitos legales y de investigación: el registro de actividad solo se conserva 90 días si no lo exportas."
-      ],
-      "skills": [
-        "logging"
-      ],
-      "catalog_skills": [
-        "microsoft-sentinel"
-      ],
-      "practice": {
-        "label": "Registro de actividad de Azure Monitor (Microsoft Learn)",
-        "url": "https://learn.microsoft.com/azure/azure-monitor/platform/activity-log"
-      },
-      "quiz": [
-        {
-          "q": "¿Qué responde el registro de actividad de Azure?",
-          "options": [
-            "Cuánto cuesta cada servicio",
-            "Quién hizo qué operación, cuándo y desde dónde",
-            "El contenido de los archivos",
-            "La velocidad de la red"
-          ],
-          "answer": 1,
-          "why": "Es el registro forense básico de la nube."
-        },
-        {
-          "q": "¿Por qué guardar los logs en un área de trabajo separada o en almacenamiento inmutable?",
-          "options": [
-            "Es más barato",
-            "Para que un atacante con acceso a la suscripción afectada no pueda borrarlos",
-            "Para que carguen más rápido",
-            "No hace falta"
-          ],
-          "answer": 1,
-          "why": "Borrar rastros es un paso típico del atacante; separar o hacer inmutables los logs lo impide."
-        },
-        {
-          "q": "¿Qué aporta un SIEM como Microsoft Sentinel?",
-          "options": [
-            "Cifra discos",
-            "Centraliza, correlaciona eventos de varias fuentes y genera alertas",
-            "Hace backups",
-            "Reemplaza el firewall"
-          ],
-          "answer": 1,
-          "why": "Correlacionar fuentes revela ataques que no se ven en un solo log."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un mapa de cobertura de logs de tu entorno cloud.",
-        "done_when": [
-          "Registro de actividad y registros de Entra ID exportados en todas las suscripciones",
-          "Destino de los logs protegido contra borrado (área de trabajo separada, almacenamiento inmutable)",
-          "Retención definida y documentada",
-          "Una alerta útil creada (p. ej. uso de una cuenta de emergencia o cambio de asignación de roles)"
-        ],
-        "value": "Ante un incidente puedes responder qué pasó en lugar de adivinar.",
-        "where": {}
-      },
-      "resources": [
-        "la_start",
-        "sentinel_what",
-        "sentinel_es",
-        "siem_es"
-      ]
-    },
-    {
-      "id": "r2",
-      "level": "Detección y respuesta",
-      "title": "Detección de amenazas y postura (CSPM)",
-      "summary": "Deja que servicios administrados vigilen por ti: detección de comportamiento anómalo y revisión continua de configuración contra estándares.",
-      "points": [
-        "Detección de amenazas (planes de Microsoft Defender for Cloud y Microsoft Defender XDR): analizan registros, identidades y red para encontrar comportamiento malicioso.",
-        "Postura (CSPM: Defender for Cloud y su Secure Score): compara tu configuración contra el Microsoft cloud security benchmark de forma continua.",
-        "Un hallazgo sin dueño no sirve: define a quién llega cada severidad y en cuánto tiempo se atiende.",
-        "Empieza con pocas alertas de alta calidad; demasiado ruido hace que se ignoren las importantes."
-      ],
-      "skills": [
-        "deteccion"
-      ],
-      "catalog_skills": [
-        "defender-for-cloud"
-      ],
-      "practice": {
-        "label": "¿Qué es Microsoft Defender for Cloud? (Microsoft Learn)",
-        "url": "https://learn.microsoft.com/azure/defender-for-cloud/defender-for-cloud-introduction"
-      },
-      "quiz": [
-        {
-          "q": "¿Cuál es la diferencia entre detección de amenazas y CSPM?",
-          "options": [
-            "Son lo mismo",
-            "Detección busca actividad maliciosa; CSPM revisa si la configuración cumple estándares",
-            "CSPM solo cifra datos",
-            "Detección solo revisa contraseñas"
-          ],
-          "answer": 1,
-          "why": "Una vigila lo que está pasando; la otra, cómo está armado el entorno."
-        },
-        {
-          "q": "Microsoft Entra ID Protection reporta un inicio de sesión desde una dirección IP anónima (red Tor) con las credenciales de un usuario. ¿Qué haces primero?",
-          "options": [
-            "Ignorarlo",
-            "Validar con el dueño y, si no lo reconoce, revocar sus sesiones, restablecer la contraseña y revisar qué hizo",
-            "Desactivar la detección para quitar la alerta",
-            "Esperar a ver si se repite"
-          ],
-          "answer": 1,
-          "why": "Contener primero (sesiones y credenciales) y luego investigar el alcance en los registros de inicio de sesión y de actividad."
-        },
-        {
-          "q": "¿Por qué conviene empezar con pocas alertas de alta calidad?",
-          "options": [
-            "Porque las herramientas cobran por alerta",
-            "Porque el exceso de ruido hace que el equipo ignore también las importantes",
-            "Porque no hay más tipos de alerta",
-            "No conviene"
-          ],
-          "answer": 1,
-          "why": "La fatiga de alertas es una causa frecuente de incidentes que se detectaron pero nadie atendió."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un tablero de postura con las 10 brechas principales y su plan.",
-        "done_when": [
-          "Defender for Cloud (postura y detección) activado en una suscripción (de pruebas o real)",
-          "Las 10 recomendaciones principales priorizadas por severidad y exposición",
-          "Responsable y fecha para cada uno",
-          "Regla de enrutamiento: a quién llega cada severidad"
-        ],
-        "value": "Las brechas se encuentran y se cierran de forma continua, no solo en la auditoría anual.",
-        "where": {
-          "label": "Microsoft Defender for Cloud",
-          "url": "https://learn.microsoft.com/azure/defender-for-cloud/defender-for-cloud-introduction"
-        }
-      },
-      "resources": [
-        "mdc_start",
-        "mdc_cspm",
-        "mdc_posture",
-        "mdc_es"
-      ]
-    },
-    {
-      "id": "r3",
-      "level": "Detección y respuesta",
-      "title": "Respuesta a incidentes en la nube",
-      "summary": "Cuando algo pasa, un plan ensayado vale más que la mejor herramienta: preparar, detectar, contener, erradicar, recuperar y aprender.",
-      "points": [
-        "Ciclo de NIST 800-61: preparación → detección y análisis → contención, erradicación y recuperación → actividad posterior (lecciones aprendidas).",
-        "La revisión 3 (2025) integra la respuesta con el NIST CSF 2.0: gobierno, identificación y protección también son parte de responder bien.",
-        "En Azure, contener suele ser: revocar sesiones y credenciales, aislar recursos (un NSG de cuarentena) y tomar instantáneas de los discos para la investigación.",
-        "Ensaya con ejercicios de mesa (tabletop) y escribe runbooks para los escenarios más probables."
-      ],
-      "skills": [
-        "respuesta"
-      ],
-      "catalog_skills": [
-        "microsoft-defender-xdr",
-        "microsoft-sentinel"
-      ],
-      "practice": {
-        "label": "Lee NIST SP 800-61 Rev. 3",
-        "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
-      },
-      "quiz": [
-        {
-          "q": "Se confirma que una máquina virtual está comprometida. ¿Qué es lo mejor para la investigación?",
-          "options": [
-            "Borrarla de inmediato",
-            "Aislarla (cuarentena de red) y tomar un snapshot antes de cualquier cambio",
-            "Reiniciarla",
-            "Ignorarla si no hay quejas"
-          ],
-          "answer": 1,
-          "why": "Borrar o reiniciar destruye evidencia; aislar contiene el daño y el snapshot preserva el estado."
-        },
-        {
-          "q": "¿En qué fase del ciclo de NIST se escriben runbooks y se hacen simulacros?",
-          "options": [
-            "Preparación",
-            "Erradicación",
-            "Recuperación",
-            "Ninguna"
-          ],
-          "answer": 0,
-          "why": "Todo lo que hagas antes del incidente (planes, accesos, herramientas, ensayos) es preparación."
-        },
-        {
-          "q": "¿Para qué sirve la fase de lecciones aprendidas?",
-          "options": [
-            "Para buscar culpables",
-            "Para mejorar controles y el plan y que el mismo incidente no se repita",
-            "Para cerrar el ticket rápido",
-            "Es opcional"
-          ],
-          "answer": 1,
-          "why": "Una revisión sin culpas convierte el incidente en mejoras concretas."
-        }
-      ],
-      "vbd": {
-        "deliverable": "Un runbook de respuesta para un escenario cloud probable, probado en un ejercicio de mesa.",
-        "done_when": [
-          "Escenario elegido (p. ej. una clave o secreto filtrado) con criterios de detección",
-          "Pasos de contención, erradicación y recuperación con responsables",
-          "Contactos y escalamiento definidos",
-          "Ejercicio de mesa de 30 minutos hecho con el equipo y mejoras anotadas"
-        ],
-        "value": "El día del incidente el equipo ejecuta un plan en lugar de improvisar.",
-        "where": {
-          "label": "NIST SP 800-61 Rev. 3",
-          "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
-        }
-      },
-      "resources": [
-        "xdr_incidents",
-        "xdr_ir_start",
-        "cdr",
-        "ir_es",
-        "ir_r3"
-      ]
-    }
+  "DevOps / SRE": [
+   "fundamentals",
+   "configuration",
+   "secrets",
+   "containers",
+   "network",
+   "logging",
+   "response"
   ],
-  "glossary": [
-    {
-      "term": "Modelo de responsabilidad compartida",
-      "category": "Fundamentos",
-      "definition": "Reparto de la seguridad entre el proveedor cloud (la nube) y el cliente (lo que pone y configura en ella)."
-    },
-    {
-      "term": "IaaS",
-      "category": "Fundamentos",
-      "definition": "Infraestructura como servicio: rentas máquinas virtuales, red y discos; administras el sistema operativo."
-    },
-    {
-      "term": "PaaS",
-      "category": "Fundamentos",
-      "definition": "Plataforma como servicio: el proveedor administra el sistema operativo y tú la aplicación y los datos."
-    },
-    {
-      "term": "SaaS",
-      "category": "Fundamentos",
-      "definition": "Software como servicio: usas una aplicación terminada; sigues siendo responsable de identidades y datos."
-    },
-    {
-      "term": "Triada CIA",
-      "category": "Fundamentos",
-      "definition": "Confidencialidad, integridad y disponibilidad: las tres propiedades que protege la seguridad."
-    },
-    {
-      "term": "STRIDE",
-      "category": "Fundamentos",
-      "definition": "Categorías de amenaza: suplantación, alteración, repudio, fuga de información, denegación de servicio y escalada de privilegios."
-    },
-    {
-      "term": "Modelado de amenazas",
-      "category": "Fundamentos",
-      "definition": "Ejercicio de identificar qué puede salir mal en un diseño y qué controles lo mitigan."
-    },
-    {
-      "term": "CSPM",
-      "category": "Detección",
-      "definition": "Cloud Security Posture Management: revisión continua de la configuración cloud contra estándares."
-    },
-    {
-      "term": "CIS Benchmark",
-      "category": "Fundamentos",
-      "definition": "Guía de configuración segura recomendada por el Center for Internet Security para un producto o nube."
-    },
-    {
-      "term": "SSRF",
-      "category": "Fundamentos",
-      "definition": "Server-Side Request Forgery: el atacante hace que el servidor haga peticiones por él, p. ej. al servicio de metadatos."
-    },
-    {
-      "term": "IAM",
-      "category": "Identidad",
-      "definition": "Gestión de identidades y accesos: quién puede hacer qué sobre qué recursos."
-    },
-    {
-      "term": "Mínimo privilegio",
-      "category": "Identidad",
-      "definition": "Dar solo los permisos necesarios para una tarea y quitarlos cuando ya no se usan."
-    },
-    {
-      "term": "Rol de Azure RBAC",
-      "category": "Identidad",
-      "definition": "Conjunto de permisos que se asigna a una identidad en un ámbito: suscripción, grupo de recursos o recurso."
-    },
-    {
-      "term": "Identidad administrada",
-      "category": "Identidad",
-      "definition": "Identidad que Azure crea y rota para un recurso, para que acceda a otros servicios sin guardar secretos."
-    },
-    {
-      "term": "MFA",
-      "category": "Identidad",
-      "definition": "Autenticación multifactor: algo que sabes más algo que tienes o eres."
-    },
-    {
-      "term": "FIDO2 / passkey",
-      "category": "Identidad",
-      "definition": "Autenticación con llave criptográfica ligada al dominio, resistente al phishing."
-    },
-    {
-      "term": "SSO",
-      "category": "Identidad",
-      "definition": "Inicio de sesión único: una identidad central para entrar a muchas aplicaciones."
-    },
-    {
-      "term": "Cuenta de acceso de emergencia",
-      "category": "Identidad",
-      "definition": "Cuenta de administrador global reservada para cuando falla el inicio de sesión normal; se protege, casi no se usa y cada uso se alerta."
-    },
-    {
-      "term": "Gestor de secretos",
-      "category": "Identidad",
-      "definition": "Servicio que guarda, cifra, audita y rota contraseñas, llaves y tokens."
-    },
-    {
-      "term": "Rotación",
-      "category": "Identidad",
-      "definition": "Cambiar un secreto periódicamente o ante sospecha de fuga."
-    },
-    {
-      "term": "Cifrado en tránsito",
-      "category": "Datos y red",
-      "definition": "Protección de los datos mientras viajan por la red, normalmente con TLS."
-    },
-    {
-      "term": "Cifrado en reposo",
-      "category": "Datos y red",
-      "definition": "Protección de los datos guardados en discos, bases de datos o almacenamiento."
-    },
-    {
-      "term": "Azure Key Vault",
-      "category": "Datos y red",
-      "definition": "Servicio de Azure que guarda y controla claves criptográficas, secretos y certificados."
-    },
-    {
-      "term": "Cifrado de sobre",
-      "category": "Datos y red",
-      "definition": "Los datos se cifran con una clave de datos, que a su vez se cifra con una clave de cifrado de claves (KEK)."
-    },
-    {
-      "term": "TLS",
-      "category": "Datos y red",
-      "definition": "Protocolo que cifra y autentica las conexiones (el candado de HTTPS)."
-    },
-    {
-      "term": "Red virtual (VNet)",
-      "category": "Datos y red",
-      "definition": "Red privada dentro de Azure donde viven tus recursos."
-    },
-    {
-      "term": "Subred privada",
-      "category": "Datos y red",
-      "definition": "Subred sin ruta directa desde internet, para servicios internos y bases de datos."
-    },
-    {
-      "term": "Grupo de seguridad de red (NSG)",
-      "category": "Datos y red",
-      "definition": "Filtro de tráfico con estado que se asocia a una subred o a una interfaz de red en Azure."
-    },
-    {
-      "term": "Private endpoint",
-      "category": "Datos y red",
-      "definition": "Interfaz de red privada dentro de tu VNet para llegar a un servicio PaaS sin exponerlo a internet."
-    },
-    {
-      "term": "Zero Trust",
-      "category": "Datos y red",
-      "definition": "Modelo que no confía por ubicación en la red: verifica identidad y contexto en cada acceso."
-    },
-    {
-      "term": "Segmentación",
-      "category": "Datos y red",
-      "definition": "Dividir la red en zonas para limitar el movimiento lateral de un atacante."
-    },
-    {
-      "term": "Contenedor privilegiado",
-      "category": "Datos y red",
-      "definition": "Contenedor con permisos casi iguales a los del host; su compromiso alcanza al nodo."
-    },
-    {
-      "term": "RBAC",
-      "category": "Datos y red",
-      "definition": "Control de acceso basado en roles; en Kubernetes define qué puede hacer cada usuario o cuenta de servicio."
-    },
-    {
-      "term": "Escaneo de imágenes",
-      "category": "Datos y red",
-      "definition": "Revisión automática de vulnerabilidades conocidas en imágenes de contenedor."
-    },
-    {
-      "term": "Registro de actividad de Azure",
-      "category": "Detección",
-      "definition": "Registro de las operaciones sobre los recursos de una suscripción: quién hizo qué, cuándo y desde dónde."
-    },
-    {
-      "term": "SIEM",
-      "category": "Detección",
-      "definition": "Sistema que centraliza y correlaciona eventos de seguridad de muchas fuentes y genera alertas."
-    },
-    {
-      "term": "Retención",
-      "category": "Detección",
-      "definition": "Tiempo durante el cual se conservan los logs."
-    },
-    {
-      "term": "Microsoft Defender for Cloud",
-      "category": "Detección",
-      "definition": "Servicio de Microsoft que evalúa la postura de seguridad (CSPM) y detecta amenazas en las cargas de trabajo en la nube."
-    },
-    {
-      "term": "Hallazgo",
-      "category": "Detección",
-      "definition": "Resultado de una herramienta de seguridad que indica un posible problema."
-    },
-    {
-      "term": "Fatiga de alertas",
-      "category": "Detección",
-      "definition": "Pérdida de atención causada por demasiadas alertas, que hace ignorar las importantes."
-    },
-    {
-      "term": "Respuesta a incidentes",
-      "category": "Respuesta",
-      "definition": "Proceso para preparar, detectar, contener, erradicar, recuperar y aprender de un incidente."
-    },
-    {
-      "term": "Contención",
-      "category": "Respuesta",
-      "definition": "Acciones para frenar el daño de un incidente, como revocar credenciales o aislar recursos."
-    },
-    {
-      "term": "Erradicación",
-      "category": "Respuesta",
-      "definition": "Eliminar la causa del incidente (malware, accesos, configuraciones)."
-    },
-    {
-      "term": "Snapshot forense",
-      "category": "Respuesta",
-      "definition": "Copia del disco de un recurso comprometido para investigarlo sin alterarlo."
-    },
-    {
-      "term": "Runbook",
-      "category": "Respuesta",
-      "definition": "Procedimiento paso a paso para responder a un escenario concreto."
-    },
-    {
-      "term": "Ejercicio de mesa",
-      "category": "Respuesta",
-      "definition": "Simulacro conversado de un incidente para probar el plan y los roles."
-    },
-    {
-      "term": "Lecciones aprendidas",
-      "category": "Respuesta",
-      "definition": "Revisión posterior sin culpas que convierte el incidente en mejoras."
-    }
+  "Security analyst (SOC)": [
+   "fundamentals",
+   "risk",
+   "identity",
+   "logging",
+   "detection",
+   "response"
   ],
-  "resources": {
-    "shared_es_azure": {
-      "title": "03.- Fundamentos de Seguridad de Azure - Modelo de Responsabilidad Compartida",
-      "url": "https://www.youtube.com/watch?v=wa1_rL2QWDg",
-      "channel": "Corporación EIGO",
-      "lang": "es",
-      "topic": "fundamentos",
-      "why": "El mismo modelo en Azure: cómo cambia tu parte entre IaaS, PaaS y SaaS.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
+  "Cloud architect": [
+   "fundamentals",
+   "risk",
+   "configuration",
+   "iam",
+   "encryption",
+   "network",
+   "containers",
+   "detection"
+  ]
+ },
+ "topics": {
+  "fundamentals": "Fundamentals and risk",
+  "identity": "Identity, access and secrets",
+  "data_network": "Data, network and containers",
+  "detection": "Detection and response",
+  "references": "Official references"
+ },
+ "lessons": [
+  {
+   "id": "f1",
+   "level": "Fundamentals",
+   "title": "The shared responsibility model",
+   "summary": "The provider secures the infrastructure of the cloud; you secure what you put and configure in it. Most incidents happen on your side of the line.",
+   "points": [
+    "The provider (Microsoft Azure; the same goes for AWS or GCP) protects the security \"OF the cloud\": data centers, hardware, physical network, hypervisor.",
+    "You protect the security \"IN the cloud\": identities and permissions, data, service configuration, virtual network, and the operating systems you manage.",
+    "The line moves with the service: in IaaS (a VM) you patch the operating system; in PaaS or SaaS the provider does more, but identities, data and configuration are always yours.",
+    "Rule of thumb: if you can change it from your console, securing it is your responsibility."
+   ],
+   "skills": [
+    "fundamentals"
+   ],
+   "catalog_skills": [
+    "microsoft-azure-security"
+   ],
+   "practice": {
+    "label": "Free path on Microsoft Learn: security, compliance and identity concepts",
+    "url": "https://learn.microsoft.com/training/paths/describe-concepts-of-security-compliance-identity/"
+   },
+   "quiz": [
+    {
+     "q": "A company uploads customer data to an Azure Blob Storage container and leaves it with anonymous access by mistake. Whose responsibility is it?",
+     "options": [
+      "Microsoft, because the storage account lives on its infrastructure",
+      "The company: configuration and data are its part of the model",
+      "Shared 50/50 by contract",
+      "The internet service provider"
+     ],
+     "answer": 1,
+     "why": "Service configuration and data are \"security in the cloud\": always the customer's, in any type of service."
     },
-    "shared_sc900": {
-      "title": "SC-900 ¿Cómo funciona el modelo de responsabilidad compartida de Microsoft? #microsoft #SaaS #PaaS",
-      "url": "https://www.youtube.com/watch?v=GF9l5JkcxOY",
-      "channel": "SolTecTra | Soluciones Microsoft y Ciberseguridad",
-      "lang": "es",
-      "topic": "fundamentos",
-      "why": "Versión corta orientada a la certificación SC-900 de Microsoft.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
+    {
+     "q": "In which of these services do you have to patch the operating system?",
+     "options": [
+      "A managed database (Azure SQL Database)",
+      "An Azure virtual machine",
+      "A SaaS service such as Microsoft 365",
+      "None: the provider always patches"
+     ],
+     "answer": 1,
+     "why": "In IaaS you manage the VM's operating system, including its patches. In PaaS/SaaS the provider does it."
     },
-    "stride_shostack": {
-      "title": "Introducing STRIDE for threat modeling",
-      "url": "https://www.youtube.com/watch?v=iGkX06sVFFM",
-      "channel": "Adam Shostack",
-      "lang": "en",
-      "topic": "fundamentos",
-      "why": "STRIDE explicado por el autor del libro de referencia sobre modelado de amenazas.",
-      "kind": "video",
-      "level": "básico",
-      "who": "Adam Shostack",
-      "verified": "2026-10-01"
-    },
-    "stride_es": {
-      "title": "Los 3 enfoques más importantes para identificar amenazas cibernéticas y cómo usar el método STRIDE",
-      "url": "https://www.youtube.com/watch?v=zwvzZoot_E0",
-      "channel": "Cyberthreatsdefenders",
-      "lang": "es",
-      "topic": "fundamentos",
-      "why": "Enfoques para identificar amenazas y cómo aplicar STRIDE, en español.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "stride_cmp": {
-      "title": "Threat Modeling Explained: STRIDE vs PASTA vs DREAD | CISSP Guide",
-      "url": "https://www.youtube.com/watch?v=AlprS-TfVac",
-      "channel": "Cert Empire",
-      "lang": "en",
-      "topic": "fundamentos",
-      "why": "Compara STRIDE con PASTA y DREAD: cuándo usar cada uno.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "shared_az900": {
-      "title": "Shared Responsibility Model | Microsoft Azure & Cloud Computing Fundamentals Course (AZ900)",
-      "url": "https://www.youtube.com/watch?v=EfoLct9AyKA",
-      "channel": "Like A Boss Learning",
-      "lang": "en",
-      "topic": "fundamentos",
-      "why": "El modelo de responsabilidad compartida explicado sobre Azure, a nivel AZ-900.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "tm_ms_stride": {
-      "title": "Microsoft STRIDE Framework Explained | Threat Modeling | TryHackMe",
-      "url": "https://www.youtube.com/watch?v=tKqcry-ntWk",
-      "channel": "Motasem Hamdan",
-      "lang": "en",
-      "topic": "fundamentos",
-      "why": "STRIDE, el marco de modelado de amenazas de Microsoft, paso a paso.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "tm_tool": {
-      "title": "A Guide to Microsoft's Threat Modeling Tool and Custom Stencils",
-      "url": "https://www.youtube.com/watch?v=eF3VZPXc7Zw",
-      "channel": "Cyber Talks",
-      "lang": "en",
-      "topic": "fundamentos",
-      "why": "Cómo usar la herramienta gratuita Microsoft Threat Modeling Tool sobre un diagrama.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "stg_cqure": {
-      "title": "CQURE Hacks #79: Azure Storage Misconfiguration in Practice From Public Blob to Key Vault Access",
-      "url": "https://www.youtube.com/watch?v=Z94dqsdUyQk",
-      "channel": "CQURE Academy",
-      "lang": "en",
-      "topic": "fundamentos",
-      "why": "Una mala configuración de Azure Storage en la práctica: de un blob público hasta el acceso a Key Vault.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "stg_defender": {
-      "title": "Protecting Azure Storage with Microsoft Defender for Cloud | Azure Friday",
-      "url": "https://www.youtube.com/watch?v=uw7P6iYEAt8",
-      "channel": "Microsoft Azure Developers",
-      "lang": "en",
-      "topic": "fundamentos",
-      "why": "Cómo protege Defender for Cloud las cuentas de almacenamiento de Azure.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "mdc_es_itqs": {
-      "title": "Mejora tu Seguridad con Defender for Cloud",
-      "url": "https://www.youtube.com/watch?v=AX4wev4FP6M",
-      "channel": "ITQS",
-      "lang": "es",
-      "topic": "fundamentos",
-      "why": "Defender for Cloud en español: cómo usarlo para mejorar la configuración de seguridad.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "mfa_es_red": {
-      "title": "Aprende a utilizar la Autentificación Multifactor MFA",
-      "url": "https://www.youtube.com/watch?v=pPy0P_gw-eU",
-      "channel": "Red por la Ciberseguridad",
-      "lang": "es",
-      "topic": "identidad",
-      "why": "Qué es MFA, por qué detiene la mayoría de los robos de cuenta y cómo activarla.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "mfa_es_bimind": {
-      "title": "MFA - Autenticación multifactor. Añade seguridad a tus accesos.",
-      "url": "https://www.youtube.com/watch?v=4EUWRhlLGb0",
-      "channel": "BiMind | Primero procesos, luego tecnología",
-      "lang": "es",
-      "topic": "identidad",
-      "why": "MFA desde el punto de vista de procesos de la empresa.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "mfa_types": {
-      "title": "Not All MFA is Created Equal! Which Type Will Protect You Best?!",
-      "url": "https://www.youtube.com/watch?v=1cTFMViTV8M",
-      "channel": "Stan's Garage",
-      "lang": "en",
-      "topic": "identidad",
-      "why": "SMS vs app vs llave física: por qué no todos los factores protegen igual contra phishing.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "rbac_marczak": {
-      "title": "AZ-900 Episode 28 | Azure Role-based Access Control (RBAC)",
-      "url": "https://www.youtube.com/watch?v=4v7ffXxOnwU",
-      "channel": "Adam Marczak - Azure for Everyone",
-      "lang": "en",
-      "topic": "identidad",
-      "why": "Azure RBAC desde cero: roles, ámbitos y asignaciones.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "rbac_knowops": {
-      "title": "Azure RBAC : The deep dark secrets of role based access control",
-      "url": "https://www.youtube.com/watch?v=1OBi93apLdo",
-      "channel": "KnowOps",
-      "lang": "en",
-      "topic": "identidad",
-      "why": "Azure RBAC a fondo, para afinar las asignaciones de roles.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "pim_savill": {
-      "title": "Azure AD Privileged Identity Management (PIM) - AZ-500, SC-300 Deep Dive Topic",
-      "url": "https://www.youtube.com/watch?v=gccgIkR8_a0",
-      "channel": "John Savill's Technical Training",
-      "lang": "en",
-      "topic": "identidad",
-      "why": "PIM a fondo: privilegios just-in-time en lugar de permisos permanentes.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "zt_identity": {
-      "title": "Zero Trust Identity Controls - Essentials Series - Episode 2",
-      "url": "https://www.youtube.com/watch?v=fQZQznIKcGM",
-      "channel": "Microsoft Mechanics",
-      "lang": "en",
-      "topic": "identidad",
-      "why": "Los controles de identidad de Zero Trust, de la serie oficial de Microsoft.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "passkeys_entra": {
-      "title": "Passkeys - path to phishing-resistant authentication with Microsoft Entra",
-      "url": "https://www.youtube.com/watch?v=mUEIe4dJQio",
-      "channel": "Tech Mind Factory",
-      "lang": "en",
-      "topic": "identidad",
-      "why": "Passkeys en Microsoft Entra: el camino a la autenticación resistente a phishing.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "prmfa_malone": {
-      "title": "Phishing Resistant MFA How it Works!",
-      "url": "https://www.youtube.com/watch?v=Z0C_dpwCOcY",
-      "channel": "Andy Malone MVP",
-      "lang": "en",
-      "topic": "identidad",
-      "why": "Cómo funciona el MFA resistente a phishing.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "ca_es": {
-      "title": "#MicrosoftEntraID: Guía completa para políticas de acceso condicional",
-      "url": "https://www.youtube.com/watch?v=L-c82HRMJzw",
-      "channel": "Mobile Data Solutions",
-      "lang": "es",
-      "topic": "identidad",
-      "why": "Políticas de acceso condicional de Microsoft Entra ID, en español.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "kv_savill": {
-      "title": "Azure Key Vault Deep Dive (AZ-500)",
-      "url": "https://www.youtube.com/watch?v=kP7KpfToMkg",
-      "channel": "John Savill's Technical Training",
-      "lang": "en",
-      "topic": "identidad",
-      "why": "Azure Key Vault a fondo: secretos, claves y certificados.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "kv_es": {
-      "title": "Azure Key Vault Tutorial en Español, |Secretos, keys y certificados explicados Muy Facil!",
-      "url": "https://www.youtube.com/watch?v=HvOTSY1RNOM",
-      "channel": "La Comunidad de la Nube",
-      "lang": "es",
-      "topic": "identidad",
-      "why": "Azure Key Vault en español: secretos, claves y certificados.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "crypto_es_root": {
-      "title": "Cifrado Simétrico vs. Asimétrico: Entendido con Dibujos y Ejemplos",
-      "url": "https://www.youtube.com/watch?v=xLw5u5OZfDI",
-      "channel": "Root4Everyone",
-      "lang": "es",
-      "topic": "datos_red",
-      "why": "La base: cifrado simétrico vs asimétrico, con dibujos.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "crypto_es_andr": {
-      "title": "¿Qué es la criptografía? Simétrica, asimétrica, clave pública, HTTPS, RSA, SSL...",
-      "url": "https://www.youtube.com/watch?v=IFZS36m8Miw",
-      "channel": "Androide Sabiondo",
-      "lang": "es",
-      "topic": "datos_red",
-      "why": "Cómo se combinan los dos tipos de cifrado en HTTPS/TLS (cifrado en tránsito).",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "zt_ibm": {
-      "title": "Zero Trust Explained in 4 mins",
-      "url": "https://www.youtube.com/watch?v=yn6CPQ9RioA",
-      "channel": "IBM Technology",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "Zero Trust en 4 minutos: nunca confiar por estar «dentro de la red», verificar siempre.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "zt_es_hoy": {
-      "title": "¿Qué es ZERO TRUST?",
-      "url": "https://www.youtube.com/watch?v=2OxzvIwwFPo",
-      "channel": "Computer Hoy",
-      "lang": "es",
-      "topic": "datos_red",
-      "why": "Zero Trust explicado en español para cualquier perfil.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "zt_es_m3": {
-      "title": "Zero Trust - ¿Qué es?",
-      "url": "https://www.youtube.com/watch?v=JqMKlEe7tD4",
-      "channel": "M3 Security",
-      "lang": "es",
-      "topic": "datos_red",
-      "why": "Principios de Zero Trust y cómo se aplican en una empresa.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "cont_e2e": {
-      "title": "Container Security Explained End to End | Dockerfile to Kubernetes Production",
-      "url": "https://www.youtube.com/watch?v=mBiUKUycvts",
-      "channel": "Cloud Advocate",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "La cadena completa: imagen base, escaneo, registro, despliegue y ejecución.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "k8s_es_terror": {
-      "title": "Seguridad en Kubernetes: Historias de terror para poder asegurar tu cluster - Pablo Fredrikson,Split",
-      "url": "https://www.youtube.com/watch?v=-Qd_b0DW6Xw",
-      "channel": "Cloud Native Guatemala",
-      "lang": "es",
-      "topic": "datos_red",
-      "why": "Incidentes reales en clusters de Kubernetes y qué control los habría evitado.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "Pablo Fredrikson",
-      "verified": "2026-10-01"
-    },
-    "k8s_datadog": {
-      "title": "Kubernetes Security Fundamentals - Introduction",
-      "url": "https://www.youtube.com/watch?v=0MhHkTtiBCc",
-      "channel": "Datadog",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "Fundamentos: RBAC, namespaces, políticas de red y secretos en Kubernetes.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "enc_savill": {
-      "title": "Azure Storage and Disk Encryption Deep Dive",
-      "url": "https://www.youtube.com/watch?v=EOXgzTqceok",
-      "channel": "John Savill's Technical Training",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "El cifrado de almacenamiento y de discos en Azure, a fondo.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "zt_network": {
-      "title": "Zero Trust for Network & Infrastructure - Essentials Series - Episode 4",
-      "url": "https://www.youtube.com/watch?v=jroIqFCgMfI",
-      "channel": "Microsoft Mechanics",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "Zero Trust aplicado a red e infraestructura, de la serie oficial de Microsoft.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "vnet_savill": {
-      "title": "Azure Virtual Network and PaaS Network Controls",
-      "url": "https://www.youtube.com/watch?v=MnARPRQ2kvk",
-      "channel": "John Savill's Technical Training",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "Controles de red para redes virtuales y servicios PaaS de Azure.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "nsg_marczak": {
-      "title": "AZ-900 Episode 21 | Azure Security Groups | Network and Application Security Groups (NSG, ASG)",
-      "url": "https://www.youtube.com/watch?v=w8H5fWBHddA",
-      "channel": "Adam Marczak - Azure for Everyone",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "Grupos de seguridad de red y de aplicación (NSG y ASG) desde cero.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "nsg_es": {
-      "title": "12.- Grupo de Seguridad de Red - Aprende Azure - ¡Fácil y Rápido!",
-      "url": "https://www.youtube.com/watch?v=ZXL_nz47TvM",
-      "channel": "InfoFran, Azure en Español",
-      "lang": "es",
-      "topic": "datos_red",
-      "why": "Los grupos de seguridad de red de Azure, en español.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "aks_sec": {
-      "title": "Security Best Practices for Azure Kubernetes Services (AKS)",
-      "url": "https://www.youtube.com/watch?v=S-WlcOuzQNQ",
-      "channel": "Luke Murray",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "Buenas prácticas de seguridad para Azure Kubernetes Service.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "mdc_containers": {
-      "title": "Microsoft Defender for Containers | Defender for Cloud in the Field #3",
-      "url": "https://www.youtube.com/watch?v=KeH0a3enLJ0",
-      "channel": "Microsoft Security",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "Defender for Containers presentado por el equipo de Microsoft Security.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "cont_basics": {
-      "title": "Basics of Containers - Microsoft Defender for Containers Series",
-      "url": "https://www.youtube.com/watch?v=mliTM4_My1Y",
-      "channel": "Microsoft Security Community",
-      "lang": "en",
-      "topic": "datos_red",
-      "why": "Fundamentos de contenedores, de la serie de Defender for Containers.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "aks_es": {
-      "title": "AKS.Azure.Kubernetes. Vídeo educativo.",
-      "url": "https://www.youtube.com/watch?v=BzINvcdg0SI",
-      "channel": "Javier de Prado",
-      "lang": "es",
-      "topic": "datos_red",
-      "why": "Azure Kubernetes Service explicado en español.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "siem_es": {
-      "title": "📋 ¿Qué es un SIEM? ► Software para la Gestión de Información y Eventos de Seguridad | Alberto López",
-      "url": "https://www.youtube.com/watch?v=xgxJUUaD3lg",
-      "channel": "AlbertoLopez TECH TIPS",
-      "lang": "es",
-      "topic": "deteccion",
-      "why": "Qué hace un SIEM con los logs: centralizar, correlacionar y alertar.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "ir_es": {
-      "title": "MasterClass: Gestión Moderna de incidentes en un SOC: aplicando NIST SP 800-61 y SANS",
-      "url": "https://www.youtube.com/watch?v=LkEjH7AFzis",
-      "channel": "Academia de Ciberseguridad by LD GRUPO",
-      "lang": "es",
-      "topic": "deteccion",
-      "why": "Gestión de incidentes en un SOC con NIST 800-61 y SANS, en español.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "ir_kamil": {
-      "title": "IT and Computer Incident Response Process Overview (NIST SP 800-61 Rev 2)",
-      "url": "https://www.youtube.com/watch?v=vWhkVKDk5_4",
-      "channel": "KamilSec",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Las fases clásicas: preparación, detección y análisis, contención/erradicación/recuperación, lecciones aprendidas.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "ir_r3": {
-      "title": "NIST SP 800-61r3 UPDATED (2025) 🚨 Incident Response Framework",
-      "url": "https://www.youtube.com/watch?v=BAKHlv7WVa0",
-      "channel": "ProfessorBlackOps - CyberSecurity for the people",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Qué cambió en la revisión 3 (2025): la respuesta se integra con el CSF 2.0 (Govern, Identify, Protect…).",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-01"
-    },
-    "la_start": {
-      "title": "How to get started with Azure Monitor Log Analytics",
-      "url": "https://www.youtube.com/watch?v=-aMecR2Nrfc",
-      "channel": "Microsoft Azure",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Primeros pasos con Log Analytics, donde se centralizan y consultan los registros.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "sentinel_what": {
-      "title": "What is Microsoft Azure Sentinel? Cloud-native SIEM.",
-      "url": "https://www.youtube.com/watch?v=XXZp6LQZSJU",
-      "channel": "Microsoft Mechanics",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Qué es Microsoft Sentinel, el SIEM nativo de la nube de Microsoft.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "sentinel_es": {
-      "title": "Azure Sentinel Español - Episodio 1 - Primeros Pasos",
-      "url": "https://www.youtube.com/watch?v=mScQyagvc5k",
-      "channel": "La Comunidad de la Nube",
-      "lang": "es",
-      "topic": "deteccion",
-      "why": "Primeros pasos con Microsoft Sentinel, en español.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "mdc_start": {
-      "title": "Getting Started with Microsoft Defender for Cloud",
-      "url": "https://www.youtube.com/watch?v=2y-QZK75vek",
-      "channel": "Microsoft Security",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Primeros pasos con Defender for Cloud, del canal oficial Microsoft Security.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "mdc_cspm": {
-      "title": "Microsoft Defender for Cloud - Introducing Defender CSPM (Cloud Security Posture Management)",
-      "url": "https://www.youtube.com/watch?v=exSsDlI57Xs",
-      "channel": "Microsoft Security",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Defender CSPM: la gestión de postura de seguridad en la nube de Microsoft.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "mdc_posture": {
-      "title": "Manage cloud security posture with Microsoft Defender for Cloud",
-      "url": "https://www.youtube.com/watch?v=nE6tFjP7Juc",
-      "channel": "Microsoft Security",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Cómo gestionar la postura de seguridad con Defender for Cloud.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "mdc_es": {
-      "title": "¿Qué es Microsoft Defender for Cloud? - Español - Mayo 2022 - Teórico",
-      "url": "https://www.youtube.com/watch?v=EaltjIEiUqE",
-      "channel": "Néstor Reverón",
-      "lang": "es",
-      "topic": "deteccion",
-      "why": "Qué es Microsoft Defender for Cloud, en español.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "xdr_incidents": {
-      "title": "How to manage incidents - Microsoft Defender XDR",
-      "url": "https://www.youtube.com/watch?v=pSHAANTfIm0",
-      "channel": "Microsoft Security",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Cómo gestionar incidentes en Microsoft Defender XDR.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "xdr_ir_start": {
-      "title": "Get started with incident response | Microsoft Defender Experts for XDR",
-      "url": "https://www.youtube.com/watch?v=fYzquW2hE5I",
-      "channel": "Microsoft Security",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Primeros pasos de la respuesta a incidentes con Defender XDR.",
-      "kind": "video",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "cdr": {
-      "title": "Cloud Detection and Response with Microsoft Defender for Cloud and Microsoft Defender XDR",
-      "url": "https://www.youtube.com/watch?v=ecLLpf14OyE",
-      "channel": "Microsoft Security",
-      "lang": "en",
-      "topic": "deteccion",
-      "why": "Detección y respuesta en la nube combinando Defender for Cloud y Defender XDR.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "sentinel_es2": {
-      "title": "27 - Microsoft Sentinel (SIEM, SOAR, investigación, optimización de costes, análisis, etc.)",
-      "url": "https://www.youtube.com/watch?v=Gr7venKFPJQ",
-      "channel": "Cloud en Español",
-      "lang": "es",
-      "topic": "deteccion",
-      "why": "Microsoft Sentinel en español: SIEM, SOAR e investigación.",
-      "kind": "video",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "ref_cis": {
-      "title": "CIS Benchmarks",
-      "url": "https://www.cisecurity.org/cis-benchmarks",
-      "channel": "Center for Internet Security",
-      "lang": "en",
-      "topic": "referencias",
-      "why": "Configuraciones recomendadas por proveedor (AWS, Azure, GCP, Kubernetes…), base de casi todo CSPM.",
-      "kind": "link",
-      "level": "básico"
-    },
-    "ref_nist_ir": {
-      "title": "NIST SP 800-61 Rev. 3 - Incident Response Recommendations",
-      "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
-      "channel": "NIST",
-      "lang": "en",
-      "topic": "referencias",
-      "why": "La guía de respuesta a incidentes vigente (abril 2025).",
-      "kind": "link",
-      "level": "básico"
-    },
-    "ref_nist_zt": {
-      "title": "NIST SP 800-207 - Zero Trust Architecture",
-      "url": "https://csrc.nist.gov/pubs/sp/800/207/final",
-      "channel": "NIST",
-      "lang": "en",
-      "topic": "referencias",
-      "why": "La definición formal de arquitectura Zero Trust.",
-      "kind": "link",
-      "level": "básico"
-    },
-    "ref_ms_shared": {
-      "title": "Shared responsibility in the cloud",
-      "url": "https://learn.microsoft.com/azure/security/fundamentals/shared-responsibility",
-      "channel": "Microsoft Learn",
-      "lang": "en",
-      "topic": "referencias",
-      "why": "El modelo oficial de responsabilidad compartida de Microsoft.",
-      "kind": "link",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "ref_mcsb": {
-      "title": "Microsoft cloud security benchmark",
-      "url": "https://learn.microsoft.com/security/benchmark/azure/overview",
-      "channel": "Microsoft Learn",
-      "lang": "en",
-      "topic": "referencias",
-      "why": "Los controles de seguridad recomendados por Microsoft, base de Defender for Cloud.",
-      "kind": "link",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "ref_ms_zt": {
-      "title": "Zero Trust as a security foundation",
-      "url": "https://learn.microsoft.com/security/zero-trust/zero-trust-overview",
-      "channel": "Microsoft Learn",
-      "lang": "en",
-      "topic": "referencias",
-      "why": "La guía de Zero Trust de Microsoft.",
-      "kind": "link",
-      "level": "básico",
-      "who": "",
-      "verified": "2026-10-02"
-    },
-    "ref_ms_ir": {
-      "title": "Incident response overview",
-      "url": "https://learn.microsoft.com/security/operations/incident-response-overview",
-      "channel": "Microsoft Learn",
-      "lang": "en",
-      "topic": "referencias",
-      "why": "La guía de respuesta a incidentes de Microsoft.",
-      "kind": "link",
-      "level": "intermedio",
-      "who": "",
-      "verified": "2026-10-02"
+    {
+     "q": "Which responsibility do you keep even in a SaaS service?",
+     "options": [
+      "The server hardware",
+      "The physical security of the data center",
+      "The identities, permissions and the data you store",
+      "The hypervisor"
+     ],
+     "answer": 2,
+     "why": "Identities, access and data are never transferred to the provider: that is why MFA and permissions are your first line of defense."
     }
+   ],
+   "resources": [
+    "shared_az900",
+    "shared_savill_az900",
+    "shared_sans"
+   ]
+  },
+  {
+   "id": "f2",
+   "level": "Fundamentals",
+   "title": "Risk and threat modeling",
+   "summary": "Before choosing controls, ask what can go wrong. STRIDE gives you six threat categories to review any design.",
+   "points": [
+    "Risk = likelihood × impact. Not everything is protected the same way: prioritize what would do the most damage.",
+    "The CIA triad sums up what we protect: Confidentiality, Integrity and Availability.",
+    "STRIDE: Spoofing, Tampering, Repudiation, Information disclosure, Denial of service and Elevation of privilege.",
+    "Threat modeling is a team exercise over a diagram: what are we building? what can go wrong? what will we do about it? did we do a good job?"
+   ],
+   "skills": [
+    "risk"
+   ],
+   "catalog_skills": [
+    "security-architecture"
+   ],
+   "practice": {
+    "label": "Draw the diagram of one of your team's apps and review it with STRIDE"
+   },
+   "quiz": [
+    {
+     "q": "An attacker uses stolen credentials to log in as another user. Which STRIDE category is it?",
+     "options": [
+      "Tampering",
+      "Spoofing",
+      "Denial of service",
+      "Repudiation"
+     ],
+     "answer": 1,
+     "why": "Spoofing is pretending to be another identity. It is mitigated with strong authentication (MFA)."
+    },
+    {
+     "q": "Which property of the CIA triad is lost if someone modifies database records without permission?",
+     "options": [
+      "Confidentiality",
+      "Integrity",
+      "Availability",
+      "None"
+     ],
+     "answer": 1,
+     "why": "Integrity = data is not altered without authorization."
+    },
+    {
+     "q": "What is the best way to prioritize threats?",
+     "options": [
+      "Handle the newest ones in the news first",
+      "By likelihood × impact on what matters most to the business",
+      "In the alphabetical order of STRIDE",
+      "Handle them all at once"
+     ],
+     "answer": 1,
+     "why": "Risk = likelihood × impact: focus the effort where the potential damage is greatest."
+    }
+   ],
+   "resources": [
+    "stride_shostack",
+    "tm_ms_stride",
+    "tm_tool",
+    "stride_cmp"
+   ]
+  },
+  {
+   "id": "f3",
+   "level": "Fundamentals",
+   "title": "Misconfigurations: the number one cause",
+   "summary": "Most cloud leaks do not come from sophisticated attacks but from something misconfigured: public data, excessive permissions, open ports.",
+   "points": [
+    "Typical mistakes: blob containers with anonymous access, network security groups (NSGs) open to the internet, roles with excessive permissions, diagnostic logs turned off.",
+    "The pattern repeats in every cloud: a small flaw in an app becomes a massive leak when that app's identity (its managed identity or service principal) can read far more than it needs.",
+    "Preventing is cheaper than detecting: disable anonymous blob access on the storage account, use Azure Policy to block insecure configurations and deploy from reviewed templates (Bicep or Terraform).",
+    "The Microsoft cloud security benchmark (MCSB) and the CIS Microsoft Azure Foundations Benchmark list the recommended secure configuration; Microsoft Defender for Cloud measures your environment against them."
+   ],
+   "skills": [
+    "configuration"
+   ],
+   "catalog_skills": [
+    "microsoft-azure-security",
+    "defender-for-cloud"
+   ],
+   "practice": {
+    "label": "Review the Microsoft cloud security benchmark",
+    "url": "https://learn.microsoft.com/security/benchmark/azure/overview"
+   },
+   "quiz": [
+    {
+     "q": "A web app has a vulnerability that lets an attacker act with the app's managed identity. What turns that flaw into a massive leak?",
+     "options": [
+      "Weak encryption",
+      "The identity having more permissions on storage than it needs",
+      "A brute-force attack on passwords",
+      "A physical failure in the data center"
+     ],
+     "answer": 1,
+     "why": "The attacker inherits whatever the identity can do: if it could only read one container, the damage is bounded; if it could read everything, everything is lost."
+    },
+    {
+     "q": "Which control prevents any container in a storage account from becoming public?",
+     "options": [
+      "Encryption with Microsoft-managed keys",
+      "Disabling \"Allow Blob anonymous access\" on the storage account",
+      "Blob versioning",
+      "Azure Front Door"
+     ],
+     "answer": 1,
+     "why": "With anonymous access disabled on the account, no container can be made public even if someone tries by mistake."
+    },
+    {
+     "q": "An NSG allows RDP (port 3389) from \"Any\" or \"Internet\". What does that mean?",
+     "options": [
+      "That only the internal network can get in",
+      "That any internet address can try to connect over RDP",
+      "That RDP is disabled",
+      "That only Microsoft can connect"
+     ],
+     "answer": 1,
+     "why": "\"Any\" or \"Internet\" is the whole internet. Restrict it to known IPs or use access without exposed ports: Azure Bastion or Defender for Cloud just-in-time access."
+    }
+   ],
+   "resources": [
+    "stg_cqure",
+    "stg_defender"
+   ]
+  },
+  {
+   "id": "i1",
+   "level": "Identity and access",
+   "title": "Identity and least privilege with Entra ID and Azure RBAC",
+   "summary": "Identity is the new perimeter: every person and every service should have only the permissions it needs, and not one more.",
+   "points": [
+    "Least privilege: grant only the actions and resources needed for the task, and remove them when they are no longer used.",
+    "Prefer managed identities and just-in-time access with PIM over long-lived secrets and standing permissions.",
+    "Assign roles to groups and at the smallest possible scope (resource or resource group), not person by person across the subscription.",
+    "Measure what is really used with access reviews and sign-in logs, and trim what is left over."
+   ],
+   "skills": [
+    "iam"
+   ],
+   "catalog_skills": [
+    "identity-governance",
+    "pim-pam"
+   ],
+   "practice": {
+    "label": "Azure RBAC best practices on Microsoft Learn",
+    "url": "https://learn.microsoft.com/azure/role-based-access-control/best-practices"
+   },
+   "quiz": [
+    {
+     "q": "An application on an Azure virtual machine needs to read a single blob container. What is the right approach?",
+     "options": [
+      "Store the storage account access key on the server",
+      "A managed identity with the Storage Blob Data Reader role on that container only",
+      "Give it the Contributor role on the whole subscription to avoid problems",
+      "Make the container public"
+     ],
+     "answer": 1,
+     "why": "Managed identity (no secret to store) + minimum role + specific scope = least privilege."
+    },
+    {
+     "q": "Why are managed identities and short-lived tokens preferred?",
+     "options": [
+      "They are faster",
+      "There is no secret to store and tokens expire on their own: if they leak, they are useful only briefly",
+      "They do not require roles",
+      "They are free"
+     ],
+     "answer": 1,
+     "why": "A leaked long-lived key or secret works until someone revokes it; a token expires in minutes or hours."
+    },
+    {
+     "q": "What helps trim access nobody needs anymore?",
+     "options": [
+      "Access reviews in Microsoft Entra ID Governance",
+      "Azure Front Door",
+      "Azure Archive Storage",
+      "Azure DNS"
+     ],
+     "answer": 0,
+     "why": "Access reviews ask periodically who still needs a role or a group, and remove whatever is not confirmed."
+    }
+   ],
+   "resources": [
+    "rbac_marczak",
+    "rbac_knowops",
+    "pim_savill"
+   ]
+  },
+  {
+   "id": "i2",
+   "level": "Identity and access",
+   "title": "MFA, SSO and Global Administrator accounts",
+   "summary": "A stolen password should not be enough to get in. Phishing-resistant MFA, single sign-on and Global Administrator accounts kept under lock and key.",
+   "points": [
+    "MFA blocks the vast majority of password-theft attacks; turn it on for everyone, starting with administrators.",
+    "Not all MFA is equal: SMS < authenticator app codes < number-matching notification < FIDO2 keys/passkeys (phishing-resistant).",
+    "SSO with Microsoft Entra ID centralizes joiners, leavers and MFA: when someone leaves the company, they are disabled in one place; Conditional Access decides when to ask for more proof.",
+    "Global Administrator: few accounts, with phishing-resistant MFA and activated through PIM only when needed; plus two emergency access accounts monitored with alerts."
+   ],
+   "skills": [
+    "identity"
+   ],
+   "catalog_skills": [
+    "microsoft-entra-id",
+    "conditional-access"
+   ],
+   "practice": {
+    "label": "Free modules on Microsoft Learn",
+    "url": "https://learn.microsoft.com/training/"
+   },
+   "quiz": [
+    {
+     "q": "Which type of MFA resists phishing best?",
+     "options": [
+      "SMS",
+      "Code sent by e-mail",
+      "FIDO2 security key / passkey",
+      "Security questions"
+     ],
+     "answer": 2,
+     "why": "FIDO2 verifies the site's real domain: a fake site cannot reuse the response."
+    },
+    {
+     "q": "What is the correct use of an emergency access (break-glass) account?",
+     "options": [
+      "For the administrator's daily work",
+      "Real emergencies only, with phishing-resistant credentials and an alert every time it is used",
+      "For production applications",
+      "Shared by the IT team for day-to-day work"
+     ],
+     "answer": 1,
+     "why": "It is the last door when normal sign-in fails: it is kept apart, almost never used, and every use is investigated."
+    },
+    {
+     "q": "What advantage does SSO give when offboarding a person?",
+     "options": [
+      "None",
+      "They are disabled in one place and lose access to all connected accounts and apps",
+      "It deletes their files",
+      "It changes every password in the company"
+     ],
+     "answer": 1,
+     "why": "Without SSO you have to delete users in each system, and one gets forgotten."
+    }
+   ],
+   "resources": [
+    "zt_identity",
+    "passkeys_entra",
+    "prmfa_malone"
+   ]
+  },
+  {
+   "id": "i3",
+   "level": "Identity and access",
+   "title": "Secrets: keys, passwords and tokens",
+   "summary": "A secret in the code or in a chat ends up leaking. Store it in a manager, give it minimum access and rotate it.",
+   "points": [
+    "Never in code, repositories, tickets or chats: repositories get cloned and git history does not forget.",
+    "Use Azure Key Vault as the secrets manager: encryption, access control with RBAC and auditing. Better still, use managed identities so there is no secret to store.",
+    "Rotation: change secrets periodically and immediately if a leak is suspected; better if it is automatic.",
+    "Scan repositories (GitHub secret scanning, Gitleaks) to catch keys before they reach production."
+   ],
+   "skills": [
+    "secrets"
+   ],
+   "catalog_skills": [
+    "encryption-key-vault-hsm"
+   ],
+   "practice": {
+    "label": "Run a secrets scanner (e.g. Gitleaks) on one of your team's repositories"
+   },
+   "quiz": [
+    {
+     "q": "You pushed a storage account key to a public repository by mistake and deleted it in the next commit. What do you do?",
+     "options": [
+      "Nothing, it is already deleted",
+      "Regenerate the key immediately and review its use in the logs",
+      "Make the repository private and that is it",
+      "Rename the file"
+     ],
+     "answer": 1,
+     "why": "The key is still in the history and bots scan GitHub within minutes: regenerate it and review what was done with it."
+    },
+    {
+     "q": "What does Azure Key Vault add over a .env file on the server?",
+     "options": [
+      "Nothing",
+      "Encryption, per-identity permissions, an audit trail of who read it, and rotation",
+      "It makes the secret shorter",
+      "It makes it never expire"
+     ],
+     "answer": 1,
+     "why": "Key Vault centralizes and records access; a loose file does not tell you who read it."
+    },
+    {
+     "q": "What is the best rotation practice?",
+     "options": [
+      "Never rotate so nothing breaks",
+      "Rotate periodically and immediately on suspicion, ideally automated",
+      "Rotate only when someone resigns",
+      "Rotate once a year by hand"
+     ],
+     "answer": 1,
+     "why": "Automatic rotation shortens the window in which a leaked secret can be used, without relying on someone's memory."
+    }
+   ],
+   "resources": [
+    "kv_savill",
+    "kv_marczak",
+    "kv_cbt"
+   ]
+  },
+  {
+   "id": "d1",
+   "level": "Data and network",
+   "title": "Encryption at rest and in transit",
+   "summary": "Encrypt the data you store and the data that travels. The hard part is not encrypting: it is managing the keys well.",
+   "points": [
+    "In transit: TLS (HTTPS) on every connection, internal ones too; disable old protocols (TLS 1.0/1.1).",
+    "At rest: Azure encrypts storage and managed disks by default; decide where you need customer-managed keys (CMK).",
+    "Azure Key Vault (or Managed HSM) holds the keys; envelope encryption uses one data key per object, protected by a key encryption key (KEK).",
+    "Whoever controls the key controls the data: limit who can use each key and log its use."
+   ],
+   "skills": [
+    "encryption"
+   ],
+   "catalog_skills": [
+    "encryption-key-vault-hsm"
+   ],
+   "practice": {
+    "label": "Azure encryption overview (Microsoft Learn)",
+    "url": "https://learn.microsoft.com/azure/security/fundamentals/encryption-overview"
+   },
+   "quiz": [
+    {
+     "q": "What does encryption in transit protect?",
+     "options": [
+      "Data stored on disk",
+      "Data while it travels over the network",
+      "Only user passwords",
+      "The logs"
+     ],
+     "answer": 1,
+     "why": "TLS protects the communication from being read or altered along the way."
+    },
+    {
+     "q": "In envelope encryption, what does the key that lives in Key Vault (the KEK) encrypt?",
+     "options": [
+      "All the files directly",
+      "The data key that in turn encrypted the file",
+      "Entra ID passwords",
+      "Nothing"
+     ],
+     "answer": 1,
+     "why": "The Key Vault key never leaves the service; it encrypts small data keys, which are the ones that encrypt the data."
+    },
+    {
+     "q": "Why does it matter who can use a Key Vault key?",
+     "options": [
+      "It does not matter if the data is encrypted",
+      "Whoever can use the key can decrypt the data",
+      "It only affects cost",
+      "To comply with the language requirement"
+     ],
+     "answer": 1,
+     "why": "Encryption moves access control to the key: its permissions are as important as the data's."
+    }
+   ],
+   "resources": [
+    "enc_savill",
+    "enc_messer",
+    "enc_kv_hsm"
+   ]
+  },
+  {
+   "id": "d2",
+   "level": "Data and network",
+   "title": "Network security and Zero Trust",
+   "summary": "Segment the network to limit the attacker's movement, and stop trusting something just because it is \"inside\".",
+   "points": [
+    "Segment: public subnets only for what must receive internet traffic; databases and internal services in private subnets.",
+    "Network security groups (NSGs) filter statefully per subnet or per network interface; Azure Firewall inspects centrally. Use minimal rules.",
+    "Avoid opening administration ports: use Azure Bastion, just-in-time access or a VPN with MFA, and reach PaaS services through private endpoints.",
+    "Zero Trust: always verify identity, device and context on every access; never trust based on network location alone."
+   ],
+   "skills": [
+    "network"
+   ],
+   "catalog_skills": [
+    "zero-trust",
+    "azure-network-controls"
+   ],
+   "practice": {
+    "label": "Read Microsoft's Zero Trust guidance",
+    "url": "https://learn.microsoft.com/security/zero-trust/zero-trust-overview"
+   },
+   "quiz": [
+    {
+     "q": "Where should a production database live?",
+     "options": [
+      "In a public subnet with a public IP",
+      "In a private subnet or behind a private endpoint, reachable only from the app",
+      "In any subnet as long as it has a password",
+      "Outside the virtual network"
+     ],
+     "answer": 1,
+     "why": "A database does not need to receive internet traffic: isolating it drastically reduces its exposure."
+    },
+    {
+     "q": "What does it mean that an NSG is stateful?",
+     "options": [
+      "That it keeps a copy of the traffic",
+      "That the reply to an allowed connection passes automatically, without a rule in the opposite direction",
+      "That it encrypts traffic",
+      "That it only works with IPv6"
+     ],
+     "answer": 1,
+     "why": "The NSG remembers each allowed flow: the reply to an allowed inbound connection needs no outbound rule."
+    },
+    {
+     "q": "What does the Zero Trust principle state?",
+     "options": [
+      "Everything inside the corporate network is trusted",
+      "Never trust by default: verify every access with identity and context",
+      "Do not use firewalls",
+      "Distrust the cloud provider and do not use it"
+     ],
+     "answer": 1,
+     "why": "Zero Trust moves trust from \"being on the network\" to \"proving who you are and under what conditions\" on every access."
+    }
+   ],
+   "resources": [
+    "zt_network",
+    "vnet_savill",
+    "nsg_marczak"
+   ]
+  },
+  {
+   "id": "d3",
+   "level": "Data and network",
+   "title": "Containers and Kubernetes",
+   "summary": "A container is as secure as its image, its permissions and the cluster it runs on.",
+   "points": [
+    "Images: minimal official base, vulnerability scanning in the pipeline and in Azure Container Registry (Defender for Containers), no secrets inside.",
+    "Runtime: do not run as root, read-only file system where possible, no privileged containers.",
+    "Kubernetes (AKS): authentication with Microsoft Entra ID, least-privilege RBAC, namespaces, network policies and secrets kept out of the image.",
+    "The control plane (API server) never exposed to the internet without strong authentication; in AKS consider a private cluster or authorized IP ranges."
+   ],
+   "skills": [
+    "containers"
+   ],
+   "catalog_skills": [
+    "container-security"
+   ],
+   "practice": {
+    "label": "Scan one of your team's images (Defender for Containers in Azure Container Registry, or Trivy)"
+   },
+   "quiz": [
+    {
+     "q": "Why is it risky to run a container as privileged?",
+     "options": [
+      "It uses more memory",
+      "It can take control of the host node if the container is compromised",
+      "It takes longer to start",
+      "There is no risk"
+     ],
+     "answer": 1,
+     "why": "A privileged container has almost the same powers as the host: an escape compromises the whole node."
+    },
+    {
+     "q": "Where should the passwords used by an application in Kubernetes go?",
+     "options": [
+      "Inside the image",
+      "In variables written in the Dockerfile",
+      "In Azure Key Vault or Kubernetes Secrets with restricted access",
+      "In the README"
+     ],
+     "answer": 2,
+     "why": "The image is copied to registries and machines; secrets must be injected at runtime with controlled access."
+    },
+    {
+     "q": "What does RBAC control in Kubernetes?",
+     "options": [
+      "Network traffic between pods",
+      "Which users and service accounts can perform which actions on which resources",
+      "The size of the images",
+      "Disk encryption"
+     ],
+     "answer": 1,
+     "why": "RBAC is the IAM of Kubernetes: it applies least privilege inside the cluster too."
+    }
+   ],
+   "resources": [
+    "aks_sec",
+    "mdc_containers",
+    "cont_basics"
+   ]
+  },
+  {
+   "id": "r1",
+   "level": "Detection and response",
+   "title": "Logs and monitoring",
+   "summary": "Without logs no investigation is possible. Record who did what, protect it from deletion and centralize it.",
+   "points": [
+    "Send the Azure activity log and the Microsoft Entra ID logs (sign-ins and audit) to a Log Analytics workspace with a diagnostic setting.",
+    "Protect the logs: a separate workspace or subscription, or immutable storage; an attacker usually tries to delete them first.",
+    "Centralize in Microsoft Sentinel (SIEM) to correlate events from several sources and alert.",
+    "Define retention according to legal and investigation requirements: the activity log is kept for only 90 days unless you export it."
+   ],
+   "skills": [
+    "logging"
+   ],
+   "catalog_skills": [
+    "microsoft-sentinel"
+   ],
+   "practice": {
+    "label": "Activity log in Azure Monitor (Microsoft Learn)",
+    "url": "https://learn.microsoft.com/azure/azure-monitor/platform/activity-log"
+   },
+   "quiz": [
+    {
+     "q": "What does the Azure activity log answer?",
+     "options": [
+      "How much each service costs",
+      "Who did what operation, when and from where",
+      "The contents of the files",
+      "The network speed"
+     ],
+     "answer": 1,
+     "why": "It is the basic forensic record of the cloud."
+    },
+    {
+     "q": "Why store logs in a separate workspace or in immutable storage?",
+     "options": [
+      "It is cheaper",
+      "So that an attacker with access to the affected subscription cannot delete them",
+      "So they load faster",
+      "There is no need"
+     ],
+     "answer": 1,
+     "why": "Erasing traces is a typical attacker step; separating the logs or making them immutable prevents it."
+    },
+    {
+     "q": "What does a SIEM such as Microsoft Sentinel provide?",
+     "options": [
+      "It encrypts disks",
+      "It centralizes, correlates events from several sources and generates alerts",
+      "It makes backups",
+      "It replaces the firewall"
+     ],
+     "answer": 1,
+     "why": "Correlating sources reveals attacks that cannot be seen in a single log."
+    }
+   ],
+   "resources": [
+    "la_start",
+    "sentinel_what"
+   ]
+  },
+  {
+   "id": "r2",
+   "level": "Detection and response",
+   "title": "Threat detection and posture (CSPM)",
+   "summary": "Let managed services watch for you: detection of anomalous behavior and continuous review of configuration against standards.",
+   "points": [
+    "Threat detection (Microsoft Defender for Cloud plans and Microsoft Defender XDR): they analyze logs, identities and network to find malicious behavior.",
+    "Posture (CSPM: Defender for Cloud and its Secure Score): continuously compares your configuration against the Microsoft cloud security benchmark.",
+    "A finding without an owner is useless: define who receives each severity and how fast it is handled.",
+    "Start with a few high-quality alerts; too much noise causes the important ones to be ignored."
+   ],
+   "skills": [
+    "detection"
+   ],
+   "catalog_skills": [
+    "defender-for-cloud"
+   ],
+   "practice": {
+    "label": "What is Microsoft Defender for Cloud? (Microsoft Learn)",
+    "url": "https://learn.microsoft.com/azure/defender-for-cloud/defender-for-cloud-introduction"
+   },
+   "quiz": [
+    {
+     "q": "What is the difference between threat detection and CSPM?",
+     "options": [
+      "They are the same thing",
+      "Detection looks for malicious activity; CSPM checks whether the configuration meets standards",
+      "CSPM only encrypts data",
+      "Detection only checks passwords"
+     ],
+     "answer": 1,
+     "why": "One watches what is happening; the other, how the environment is built."
+    },
+    {
+     "q": "Microsoft Entra ID Protection reports a sign-in from an anonymous IP address (Tor network) using a user's credentials. What do you do first?",
+     "options": [
+      "Ignore it",
+      "Validate with the owner and, if they do not recognize it, revoke their sessions, reset the password and review what was done",
+      "Turn off the detection to clear the alert",
+      "Wait to see whether it happens again"
+     ],
+     "answer": 1,
+     "why": "Contain first (sessions and credentials) and then investigate the scope in the sign-in and activity logs."
+    },
+    {
+     "q": "Why is it better to start with a few high-quality alerts?",
+     "options": [
+      "Because the tools charge per alert",
+      "Because too much noise makes the team ignore the important ones too",
+      "Because there are no other types of alert",
+      "It is not better"
+     ],
+     "answer": 1,
+     "why": "Alert fatigue is a frequent cause of incidents that were detected but nobody handled."
+    }
+   ],
+   "resources": [
+    "mdc_start",
+    "mdc_cspm",
+    "mdc_posture",
+    "cspm_mechanics"
+   ]
+  },
+  {
+   "id": "r3",
+   "level": "Detection and response",
+   "title": "Incident response in the cloud",
+   "summary": "When something happens, a rehearsed plan is worth more than the best tool: prepare, detect, contain, eradicate, recover and learn.",
+   "points": [
+    "NIST 800-61 cycle: preparation → detection and analysis → containment, eradication and recovery → post-incident activity (lessons learned).",
+    "Revision 3 (2025) integrates response with NIST CSF 2.0: governance, identification and protection are also part of responding well.",
+    "In Azure, containing usually means: revoking sessions and credentials, isolating resources (a quarantine NSG) and taking disk snapshots for the investigation.",
+    "Rehearse with tabletop exercises and write runbooks for the most likely scenarios."
+   ],
+   "skills": [
+    "response"
+   ],
+   "catalog_skills": [
+    "microsoft-defender-xdr",
+    "microsoft-sentinel"
+   ],
+   "practice": {
+    "label": "Read NIST SP 800-61 Rev. 3",
+    "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+   },
+   "quiz": [
+    {
+     "q": "A virtual machine is confirmed to be compromised. What is best for the investigation?",
+     "options": [
+      "Delete it immediately",
+      "Isolate it (network quarantine) and take a snapshot before making any change",
+      "Restart it",
+      "Ignore it if nobody complains"
+     ],
+     "answer": 1,
+     "why": "Deleting or restarting destroys evidence; isolating contains the damage and the snapshot preserves the state."
+    },
+    {
+     "q": "In which phase of the NIST cycle are runbooks written and drills carried out?",
+     "options": [
+      "Preparation",
+      "Eradication",
+      "Recovery",
+      "None"
+     ],
+     "answer": 0,
+     "why": "Everything you do before the incident (plans, access, tools, rehearsals) is preparation."
+    },
+    {
+     "q": "What is the lessons-learned phase for?",
+     "options": [
+      "To find someone to blame",
+      "To improve the controls and the plan so the same incident does not happen again",
+      "To close the ticket quickly",
+      "It is optional"
+     ],
+     "answer": 1,
+     "why": "A blameless review turns the incident into concrete improvements."
+    }
+   ],
+   "resources": [
+    "xdr_incidents",
+    "xdr_ir_start",
+    "cdr",
+    "ir_r3"
+   ]
   }
+ ],
+ "glossary": [
+  {
+   "term": "Shared responsibility model",
+   "category": "Fundamentals",
+   "definition": "The split of security between the cloud provider (the cloud) and the customer (what they put and configure in it)."
+  },
+  {
+   "term": "IaaS",
+   "category": "Fundamentals",
+   "definition": "Infrastructure as a service: you rent virtual machines, network and disks; you manage the operating system."
+  },
+  {
+   "term": "PaaS",
+   "category": "Fundamentals",
+   "definition": "Platform as a service: the provider manages the operating system and you manage the application and the data."
+  },
+  {
+   "term": "SaaS",
+   "category": "Fundamentals",
+   "definition": "Software as a service: you use a finished application; you remain responsible for identities and data."
+  },
+  {
+   "term": "CIA triad",
+   "category": "Fundamentals",
+   "definition": "Confidentiality, integrity and availability: the three properties that security protects."
+  },
+  {
+   "term": "STRIDE",
+   "category": "Fundamentals",
+   "definition": "Threat categories: spoofing, tampering, repudiation, information disclosure, denial of service and elevation of privilege."
+  },
+  {
+   "term": "Threat modeling",
+   "category": "Fundamentals",
+   "definition": "The exercise of identifying what can go wrong in a design and which controls mitigate it."
+  },
+  {
+   "term": "CSPM",
+   "category": "Detection",
+   "definition": "Cloud Security Posture Management: continuous review of cloud configuration against standards."
+  },
+  {
+   "term": "CIS Benchmark",
+   "category": "Fundamentals",
+   "definition": "Secure configuration guide recommended by the Center for Internet Security for a product or cloud."
+  },
+  {
+   "term": "SSRF",
+   "category": "Fundamentals",
+   "definition": "Server-Side Request Forgery: the attacker makes the server send requests on their behalf, e.g. to the metadata service."
+  },
+  {
+   "term": "IAM",
+   "category": "Identity",
+   "definition": "Identity and access management: who can do what on which resources."
+  },
+  {
+   "term": "Least privilege",
+   "category": "Identity",
+   "definition": "Giving only the permissions needed for a task and removing them when they are no longer used."
+  },
+  {
+   "term": "Azure RBAC role",
+   "category": "Identity",
+   "definition": "A set of permissions assigned to an identity at a scope: subscription, resource group or resource."
+  },
+  {
+   "term": "Managed identity",
+   "category": "Identity",
+   "definition": "An identity that Azure creates and rotates for a resource, so it can reach other services without storing secrets."
+  },
+  {
+   "term": "MFA",
+   "category": "Identity",
+   "definition": "Multi-factor authentication: something you know plus something you have or are."
+  },
+  {
+   "term": "FIDO2 / passkey",
+   "category": "Identity",
+   "definition": "Authentication with a cryptographic key bound to the domain, resistant to phishing."
+  },
+  {
+   "term": "SSO",
+   "category": "Identity",
+   "definition": "Single sign-on: one central identity to get into many applications."
+  },
+  {
+   "term": "Emergency access account",
+   "category": "Identity",
+   "definition": "A Global Administrator account reserved for when normal sign-in fails; it is protected, almost never used and every use raises an alert."
+  },
+  {
+   "term": "Secrets manager",
+   "category": "Identity",
+   "definition": "A service that stores, encrypts, audits and rotates passwords, keys and tokens."
+  },
+  {
+   "term": "Rotation",
+   "category": "Identity",
+   "definition": "Changing a secret periodically or when a leak is suspected."
+  },
+  {
+   "term": "Encryption in transit",
+   "category": "Data and network",
+   "definition": "Protection of data while it travels over the network, usually with TLS."
+  },
+  {
+   "term": "Encryption at rest",
+   "category": "Data and network",
+   "definition": "Protection of data stored on disks, databases or storage."
+  },
+  {
+   "term": "Azure Key Vault",
+   "category": "Data and network",
+   "definition": "The Azure service that stores and controls cryptographic keys, secrets and certificates."
+  },
+  {
+   "term": "Envelope encryption",
+   "category": "Data and network",
+   "definition": "Data is encrypted with a data key, which in turn is encrypted with a key encryption key (KEK)."
+  },
+  {
+   "term": "TLS",
+   "category": "Data and network",
+   "definition": "The protocol that encrypts and authenticates connections (the HTTPS padlock)."
+  },
+  {
+   "term": "Virtual network (VNet)",
+   "category": "Data and network",
+   "definition": "A private network inside Azure where your resources live."
+  },
+  {
+   "term": "Private subnet",
+   "category": "Data and network",
+   "definition": "A subnet with no direct route from the internet, for internal services and databases."
+  },
+  {
+   "term": "Network security group (NSG)",
+   "category": "Data and network",
+   "definition": "A stateful traffic filter associated with a subnet or a network interface in Azure."
+  },
+  {
+   "term": "Private endpoint",
+   "category": "Data and network",
+   "definition": "A private network interface inside your VNet to reach a PaaS service without exposing it to the internet."
+  },
+  {
+   "term": "Zero Trust",
+   "category": "Data and network",
+   "definition": "A model that does not trust based on network location: it verifies identity and context on every access."
+  },
+  {
+   "term": "Segmentation",
+   "category": "Data and network",
+   "definition": "Dividing the network into zones to limit an attacker's lateral movement."
+  },
+  {
+   "term": "Privileged container",
+   "category": "Data and network",
+   "definition": "A container with permissions almost equal to the host's; compromising it reaches the node."
+  },
+  {
+   "term": "RBAC",
+   "category": "Data and network",
+   "definition": "Role-based access control; in Kubernetes it defines what each user or service account can do."
+  },
+  {
+   "term": "Image scanning",
+   "category": "Data and network",
+   "definition": "Automatic review of known vulnerabilities in container images."
+  },
+  {
+   "term": "Azure activity log",
+   "category": "Detection",
+   "definition": "The record of operations on a subscription's resources: who did what, when and from where."
+  },
+  {
+   "term": "SIEM",
+   "category": "Detection",
+   "definition": "A system that centralizes and correlates security events from many sources and generates alerts."
+  },
+  {
+   "term": "Retention",
+   "category": "Detection",
+   "definition": "The length of time logs are kept."
+  },
+  {
+   "term": "Microsoft Defender for Cloud",
+   "category": "Detection",
+   "definition": "The Microsoft service that assesses security posture (CSPM) and detects threats in cloud workloads."
+  },
+  {
+   "term": "Finding",
+   "category": "Detection",
+   "definition": "The output of a security tool that points to a possible problem."
+  },
+  {
+   "term": "Alert fatigue",
+   "category": "Detection",
+   "definition": "Loss of attention caused by too many alerts, which leads to ignoring the important ones."
+  },
+  {
+   "term": "Incident response",
+   "category": "Response",
+   "definition": "The process to prepare for, detect, contain, eradicate, recover from and learn from an incident."
+  },
+  {
+   "term": "Containment",
+   "category": "Response",
+   "definition": "Actions to stop the damage of an incident, such as revoking credentials or isolating resources."
+  },
+  {
+   "term": "Eradication",
+   "category": "Response",
+   "definition": "Removing the cause of the incident (malware, access, configurations)."
+  },
+  {
+   "term": "Forensic snapshot",
+   "category": "Response",
+   "definition": "A copy of a compromised resource's disk, to investigate it without altering it."
+  },
+  {
+   "term": "Runbook",
+   "category": "Response",
+   "definition": "A step-by-step procedure to respond to a specific scenario."
+  },
+  {
+   "term": "Tabletop exercise",
+   "category": "Response",
+   "definition": "A talked-through simulation of an incident to test the plan and the roles."
+  },
+  {
+   "term": "Lessons learned",
+   "category": "Response",
+   "definition": "A blameless post-incident review that turns the incident into improvements."
+  }
+ ],
+ "resources": {
+  "stride_shostack": {
+   "title": "Introducing STRIDE for threat modeling",
+   "url": "https://www.youtube.com/watch?v=iGkX06sVFFM",
+   "channel": "Adam Shostack",
+   "lang": "en",
+   "topic": "fundamentals",
+   "why": "STRIDE explained by the author of the reference book on threat modeling.",
+   "kind": "video",
+   "level": "basic",
+   "who": "Adam Shostack",
+   "verified": "2026-10-01"
+  },
+  "stride_cmp": {
+   "title": "Threat Modeling Explained: STRIDE vs PASTA vs DREAD | CISSP Guide",
+   "url": "https://www.youtube.com/watch?v=AlprS-TfVac",
+   "channel": "Cert Empire",
+   "lang": "en",
+   "topic": "fundamentals",
+   "why": "Compares STRIDE with PASTA and DREAD: when to use each one.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "shared_az900": {
+   "title": "Shared Responsibility Model | Microsoft Azure & Cloud Computing Fundamentals Course (AZ900)",
+   "url": "https://www.youtube.com/watch?v=EfoLct9AyKA",
+   "channel": "Like A Boss Learning",
+   "lang": "en",
+   "topic": "fundamentals",
+   "why": "The shared responsibility model explained on Azure, at AZ-900 level.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "tm_ms_stride": {
+   "title": "Microsoft STRIDE Framework Explained | Threat Modeling | TryHackMe",
+   "url": "https://www.youtube.com/watch?v=tKqcry-ntWk",
+   "channel": "Motasem Hamdan",
+   "lang": "en",
+   "topic": "fundamentals",
+   "why": "STRIDE, Microsoft's threat modeling framework, step by step.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "tm_tool": {
+   "title": "A Guide to Microsoft's Threat Modeling Tool and Custom Stencils",
+   "url": "https://www.youtube.com/watch?v=eF3VZPXc7Zw",
+   "channel": "Cyber Talks",
+   "lang": "en",
+   "topic": "fundamentals",
+   "why": "How to use the free Microsoft Threat Modeling Tool on a diagram.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "stg_cqure": {
+   "title": "CQURE Hacks #79: Azure Storage Misconfiguration in Practice From Public Blob to Key Vault Access",
+   "url": "https://www.youtube.com/watch?v=Z94dqsdUyQk",
+   "channel": "CQURE Academy",
+   "lang": "en",
+   "topic": "fundamentals",
+   "why": "An Azure Storage misconfiguration in practice: from a public blob to Key Vault access.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "stg_defender": {
+   "title": "Protecting Azure Storage with Microsoft Defender for Cloud | Azure Friday",
+   "url": "https://www.youtube.com/watch?v=uw7P6iYEAt8",
+   "channel": "Microsoft Azure Developers",
+   "lang": "en",
+   "topic": "fundamentals",
+   "why": "How Defender for Cloud protects Azure storage accounts.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "mfa_types": {
+   "title": "Not All MFA is Created Equal! Which Type Will Protect You Best?!",
+   "url": "https://www.youtube.com/watch?v=1cTFMViTV8M",
+   "channel": "Stan's Garage",
+   "lang": "en",
+   "topic": "identity",
+   "why": "SMS vs app vs hardware key: why not every factor protects equally against phishing.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "rbac_marczak": {
+   "title": "AZ-900 Episode 28 | Azure Role-based Access Control (RBAC)",
+   "url": "https://www.youtube.com/watch?v=4v7ffXxOnwU",
+   "channel": "Adam Marczak - Azure for Everyone",
+   "lang": "en",
+   "topic": "identity",
+   "why": "Azure RBAC from scratch: roles, scopes and assignments.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "rbac_knowops": {
+   "title": "Azure RBAC : The deep dark secrets of role based access control",
+   "url": "https://www.youtube.com/watch?v=1OBi93apLdo",
+   "channel": "KnowOps",
+   "lang": "en",
+   "topic": "identity",
+   "why": "Azure RBAC in depth, to fine-tune role assignments.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "pim_savill": {
+   "title": "Azure AD Privileged Identity Management (PIM) - AZ-500, SC-300 Deep Dive Topic",
+   "url": "https://www.youtube.com/watch?v=gccgIkR8_a0",
+   "channel": "John Savill's Technical Training",
+   "lang": "en",
+   "topic": "identity",
+   "why": "PIM in depth: just-in-time privileges instead of standing permissions.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "zt_identity": {
+   "title": "Zero Trust Identity Controls - Essentials Series - Episode 2",
+   "url": "https://www.youtube.com/watch?v=fQZQznIKcGM",
+   "channel": "Microsoft Mechanics",
+   "lang": "en",
+   "topic": "identity",
+   "why": "Zero Trust identity controls, from Microsoft's official series.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "passkeys_entra": {
+   "title": "Passkeys - path to phishing-resistant authentication with Microsoft Entra",
+   "url": "https://www.youtube.com/watch?v=mUEIe4dJQio",
+   "channel": "Tech Mind Factory",
+   "lang": "en",
+   "topic": "identity",
+   "why": "Passkeys in Microsoft Entra: the path to phishing-resistant authentication.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "prmfa_malone": {
+   "title": "Phishing Resistant MFA How it Works!",
+   "url": "https://www.youtube.com/watch?v=Z0C_dpwCOcY",
+   "channel": "Andy Malone MVP",
+   "lang": "en",
+   "topic": "identity",
+   "why": "How phishing-resistant MFA works.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "kv_savill": {
+   "title": "Azure Key Vault Deep Dive (AZ-500)",
+   "url": "https://www.youtube.com/watch?v=kP7KpfToMkg",
+   "channel": "John Savill's Technical Training",
+   "lang": "en",
+   "topic": "identity",
+   "why": "Azure Key Vault in depth: secrets, keys and certificates.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "zt_ibm": {
+   "title": "Zero Trust Explained in 4 mins",
+   "url": "https://www.youtube.com/watch?v=yn6CPQ9RioA",
+   "channel": "IBM Technology",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Zero Trust in 4 minutes: never trust because something is \"inside the network\", always verify.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "cont_e2e": {
+   "title": "Container Security Explained End to End | Dockerfile to Kubernetes Production",
+   "url": "https://www.youtube.com/watch?v=mBiUKUycvts",
+   "channel": "Cloud Advocate",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "The full chain: base image, scanning, registry, deployment and runtime.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "k8s_datadog": {
+   "title": "Kubernetes Security Fundamentals - Introduction",
+   "url": "https://www.youtube.com/watch?v=0MhHkTtiBCc",
+   "channel": "Datadog",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Fundamentals: RBAC, namespaces, network policies and secrets in Kubernetes.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "enc_savill": {
+   "title": "Azure Storage and Disk Encryption Deep Dive",
+   "url": "https://www.youtube.com/watch?v=EOXgzTqceok",
+   "channel": "John Savill's Technical Training",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Azure storage and disk encryption, in depth.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "zt_network": {
+   "title": "Zero Trust for Network & Infrastructure - Essentials Series - Episode 4",
+   "url": "https://www.youtube.com/watch?v=jroIqFCgMfI",
+   "channel": "Microsoft Mechanics",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Zero Trust applied to network and infrastructure, from Microsoft's official series.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "vnet_savill": {
+   "title": "Azure Virtual Network and PaaS Network Controls",
+   "url": "https://www.youtube.com/watch?v=MnARPRQ2kvk",
+   "channel": "John Savill's Technical Training",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Network controls for Azure virtual networks and PaaS services.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "nsg_marczak": {
+   "title": "AZ-900 Episode 21 | Azure Security Groups | Network and Application Security Groups (NSG, ASG)",
+   "url": "https://www.youtube.com/watch?v=w8H5fWBHddA",
+   "channel": "Adam Marczak - Azure for Everyone",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Network and application security groups (NSG and ASG) from scratch.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "aks_sec": {
+   "title": "Security Best Practices for Azure Kubernetes Services (AKS)",
+   "url": "https://www.youtube.com/watch?v=S-WlcOuzQNQ",
+   "channel": "Luke Murray",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Security best practices for Azure Kubernetes Service.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "mdc_containers": {
+   "title": "Microsoft Defender for Containers | Defender for Cloud in the Field #3",
+   "url": "https://www.youtube.com/watch?v=KeH0a3enLJ0",
+   "channel": "Microsoft Security",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Defender for Containers presented by the Microsoft Security team.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "cont_basics": {
+   "title": "Basics of Containers - Microsoft Defender for Containers Series",
+   "url": "https://www.youtube.com/watch?v=mliTM4_My1Y",
+   "channel": "Microsoft Security Community",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Container basics, from the Defender for Containers series.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "ir_kamil": {
+   "title": "IT and Computer Incident Response Process Overview (NIST SP 800-61 Rev 2)",
+   "url": "https://www.youtube.com/watch?v=vWhkVKDk5_4",
+   "channel": "KamilSec",
+   "lang": "en",
+   "topic": "detection",
+   "why": "The classic phases: preparation, detection and analysis, containment/eradication/recovery, lessons learned.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "ir_r3": {
+   "title": "NIST SP 800-61r3 UPDATED (2025) 🚨 Incident Response Framework",
+   "url": "https://www.youtube.com/watch?v=BAKHlv7WVa0",
+   "channel": "ProfessorBlackOps - CyberSecurity for the people",
+   "lang": "en",
+   "topic": "detection",
+   "why": "What changed in revision 3 (2025): response is integrated with CSF 2.0 (Govern, Identify, Protect…).",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-01"
+  },
+  "la_start": {
+   "title": "How to get started with Azure Monitor Log Analytics",
+   "url": "https://www.youtube.com/watch?v=-aMecR2Nrfc",
+   "channel": "Microsoft Azure",
+   "lang": "en",
+   "topic": "detection",
+   "why": "Getting started with Log Analytics, where logs are centralized and queried.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "sentinel_what": {
+   "title": "What is Microsoft Azure Sentinel? Cloud-native SIEM.",
+   "url": "https://www.youtube.com/watch?v=XXZp6LQZSJU",
+   "channel": "Microsoft Mechanics",
+   "lang": "en",
+   "topic": "detection",
+   "why": "What Microsoft Sentinel is: Microsoft's cloud-native SIEM.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "mdc_start": {
+   "title": "Getting Started with Microsoft Defender for Cloud",
+   "url": "https://www.youtube.com/watch?v=2y-QZK75vek",
+   "channel": "Microsoft Security",
+   "lang": "en",
+   "topic": "detection",
+   "why": "Getting started with Defender for Cloud, from the official Microsoft Security channel.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "mdc_cspm": {
+   "title": "Microsoft Defender for Cloud - Introducing Defender CSPM (Cloud Security Posture Management)",
+   "url": "https://www.youtube.com/watch?v=exSsDlI57Xs",
+   "channel": "Microsoft Security",
+   "lang": "en",
+   "topic": "detection",
+   "why": "Defender CSPM: Microsoft's cloud security posture management.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "mdc_posture": {
+   "title": "Manage cloud security posture with Microsoft Defender for Cloud",
+   "url": "https://www.youtube.com/watch?v=nE6tFjP7Juc",
+   "channel": "Microsoft Security",
+   "lang": "en",
+   "topic": "detection",
+   "why": "Managing security posture with Defender for Cloud.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "xdr_incidents": {
+   "title": "How to manage incidents - Microsoft Defender XDR",
+   "url": "https://www.youtube.com/watch?v=pSHAANTfIm0",
+   "channel": "Microsoft Security",
+   "lang": "en",
+   "topic": "detection",
+   "why": "How to manage incidents in Microsoft Defender XDR.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "xdr_ir_start": {
+   "title": "Get started with incident response | Microsoft Defender Experts for XDR",
+   "url": "https://www.youtube.com/watch?v=fYzquW2hE5I",
+   "channel": "Microsoft Security",
+   "lang": "en",
+   "topic": "detection",
+   "why": "Getting started with incident response in Defender XDR.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "cdr": {
+   "title": "Cloud Detection and Response with Microsoft Defender for Cloud and Microsoft Defender XDR",
+   "url": "https://www.youtube.com/watch?v=ecLLpf14OyE",
+   "channel": "Microsoft Security",
+   "lang": "en",
+   "topic": "detection",
+   "why": "Cloud detection and response combining Defender for Cloud and Defender XDR.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "ref_cis": {
+   "title": "CIS Benchmarks",
+   "url": "https://www.cisecurity.org/cis-benchmarks",
+   "channel": "Center for Internet Security",
+   "lang": "en",
+   "topic": "references",
+   "why": "Recommended configurations per provider (AWS, Azure, GCP, Kubernetes…), the basis of almost every CSPM.",
+   "kind": "link",
+   "level": "basic"
+  },
+  "ref_nist_ir": {
+   "title": "NIST SP 800-61 Rev. 3 - Incident Response Recommendations",
+   "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final",
+   "channel": "NIST",
+   "lang": "en",
+   "topic": "references",
+   "why": "The current incident response guide (April 2025).",
+   "kind": "link",
+   "level": "basic"
+  },
+  "ref_nist_zt": {
+   "title": "NIST SP 800-207 - Zero Trust Architecture",
+   "url": "https://csrc.nist.gov/pubs/sp/800/207/final",
+   "channel": "NIST",
+   "lang": "en",
+   "topic": "references",
+   "why": "The formal definition of Zero Trust architecture.",
+   "kind": "link",
+   "level": "basic"
+  },
+  "ref_ms_shared": {
+   "title": "Shared responsibility in the cloud",
+   "url": "https://learn.microsoft.com/azure/security/fundamentals/shared-responsibility",
+   "channel": "Microsoft Learn",
+   "lang": "en",
+   "topic": "references",
+   "why": "Microsoft's official shared responsibility model.",
+   "kind": "link",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "ref_mcsb": {
+   "title": "Microsoft cloud security benchmark",
+   "url": "https://learn.microsoft.com/security/benchmark/azure/overview",
+   "channel": "Microsoft Learn",
+   "lang": "en",
+   "topic": "references",
+   "why": "Microsoft's recommended security controls, the basis of Defender for Cloud.",
+   "kind": "link",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "ref_ms_zt": {
+   "title": "Zero Trust as a security foundation",
+   "url": "https://learn.microsoft.com/security/zero-trust/zero-trust-overview",
+   "channel": "Microsoft Learn",
+   "lang": "en",
+   "topic": "references",
+   "why": "Microsoft's Zero Trust guidance.",
+   "kind": "link",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "ref_ms_ir": {
+   "title": "Incident response overview",
+   "url": "https://learn.microsoft.com/security/operations/incident-response-overview",
+   "channel": "Microsoft Learn",
+   "lang": "en",
+   "topic": "references",
+   "why": "Microsoft's incident response guidance.",
+   "kind": "link",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-02"
+  },
+  "shared_savill_az900": {
+   "title": "Differences Between Cloud Service Categories - AZ-900 Certification Course",
+   "url": "https://www.youtube.com/watch?v=IqQC1EOQqeU",
+   "channel": "John Savill's Technical Training",
+   "lang": "en",
+   "topic": "fundamentals",
+   "why": "Explains how responsibility shifts between Microsoft and the customer across IaaS, PaaS and SaaS: the Azure framing of the shared responsibility model.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-08"
+  },
+  "shared_sans": {
+   "title": "Cloud Security Begins with the Shared Responsibility Model",
+   "url": "https://www.youtube.com/watch?v=rSMKSquxykE",
+   "channel": "SANS Institute",
+   "lang": "en",
+   "topic": "fundamentals",
+   "why": "Introduces the shared responsibility model as the foundation of cloud security: the provider secures the cloud and you secure what you put in it.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-08"
+  },
+  "kv_marczak": {
+   "title": "Azure Key Vault Tutorial | Secure secrets, keys and certificates easily",
+   "url": "https://www.youtube.com/watch?v=PgujSug1ZbI",
+   "channel": "Adam Marczak - Azure for Everyone",
+   "lang": "en",
+   "topic": "identity",
+   "why": "Walks through storing secrets, keys and certificates in Azure Key Vault and controlling application access instead of hard-coding credentials.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-08"
+  },
+  "kv_cbt": {
+   "title": "What is Azure Key Vault Used For?",
+   "url": "https://www.youtube.com/watch?v=pnOFP_oijxw",
+   "channel": "CBT Nuggets",
+   "lang": "en",
+   "topic": "identity",
+   "why": "A short overview of why Azure Key Vault exists and how it centralizes keys, passwords and tokens.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-08"
+  },
+  "enc_messer": {
+   "title": "Encrypting Data - CompTIA Security+ SY0-701 - 1.4",
+   "url": "https://www.youtube.com/watch?v=jpsc4c7lntw",
+   "channel": "Professor Messer",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Covers encryption of data at rest (disk, volume, file, database) and in transit, plus the role of keys.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-08"
+  },
+  "enc_kv_hsm": {
+   "title": "Microsoft Azure Key Vault HSM Animated Explainer",
+   "url": "https://www.youtube.com/watch?v=4qqSPSMJSFY",
+   "channel": "Microsoft Azure",
+   "lang": "en",
+   "topic": "data_network",
+   "why": "Shows how Azure protects encryption keys with Key Vault and hardware security modules: the key management side of encryption.",
+   "kind": "video",
+   "level": "basic",
+   "who": "",
+   "verified": "2026-10-08"
+  },
+  "cspm_mechanics": {
+   "title": "Predict future security incidents! Cloud Security Posture Management with Microsoft Defender",
+   "url": "https://www.youtube.com/watch?v=jF3NSR_OepI",
+   "channel": "Microsoft Mechanics",
+   "lang": "en",
+   "topic": "detection",
+   "why": "Demonstrates Defender CSPM: misconfigurations, attack paths and prioritized risks found before they become incidents.",
+   "kind": "video",
+   "level": "intermediate",
+   "who": "",
+   "verified": "2026-10-08"
+  }
+ }
 }
