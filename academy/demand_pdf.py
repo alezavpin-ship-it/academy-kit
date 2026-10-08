@@ -87,7 +87,8 @@ def _lines(points: list[dict], width: float, lang: str, height: float = 150):
         d.add(Line(left, y, width - right, y, strokeColor=HexColor(LINE), strokeWidth=0.5))
         d.add(String(left - 4, y - 2.5, str(v), fontName="Helvetica", fontSize=7, fillColor=HexColor(MUTED), textAnchor="end"))
     for i, p in enumerate(points):
-        d.add(String(xy(i, 0)[0], 3, p["date"], fontName="Helvetica", fontSize=7, fillColor=HexColor(MUTED), textAnchor="middle"))
+        anchor = "start" if i == 0 else "end" if i == len(points) - 1 else "middle"  # the end labels stay inside the plot
+        d.add(String(xy(i, 0)[0], 3, p["date"], fontName="Helvetica", fontSize=7, fillColor=HexColor(MUTED), textAnchor=anchor))
     used: list[float] = []
     for s in (CORE, THIRD, EMERGING, OUTSIDE):
         pts = [xy(i, p[s]) for i, p in enumerate(points)]

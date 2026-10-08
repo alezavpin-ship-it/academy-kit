@@ -807,7 +807,7 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
                 ("tab_news", lambda: news_page.knowledge_tab(lang, catalog, leader=owner or bool(families)))]  # Knowledge exchange: the practice's reading bank
     if owner or families:  # reports are for owners (every family) and champions (their own)
         sections.append(("tab_reports", lambda: reports_tab(conn, packs, exams, catalog, lang, learner.strip() or "me", None if owner else families)))
-        sections.append(("tab_demand", lambda: demand_tab(catalog, packs, lang, owner)))  # what the market asks for, against the practice and the courses
+        sections.append(("tab_demand", lambda: demand_tab(catalog, packs, lang, owner, conn)))  # what the market asks for, against the practice and the courses
     if owner:  # team measurements are for owners and leaders only
 
         def team_view() -> None:

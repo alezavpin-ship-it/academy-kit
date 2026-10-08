@@ -126,6 +126,12 @@ Skill are mandatory, the rest are used when present). It understands the report 
 can choose *Save it in the app* to keep it in `content\demand_roles.csv` and `content\demand_history\` (by date) and
 follow the weekly trend. `content\demand_roles_sample.csv` has made-up roles to try it.
 
+**Executive report (owners).** The Demand tab gives owners an *Executive summary* (on screen) and the **Executive report
+(PDF)**: two pages with the key messages, the top 10 practice skills against the bench (people at level 3+ in the team
+inventory) and the courses, the recommended actions with the champion who owns each one, the trend against the previous
+upload and the roles by start month. It works on a file read for the session too (compared with the saved uploads) and
+says so on the cover. The *Detailed report (PDF)* keeps every chart and table.
+
 ## English only
 Earlier versions kept Spanish and English side by side. On the first start, `academy/english.py` converts once: the
 English course and exam become the only files, Spanish videos are dropped, and the content and demand files get their
@@ -141,7 +147,7 @@ and questions have the same ids).
 | `academy/content_xlsx.py`, `content_sync.py` | The content workbook: export, import, checks, sync |
 | `academy/news.py`, `news_page.py` | News sources, feed reading, opening window, Knowledge exchange |
 | `academy/report.py`, `report_pdf.py` | Reports by family and their Excel / PDF |
-| `academy/demand.py`, `demand_page.py`, `demand_pdf.py` | Demand analysis, trend and PDF |
+| `academy/demand.py`, `demand_page.py`, `demand_pdf.py`, `demand_exec.py` | Demand analysis, trend, detailed and executive PDF |
 | `academy/progress.py`, `route.py`, `exam.py` | Points, ranks, badges; learning route; certification prep |
 | `academy/forum.py`, `certs.py` | Forum; certification register |
 | `packs/<id>/pack.json` | A course (`packs/_template/` is the skeleton for a new one) |

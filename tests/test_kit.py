@@ -1073,6 +1073,38 @@ def test_demand_tab_renders_with_the_sample(tmp_path, monkeypatch):
     assert any(m.label == "Practice skills without a course" for m in at.metric)
 
 
+def test_demand_executive_report_for_owners(tmp_path, monkeypatch):
+    from datetime import date
+
+    from academy import demand, demand_exec
+    from academy.catalog import load_materials
+    from academy.practice import load_practice
+
+    practice = load_practice(ROOT / "catalog" / "practice.json")
+    cat = load_catalog(ROOT / "catalog" / "skills.json")
+    history = demand.sample_history()
+    a = demand.analyze(history[-1][1], practice, cat, [load_pack("cloud-security")], load_materials(ROOT / "catalog" / "materials.json"), "en")
+    tr = demand.trend(history, practice, "en")
+    top = [r for r in a["skills"] if r["_scope"] != "outside"][:10]
+    bench = {r["_entry"].skill_id: 1 for r in top if r["_entry"] is not None and r["_entry"].skill_id}
+    b = demand_exec.brief(a, tr, bench, cat, today=date(2026, 10, 8))
+    assert len(b["skills"]) == 10 and b["skills"][0]["Roles"] >= b["skills"][-1]["Roles"] and b["skills"][0]["People at level 3+"] in (1, "—")
+    assert any("belong to the practice" in m for m in b["messages"]) and any(m.startswith("Since 2026-09-30") for m in b["messages"])
+    assert any("bench gap" in m for m in b["messages"]) and b["actions"] and all(r["Owner"] for r in b["actions"]) and all(r["Champion"] for r in b["skills"])
+    assert dict(b["kpis"])["Roles in demand"] == str(len(history[-1][1])) and b["upcoming"] > 0  # roles start in Oct and Nov
+    no_bench = demand_exec.brief(a, None, None, cat)
+    assert any("team inventory has no skill levels" in m for m in no_bench["messages"]) and dict(no_bench["kpis"])["Change vs previous upload"] == "—"
+    if demand_exec.available():
+        pdf = demand_exec.to_pdf(a, practice, b, "saved upload of 2026-10-07", "2026-10-08 08:00", tr)
+        assert pdf.startswith(b"%PDF") and pdf.count(b"/Type /Page") - pdf.count(b"/Type /Pages") >= 2
+    # in the app: owners get the executive report; a champion sees the Demand tab without it
+    demand.save(demand.sample_rows(), tmp_path / "demand_roles.csv")
+    at = _run(tmp_path, monkeypatch)
+    assert not at.exception and any("Executive summary" in e.label for e in at.expander)
+    if demand_exec.available():
+        assert any(getattr(b, "label", "") == "Executive report (PDF)" for b in at.get("download_button"))
+
+
 def test_practice_travels_in_the_content_file(tmp_path, monkeypatch):
     content, _ = _content_sandbox(tmp_path, monkeypatch)
     from academy.practice import load_practice

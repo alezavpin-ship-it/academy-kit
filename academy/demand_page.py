@@ -7,7 +7,7 @@ from datetime import datetime
 import pandas as pd
 import streamlit as st
 
-from academy import demand, demand_pdf
+from academy import demand, demand_exec, demand_pdf
 from academy.catalog import load_materials
 from academy.practice import load_practice
 
@@ -21,6 +21,41 @@ def _rows(path: str, stamp: int) -> list[dict]:
 def _report_pdf(signature: tuple, lang: str, now: str, _a: dict, _practice, _tr: dict) -> bytes | None:
     """The PDF for the current data (None without reportlab); rebuilt only when a roles file, the practice or the content changes."""
     return demand_pdf.to_pdf(_a, _practice, now, _tr) if demand_pdf.available() else None
+
+
+@st.cache_data(show_spinner=False)
+def _exec_pdf(signature: tuple, now: str, source: str, bench_key: tuple, _a: dict, _practice, _b: dict, _tr: dict) -> bytes | None:
+    return demand_exec.to_pdf(_a, _practice, _b, source, now, _tr) if demand_pdf.available() else None
+
+
+def _bench(conn, a: dict) -> dict[str, int] | None:
+    """People at level 3+ in the team inventory for the demanded practice skills (None without the database)."""
+    if conn is None:
+        return None
+    from academy.inventory import Inventory
+
+    ids = [r["_entry"].skill_id for r in a["skills"] if r["_scope"] != "outside" and r.get("_entry") is not None and r["_entry"].skill_id]
+    try:
+        return Inventory(conn).coverage(ids)
+    except Exception:  # an inventory not created yet
+        return None
+
+
+def _executive(a: dict, practice, tr: dict, catalog, conn, source: str, now: str, stamp: str, signature: tuple, col) -> None:
+    """Owners: the executive summary on screen and as a two-page PDF."""
+    bench = _bench(conn, a)
+    b = demand_exec.brief(a, tr, bench, catalog)
+    pdf = _exec_pdf(signature, now, source, tuple(sorted((bench or {}).items())), a, practice, b, tr)
+    if pdf:
+        col.download_button("Executive report (PDF)", pdf, file_name=f"demand_executive_report_{stamp}.pdf", mime="application/pdf",
+                            key="dm_exec", width="stretch", type="primary", help="Two pages for the leadership: key messages, top skills "
+                            "against the bench and the courses, recommended actions with their owner, trend.")
+    with st.expander("📌 Executive summary (owners)", expanded=False):
+        for m in b["messages"]:
+            st.markdown(f"- {m}")
+        if b["actions"]:
+            st.markdown("**Recommended actions**")
+            st.dataframe(pd.DataFrame(b["actions"]), hide_index=True, width="stretch")
 
 
 def _signature() -> tuple:
@@ -79,7 +114,7 @@ def _import_box(lang: str, current: list[dict], owner: bool = False) -> None:
                        + f" (folder `{demand.history_dir()}`; delete a file there to remove that upload).")
 
 
-def demand_tab(catalog, packs: list, lang: str, owner: bool = False) -> None:
+def demand_tab(catalog, packs: list, lang: str, owner: bool = False, conn=None) -> None:
     path = demand.demand_path()
     demand.sync_history()  # a roles file replaced by hand becomes one more dated upload
     rows = _rows(str(path), path.stat().st_mtime_ns) if path.exists() else []
@@ -109,15 +144,23 @@ def demand_tab(catalog, packs: list, lang: str, owner: bool = False) -> None:
                                         ("Practice skills without a course", s["no_course"]))):
         col.metric(label, value, border=True)
     stamp, now = datetime.now().strftime("%Y-%m-%d"), datetime.now().strftime("%Y-%m-%d %H:%M")
-    tr = demand.trend([(day, _rows(str(f), f.stat().st_mtime_ns)) for day, f in demand.snapshots()], practice, lang)
-    d = st.columns(3)
-    pdf = _report_pdf(_signature(), lang, now[:13] + ":00", a, practice, tr)  # rebuilt when the data changes, or once an hour
+    history = [(day, _rows(str(f), f.stat().st_mtime_ns)) for day, f in demand.snapshots()]
+    if session:  # the file read for this session is compared with the saved uploads (it replaces a saved one of the same date)
+        history = sorted([h for h in history if h[0] != session["date"]] + [(session["date"], rows)], key=lambda h: h[0])
+    tr = demand.trend(history, practice, lang)
+    d = st.columns(4 if owner else 3)
+    sig = _signature() + ((("session", session["name"], session["date"], len(rows)),) if session else ())
+    if owner:
+        source = (f"«{session['name']}» ({session['date']}), read for this session only, not saved" if session
+                  else f"saved upload of {history[-1][0]}" if history else "roles file")
+        _executive(a, practice, tr, catalog, conn, source, now[:13] + ":00", stamp, sig, d[3])
+    pdf = _report_pdf(sig, lang, now[:13] + ":00", a, practice, tr)  # rebuilt when the data changes, or once an hour
     if pdf:
-        d[0].download_button("Report as PDF", pdf,
+        d[0].download_button("Detailed report (PDF)", pdf,
                              file_name=f"demand_analysis_{stamp}.pdf", mime="application/pdf", key="dm_pdf",
-                             width="stretch", type="primary")
+                             width="stretch", type="secondary" if owner else "primary")
     else:
-        d[0].button("Report as PDF", disabled=True, key="dm_pdf_off", width="stretch",
+        d[0].button("Detailed report (PDF)", disabled=True, key="dm_pdf_off", width="stretch",
                     help="The PDF component is missing: close the app, double-click «Install components.bat» (in the app folder) and open it again.")
     d[1].download_button("Requested skills (CSV)",
                          pd.DataFrame(demand.visible(a["skills"])).to_csv(index=False).encode("utf-8-sig"),
