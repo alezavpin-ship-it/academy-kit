@@ -158,6 +158,16 @@ def available_packs() -> list[str]:
     return sorted(d.name for d in root.iterdir() if (d / "pack.json").exists() and not d.name.startswith("_")) if root.is_dir() else []
 
 
+def role_notes(pack: Pack) -> list[str]:
+    """Lessons outside every course role: shown to people without a role, hidden from those with one (not an error)."""
+    if not pack.roles:
+        return []
+    skills = {s for v in pack.roles.values() for s in v}
+    out = [les.title for les in pack.lessons if not set(les.skills) & skills]
+    return [f"{len(out)} lesson(s) are in no course role ({', '.join(out[:6])}{'…' if len(out) > 6 else ''}): people with a course role "
+            "will not see them. Add their skills to a role in the Roles sheet if they should."] if out else []
+
+
 def validate(pack: Pack, catalog=None) -> list[str]:
     """Every rule the methodology asks for. Returns human-readable problems; an empty list means the pack is valid.
 
@@ -202,9 +212,7 @@ def validate(pack: Pack, catalog=None) -> list[str]:
         for k in les.resource_notes:
             if k not in les.resources:
                 errs.append(f"{tag} note for '{k}', which is not in its resources.")
-        for s in les.skills:
-            if pack.roles and not any(s in v for v in pack.roles.values()):
-                errs.append(f"{tag} skill '{s}' is not in any role.")
+        # a lesson whose skills are in no course role is allowed: learners with a role do not see it (see role_notes)
     for k, r in pack.resources.items():
         if urlparse(r.url).scheme != "https":
             errs.append(f"[resource {k}] the URL must be https.")

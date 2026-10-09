@@ -591,7 +591,10 @@ def content_section(lang: str) -> None:
         result = content.read(up.getvalue())
         if result["summary"]:
             st.dataframe(pd.DataFrame(result["summary"]), hide_index=True, width="stretch")
-        st.caption(f"Families: {result.get('families', 0)} · skills: {result.get('skills', 0)} · learning paths: {result.get('learning_paths', 0)}")
+        st.caption(f"Families: {result.get('families', 0)} · skills: {result.get('skills', 0)} · learning paths: {result.get('learning_paths', 0)}"
+                   + (f" · people: {len(result['people'])}" if result.get("people") is not None else ""))
+        for note in result.get("notes", []):
+            st.info(note)
         if result["problems"]:
             st.error(f"{len(result['problems'])} problem(s). Fix them in the file and upload it again; nothing was saved.")
             st.code("\n".join(result["problems"][:60]), language=None, wrap_lines=True)

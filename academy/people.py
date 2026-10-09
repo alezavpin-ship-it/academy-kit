@@ -79,7 +79,12 @@ def people_path() -> Path:
     return Path(os.environ.get("ACADEMY_PEOPLE") or PEOPLE_FILE)
 
 
-def parse(raw: bytes, family_ids: set[str] | None = None) -> tuple[list[Person], list[str]]:
+def parse(raw: bytes, family_ids: set[str] | dict[str, str] | None = None) -> tuple[list[Person], list[str]]:
+    """``family_ids``: the families that exist — a set of ids, or {id or name in lower case: id} to accept names too."""
+    if isinstance(family_ids, dict):
+        lookup = {k.strip().lower(): v for k, v in family_ids.items()}
+    else:
+        lookup = {f.lower(): f for f in family_ids} if family_ids is not None else None
     text = raw.decode("utf-8-sig", errors="replace")
     first = text.split("\n", 1)[0]
     rows = list(csv.DictReader(io.StringIO(text, newline=""), delimiter=";" if first.count(";") > first.count(",") else ","))
@@ -102,10 +107,13 @@ def parse(raw: bytes, family_ids: set[str] | None = None) -> tuple[list[Person],
         if role in (CHAMPION, SME) and not fams:
             problems.append(f"[people row {n}] a {role} needs the Families they cover.")
             continue
-        unknown = [f for f in fams if family_ids is not None and f not in family_ids]
+        unknown = [f for f in fams if lookup is not None and f.lower() not in lookup]
         if unknown:
-            problems.append(f"[people row {n}] unknown family id(s): {', '.join(unknown)}.")
+            known = ", ".join(sorted(set(lookup.values()))) if lookup else "none yet"
+            problems.append(f"[people row {n}] unknown role family: {', '.join(unknown)} (use a family name or id of the Families sheet: {known}).")
             continue
+        if lookup is not None:
+            fams = tuple(dict.fromkeys(lookup[f.lower()] for f in fams))  # names become ids
         if name.lower() in seen:
             problems.append(f"[people row {n}] '{name}' is repeated.")
             continue

@@ -42,7 +42,7 @@ from pathlib import Path
 from academy import news, people, study
 from academy.catalog import (Catalog, Family, Skill, catalog_path, load_catalog, load_materials, materials_path, save_catalog, save_materials,
                              validate_catalog, validate_materials, vendor_of)
-from academy.pack import _parse, packs_dir as _packs_dir, validate
+from academy.pack import _parse, packs_dir as _packs_dir, role_notes, validate
 from academy.practice import Practice, RoleTerm, Term, load_practice, practice_path, save_practice, scope_of
 from academy.family_path import status_of
 from academy.route import class_order
@@ -466,6 +466,7 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
     """The content from its tables ({sheet: [row dicts keyed by column]}): the same result as ``read``. The in-app editor
     sends the tables it edited here, so a change made in the app passes exactly the checks of an imported file."""
     problems = [] if problems is None else problems
+    role_msgs: list[str] = []
     data = {name: [r if "_row" in r else {**r, "_row": n} for n, r in enumerate(data.get(name, []), start=2)] for name in SHEETS}
     catalog = catalog if catalog is not None else load_catalog()
     catalog, new_catalog = _catalog(data, catalog, problems)
@@ -545,6 +546,7 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
         else:
             try:
                 problems += [f"{tag} {e}" for e in validate(_parse(pack), catalog)]
+                role_msgs += [f"{tag} {n}" for n in role_notes(_parse(pack))]
             except Exception as e:  # a structural hole the checks above did not name
                 problems.append(f"{tag} incomplete content: {e}")
     if not packs:
@@ -586,11 +588,15 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
         problems += bad
     directory = None
     if data["People"]:
-        directory, bad = people.parse(_as_csv(people.SHEET_COLUMNS, data["People"]), {f.id for f in catalog.families} if catalog else None)
+        fams = {**{f.id: f.id for f in catalog.families}, **{f.name: f.id for f in catalog.families}} if catalog else None
+        directory, bad = people.parse(_as_csv(people.SHEET_COLUMNS, data["People"]), fams)
         problems += bad
-        course_roles = {_text(r.get("Role")) for r in data["Roles"]}
-        problems += [f"[People] '{x.name}': course role '{x.course_role}' is not a course role ({', '.join(sorted(course_roles)) or 'none yet'})."
-                     for x in directory if x.course_role and x.course_role not in course_roles]
+        course_roles = {_text(r.get("Role")).lower(): _text(r.get("Role")) for r in data["Roles"] if _text(r.get("Role"))}
+        from dataclasses import replace as _replace
+
+        directory = [_replace(x, course_role=course_roles.get(x.course_role.lower(), x.course_role)) for x in directory]
+        problems += [f"[People] '{x.name}': course role '{x.course_role}' is not a course role ({', '.join(sorted(course_roles.values())) or 'none yet'})."
+                     for x in directory if x.course_role and x.course_role.lower() not in course_roles]
         if catalog and not bad:
             catalog, moved = people.sync_catalog(directory, catalog)
             new_catalog = new_catalog or moved
@@ -602,7 +608,7 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
         problems += [f"[StudyMaterial] '{i.title}': SkillId '{i.skill_id}' is not in Skills." for i in bank if i.skill_id and known and i.skill_id not in known]
     return {"packs": packs, "materials": materials, "catalog": catalog, "new_catalog": new_catalog, "practice": practice, "news": sources,
             "people": directory, "study": bank,
-            "problems": problems, "summary": summary,
+            "problems": problems, "summary": summary, "notes": role_msgs,
             "learning_paths": sum(len(v) for v in materials.values()),
             "families": len(catalog.families) if catalog else 0, "skills": len(catalog.skills) if catalog else 0}
 
