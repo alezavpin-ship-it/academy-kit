@@ -9,7 +9,7 @@ workbook (tab People) or in the app's edit mode:
   families listed) | learner.
 * Practice = the id of the person's practice (catalog/practices.csv); empty = the first practice. A person belongs to one
   practice. An owner with an empty Practice is a GLOBAL owner (sees and runs every practice, adds practices); an owner with
-  a Practice runs only that one. At most 3 active owners of each kind (ACADEMY_MAX_OWNERS changes it).
+  a Practice runs only that one. At most 6 active owners of each kind (ACADEMY_MAX_OWNERS changes it).
 * Families = family ids separated by ";" (for champions and SMEs).
 * Active = no keeps the person in the file without showing them in the list of names.
 
@@ -33,7 +33,7 @@ COLUMNS = ["Person", "Email", "Role", "Families", "Active", "Practice"]
 SHEET_COLUMNS = COLUMNS[:5]  # the People sheet of a practice's content workbook: the practice is the workbook's own
 OWNER, CHAMPION, SME, LEARNER = "owner", "champion", "sme", "learner"
 ROLES = [OWNER, CHAMPION, SME, LEARNER]
-MAX_OWNERS = 3
+MAX_OWNERS = 6
 
 
 def max_owners() -> int:

@@ -10,7 +10,7 @@ writes (progress database, content workbook, catalog, people, courses, saved rol
 * Later deploys: only files that do not exist there yet are added (new courses, templates). What the team edited in the
   app is never overwritten. To take a shipped file again, delete it in /home/academy-data and restart.
 * ACADEMY_OWNERS (optional app setting): the app's owners, set from the Azure portal without editing files, for example
-  "a.person@company.com; Perla Marmolejo <perla.m@company.com>" (up to 3). On every start they become the owners in
+  "a.person@company.com; Perla Marmolejo <perla.m@company.com>" (up to 6). On every start they become the owners in
   /home/academy-data/catalog/people.csv; anyone else listed as owner there steps down to learner (or champion).
 
 Written in Python (not a shell script) so it works the same when the repository was saved on Windows (CRLF line ends).

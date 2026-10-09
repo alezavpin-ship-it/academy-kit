@@ -141,7 +141,7 @@ folder as always; every other one in `practices/<id>/` with the same folders. Th
   **Team → 🏢 Practices**. A new practice starts with an empty catalog and a first course without lessons, ready to fill
   in ✏️ Edit mode.
 * Everyone else belongs to one practice (column **Practice** of `catalog/people.csv`; empty = the first practice) and
-  only sees that one. Each practice can have up to 3 owners of its own (**Team → 👑 Owners of …**).
+  only sees that one. Each practice can have up to 6 owners of its own (**Team → 👑 Owners of …**).
 * The People sheet of a practice's workbook lists that practice's people; saving it leaves the others untouched.
 
 ## Azure App Service
@@ -176,7 +176,7 @@ and questions have the same ids).
 ## People and roles (catalog/people.csv)
 `Person, Email, Role, Families, Active` — Role = owner | champion | sme | learner; Families = family ids separated by `;`.
 The sidebar offers these names in **Who are you?**: your role comes with your name (owners get the **Owner view** switch).
-Up to **3 global owners** and up to 3 owners per practice (ACADEMY_MAX_OWNERS changes it): **Team → 👑 Global owners** and
+Up to **6 global owners** and up to 6 owners per practice (ACADEMY_MAX_OWNERS changes it): **Team → 👑 Global owners** and
 **Team → 👑 Owners of …**, with the work e-mail each one signs in with; they are saved in People with role `owner`.
 A champion listed here becomes the champion of those families in the catalog (reports and notices copy them). Also the
 People tab of the content workbook and ✏️ Edit mode (Team, Reports). Owners in `config/access.json` (with the optional PIN)

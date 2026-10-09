@@ -1532,7 +1532,7 @@ def test_azure_package_leaves_data_out(tmp_path):
     assert set(zipfile.ZipFile(tmp_path / "a.zip").namelist()) == set(names)
 
 
-def test_up_to_three_owners_kept_in_people(tmp_path, monkeypatch):
+def test_up_to_six_owners_kept_in_people(tmp_path, monkeypatch):
     from academy import people
 
     d = [people.Person("Alejandro Zavala", "alejandro@contoso.com", "owner"),
@@ -1541,21 +1541,23 @@ def test_up_to_three_owners_kept_in_people(tmp_path, monkeypatch):
                                           ("Bo Chen", "bo@contoso.com")])
     assert problems == [] and [p.name for p in people.owners(new)] == ["Alejandro Zavala", "Ana Lopez", "Bo Chen"]
     assert next(p for p in new if p.name == "Ana Lopez").families == ("identity-access-management",)  # keeps her families
-    four = [("A", "a@x.com"), ("B", "b@x.com"), ("C", "c@x.com"), ("D", "d@x.com")]
-    assert people.set_owners(d, four)[1] == ["At most 3 owners."] and people.set_owners(d, [])[1]
+    six = [(c, f"{c.lower()}@x.com") for c in "ABCDEF"]
+    seven = six + [("G", "g@x.com")]
+    assert people.set_owners(d, six)[1] == [] and people.set_owners(d, seven)[1] == ["At most 6 owners."] and people.set_owners(d, [])[1]
     assert people.set_owners(d, [("Bo", "not-an-email")])[1]
     back, _ = people.set_owners(new, [("Alejandro Zavala", "alejandro@contoso.com")])  # the others step down, nobody is deleted
     assert len(back) == 3 and next(p for p in back if p.name == "Ana Lopez").role == "champion" and next(p for p in back if p.name == "Bo Chen").role == "learner"
-    raw = people.to_csv([people.Person(n, e, "owner") for n, e in four])
-    assert any("at most 3 active owners" in m for m in people.parse(raw)[1])
-    monkeypatch.setenv("ACADEMY_MAX_OWNERS", "4")
+    raw = people.to_csv([people.Person(n, e, "owner") for n, e in seven])
+    assert any("at most 6 active owners" in m for m in people.parse(raw)[1])
+    assert not people.parse(people.to_csv([people.Person(n, e, "owner") for n, e in six]))[1]
+    monkeypatch.setenv("ACADEMY_MAX_OWNERS", "7")
     assert not people.parse(raw)[1]
     monkeypatch.delenv("ACADEMY_MAX_OWNERS")
-    # in the app: each of the three owners gets the owner view; the Team tab shows «App owners (3 of 3)»
+    # in the app: each of the three owners gets the owner view; the Team tab shows «Global owners (3 of 6)»
     people.save(new, tmp_path / "people.csv")
     for who in ("Ana Lopez", "Bo Chen"):
         at = _run(tmp_path, monkeypatch, owners=None, ak_person=who)
-        assert not at.exception and any(e.label == "👑 Global owners (3 of 3)" for e in at.expander), who
+        assert not at.exception and any(e.label == "👑 Global owners (3 of 6)" for e in at.expander), who
 
 
 def test_azure_startup_keeps_team_data_between_deploys(tmp_path):
@@ -1593,7 +1595,7 @@ def test_azure_owners_from_the_app_setting(tmp_path):
     d = people.load(tmp_path / "catalog" / "people.csv")
     assert msg.startswith("Owners from ACADEMY_OWNERS") and [p.email for p in people.owners(d)] == ["a.zavala@contoso.com", "perla.m@contoso.com", "sam.calles@contoso.com"]
     assert next(p for p in d if p.email == "sam.calles@contoso.com").name == "Sam Calles" and next(p for p in d if p.email == "old@gmail.com").role == "learner"
-    assert "ignored" in mod.apply_owners(ROOT, tmp_path, "a@x.com; b@x.com; c@x.com; d@x.com")  # more than 3: nothing changes
+    assert "ignored" in mod.apply_owners(ROOT, tmp_path, "a@x.com; b@x.com; c@x.com; d@x.com; e@x.com; f@x.com; g@x.com")  # more than 6: nothing changes
     assert len(people.owners(people.load(tmp_path / "catalog" / "people.csv"))) == 3
 
 
