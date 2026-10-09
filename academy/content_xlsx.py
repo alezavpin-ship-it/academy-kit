@@ -595,8 +595,19 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
         from dataclasses import replace as _replace
 
         directory = [_replace(x, course_role=course_roles.get(x.course_role.lower(), x.course_role)) for x in directory]
-        problems += [f"[People] '{x.name}': course role '{x.course_role}' is not a course role ({', '.join(sorted(course_roles.values())) or 'none yet'})."
-                     for x in directory if x.course_role and x.course_role.lower() not in course_roles]
+        undefined: dict[str, int] = {}
+        for x in directory:
+            if x.course_role and x.course_role.lower() not in course_roles:
+                undefined[x.course_role] = undefined.get(x.course_role, 0) + 1
+        role_msgs += [f"[People] course role '{r}' ({n} people) has no lessons assigned yet in the Roles sheet: they see every lesson. "
+                      f"Add a row '{r}' with its skills to the Roles sheet to narrow it (course roles today: "
+                      f"{', '.join(sorted(course_roles.values())) or 'none'})." for r, n in undefined.items()]
+        seen_mail: dict[str, list[str]] = {}
+        for x in directory:
+            if x.email:
+                seen_mail.setdefault(x.email.lower(), []).append(x.name)
+        role_msgs += [f"[People] the e-mail {m} is on several rows ({', '.join(names)}): the app uses the first one. Keep one row per person."
+                      for m, names in seen_mail.items() if len(names) > 1]
         if catalog and not bad:
             catalog, moved = people.sync_catalog(directory, catalog)
             new_catalog = new_catalog or moved

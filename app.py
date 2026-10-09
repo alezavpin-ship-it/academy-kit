@@ -129,9 +129,9 @@ with st.sidebar:
         name = packs[0]
     pack = _pack(pid, name)
     # The course role (what the person learns) is set by the practice's owners and champions in People / the roster
-    role = person.course_role if person and person.course_role in pack.roles else None
-    if role:
-        st.caption(f"{T('role')}: **{role}**")
+    role = person.course_role if person and person.course_role in pack.roles else None  # a role without lessons yet: every lesson
+    if person and person.course_role:
+        st.caption(f"{T('role')}: **{person.course_role}**")
 
     st.toggle("Sounds", value=True, key="ak_sound",
               help="A short sound when you answer, finish a step or complete a lesson.")

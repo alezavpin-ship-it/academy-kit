@@ -1709,6 +1709,11 @@ def test_content_accepts_family_names_and_one_course_role(tmp_path, monkeypatch)
     assert by["Ana Lopez"].families == ("ai-security-governance",) and by["Ana Lopez"].course_role == "Cloud Security Engineer"
     assert by["Bo Chen"].families == ("microsoft-365-security", "identity-access-management")
     assert result["notes"] and "in no course role" in result["notes"][0]  # a note, not a problem
+    data["People"][1]["CourseRole"] = "Cloud Security Architect"  # not in Roles yet: a note, everyone sees every lesson
+    data["People"].append({"Person": "Lopez, Ana", "Email": "ANA@contoso.com", "Role": "learner", "Families": "", "Active": "yes", "CourseRole": ""})
+    result = content.build(data)
+    assert result["problems"] == [] and any("'Cloud Security Architect' (1 people) has no lessons" in n for n in result["notes"])
+    assert any("ana@contoso.com is on several rows" in n for n in result["notes"])
     data["People"][0]["Families"] = "Quantum Security"
     bad = content.build(data)["problems"]
     assert any("unknown role family: Quantum Security" in m and "ai-security-governance" in m for m in bad)
