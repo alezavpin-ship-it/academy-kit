@@ -46,21 +46,23 @@ def my_skills(conn, catalog, learner: str) -> None:
     extra = st.session_state.setdefault("inv_extra_skills", [])
     if extra:
         skill_col = cc.SelectboxColumn("Skill", options=list(dict.fromkeys(names + [r["Skill"] for r in mine] + extra)), required=True)
-    ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key=f"inv_my_{len(mine)}_{len(extra)}", column_config={
-        "Skill": skill_col,
-        "Level": cc.SelectboxColumn("Level", options=list(inv.LEVELS.values()), required=True),
-        "Years": cc.NumberColumn("Years", min_value=0, max_value=50, step=0.5),
-        "Status": cc.SelectboxColumn("Status", options=[CURRENT, DESIRED], required=True, help="current = you work with it · desired = you want to learn it"),
-        "Evidence": cc.LinkColumn("Evidence", validate=r"^https://.+", help="Optional: a badge, a repo, a project page (https)"),
-        "Notes": cc.TextColumn("Notes"),
-        "Validated": cc.TextColumn("Validated by", disabled=True, help="Your champion validates the level; changing it removes the validation.")})
+    with st.form(f"inv_my_form_{len(mine)}_{len(extra)}", border=False, enter_to_submit=False):
+        ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key=f"inv_my_{len(mine)}_{len(extra)}", column_config={
+            "Skill": skill_col,
+            "Level": cc.SelectboxColumn("Level", options=list(inv.LEVELS.values()), required=True),
+            "Years": cc.NumberColumn("Years", min_value=0, max_value=50, step=0.5),
+            "Status": cc.SelectboxColumn("Status", options=[CURRENT, DESIRED], required=True, help="current = you work with it · desired = you want to learn it"),
+            "Evidence": cc.LinkColumn("Evidence", validate=r"^https://.+", help="Optional: a badge, a repo, a project page (https)"),
+            "Notes": cc.TextColumn("Notes"),
+            "Validated": cc.TextColumn("Validated by", disabled=True, help="Your champion validates the level; changing it removes the validation.")})
+        save_mine = st.form_submit_button("Save my skills", type="primary", key="inv_my_save")
     a, b = st.columns([2, 3])
     with a.popover("➕ Another skill"):
         new = st.text_input("Skill or technology", key="inv_new_skill")
         if st.button("Add to the list", key="inv_new_add", disabled=not new.strip()):
             extra.append(new.strip())
             st.rerun()
-    if b.button("Save my skills", type="primary", key="inv_my_save"):
+    if save_mine:
         practice = load_practice()
         by_name = {s.name.lower(): s for s in (catalog.skills if catalog else [])}
         rows = []
@@ -134,9 +136,11 @@ def skills_matrix(conn, catalog, who: str, owner: bool, people: set[str] | None 
     recs = [r for r in store.skills(person) if r["Status"] == CURRENT]
     vdf = pd.DataFrame([{"Skill": r["Skill"], "Level": inv.LEVELS.get(r["Level"], ""), "Years": r["Years"], "Validated": bool(r["ValidatedBy"]),
                          "By": r["ValidatedBy"]} for r in recs])
-    ved = st.data_editor(vdf, hide_index=True, width="stretch", key=f"inv_val_{person}", disabled=["Skill", "Level", "Years", "By"],
-                         column_config={"Validated": st.column_config.CheckboxColumn("Validated", help="You confirm the level after a conversation or evidence.")})
-    if st.button("Save validation", key="inv_val_save"):
+    with st.form(f"inv_val_form_{person}", border=False, enter_to_submit=False):
+        ved = st.data_editor(vdf, hide_index=True, width="stretch", key=f"inv_val_{person}", disabled=["Skill", "Level", "Years", "By"],
+                             column_config={"Validated": st.column_config.CheckboxColumn("Validated", help="You confirm the level after a conversation or evidence.")})
+        save_val = st.form_submit_button("Save validation", key="inv_val_save")
+    if save_val:
         for before, after in zip(recs, ved.to_dict("records")):
             if bool(before["ValidatedBy"]) != bool(after["Validated"]):
                 store.validate(person, before["Skill"], who, bool(after["Validated"]))

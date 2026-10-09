@@ -117,7 +117,7 @@ def course(pack: Pack, tr: Tracker, lang: str, role: str | None) -> None:
     narrowed = len(scope) < len(pack.lessons)
     if narrowed:  # a role is chosen in the sidebar: its lessons only, unless the learner asks for every lesson
         c = st.columns([3, 2])
-        c[0].caption(f"Showing the **{len(scope)}** lessons of the **{role}** role. Choose «(all)» in *Your role* to see every lesson.")
+        c[0].caption(f"Showing the **{len(scope)}** lessons of the **{role}** role. Your champion sets your role.")
         if c[1].toggle("Show every lesson", key="ak_all_lessons"):
             scope = {x.id for x in pack.lessons}
     by_level = {lv: [x for x in items if x.id in scope] for lv, items in pack.by_level().items()}
@@ -620,13 +620,15 @@ def _owners_editor(directory, acc, scope: str, title: str, help_text: str, key: 
         st.caption(help_text)
         if not scope and os.environ.get("ACADEMY_OWNERS", "").strip():
             st.info("The global owners are set in Azure (app setting ACADEMY_OWNERS) and applied on every restart: change them there.")
-        df = st.data_editor(pd.DataFrame(current, columns=["Person", "Email"]), num_rows="dynamic", hide_index=True, width="stretch",
-                            key=f"{key}_ed", column_config={"Person": st.column_config.TextColumn("Person", required=True),
-                                                            "Email": st.column_config.TextColumn("Work e-mail", required=True)})
+        with st.form(f"{key}_form", border=False, enter_to_submit=False):
+            df = st.data_editor(pd.DataFrame(current, columns=["Person", "Email"]), num_rows="dynamic", hide_index=True, width="stretch",
+                                key=f"{key}_ed", column_config={"Person": st.column_config.TextColumn("Person", required=True),
+                                                                "Email": st.column_config.TextColumn("Work e-mail", required=True)})
+            submitted = st.form_submit_button("Save owners", key=f"{key}_save", type="primary")
         rows = [(str(r.Person or ""), str(r.Email or "")) for r in df.itertuples() if str(r.Person or "").strip() or str(r.Email or "").strip()]
-        if len(rows) > cap:
-            st.warning(f"At most {cap} owners: remove {len(rows) - cap}.")
-        if st.button("Save owners", key=f"{key}_save", type="primary", disabled=len(rows) > cap):
+        if submitted and len(rows) > cap:
+            st.error(f"At most {cap} owners: remove {len(rows) - cap}.")
+        elif submitted:
             mine = {me.strip().lower(), email.strip().lower()} - {"", "me"}
             new, problems = directory_mod.set_owners(directory, rows, scope)
             if not scope and not problems and mine and not any({n.lower(), e.lower()} & mine for n, e in rows):
@@ -661,14 +663,14 @@ def access_section(lang: str, me: str = "", email: str = "", global_owner: bool 
         _owners_editor(directory, acc, here.id, f"Owners of {here.name}",
                        f"They run this practice only: reports, demand, edit mode and its team. Up to {cap}; global owners are owners here too.",
                        f"ak_owners_{here.id}", me, email)
-    with st.expander("Access: PIN and security group"):
+    with st.expander("Access: PIN and security group"), st.form("ak_acc_form", border=False, enter_to_submit=False):
         st.caption(("Offline the owner view is not a security control. On Azure, Microsoft Entra ID signs everyone in and the owners "
                      "above are matched by their work e-mail."))
         group = st.text_input("Entra ID security group (for the integration)",
                               value=acc.security_group, key="ak_acc_group", placeholder="SG-Academia-Cloud-Owners")
         pin = st.text_input("New owner PIN (empty = keep)", type="password", key="ak_acc_pin")
         drop = st.checkbox("Remove the PIN", key="ak_acc_nopin") if acc.has_pin() else False
-        if st.button("Save access", key="ak_acc_save"):
+        if st.form_submit_button("Save access", key="ak_acc_save"):
             acc.security_group = group.strip()
             if drop:
                 acc.set_pin("")
@@ -676,6 +678,52 @@ def access_section(lang: str, me: str = "", email: str = "", global_owner: bool 
                 acc.set_pin(pin)
             save_access(acc)
             st.toast("Access saved.")
+
+
+def roster_section(packs: list) -> None:
+    """Owners and champions: the practice's people and the course role each one learns (in the app or from a roster file)."""
+    from academy import content_sync, workspace
+    from academy import people as pm
+
+    pid, first = workspace.current(), workspace.default_id()
+    roles = sorted({r for p in packs for r in p.roles})
+    directory = pm.load()
+    members = pm.members(directory, pid, first)
+    with st.expander(f"🧑‍🤝‍🧑 Roster and course roles ({len(members)} people)"):
+        st.caption("The course role decides which lessons each person sees on the dashboard and in the Course tab. Set it here, add "
+                   "people at the bottom, or upload a roster file. Nobody is removed from here (use ✏️ Edit mode → People).")
+        if not roles:
+            st.info("The courses of this practice have no course roles yet: add them in ✏️ Edit mode, Progress tab → Course roles.")
+        with st.form(f"ak_roster_form_{len(members)}", border=False, enter_to_submit=False):
+            df = pd.DataFrame([{"Person": m.name, "Email": m.email, "Course role": m.course_role or None} for m in members],
+                              columns=["Person", "Email", "Course role"]).astype("string")
+            ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key=f"ak_roster_ed_{len(members)}", column_config={
+                "Person": st.column_config.TextColumn("Person", required=True),
+                "Email": st.column_config.TextColumn("Work e-mail"),
+                "Course role": st.column_config.SelectboxColumn("Course role", options=roles, help="Empty = every lesson")})
+            save = st.form_submit_button("Save the roster", type="primary", key="ak_roster_save")
+        rows = [{"Person": "" if pd.isna(r["Person"]) else str(r["Person"]), "Email": "" if pd.isna(r["Email"]) else str(r["Email"]),
+                 "CourseRole": "" if pd.isna(r["Course role"]) else str(r["Course role"])} for r in ed.to_dict("records")]
+        a, b = st.columns(2)
+        a.download_button("Download the roster (CSV)", pm.roster_csv(members), file_name="roster.csv", mime="text/csv",
+                          key="ak_roster_csv", width="stretch")
+        with b.popover("Upload a roster (CSV)", width="stretch"):
+            st.caption("Columns: Person, Email, CourseRole. People already in the app are matched by e-mail (or name) and get their "
+                       "course role; new ones are added as learners of this practice.")
+            up = st.file_uploader("Roster", type=["csv"], key="ak_roster_up", label_visibility="collapsed")
+            if up is not None:
+                rows, save = pm.parse_roster(up.getvalue()), st.button(f"Apply the roster ({len(pm.parse_roster(up.getvalue()))} rows)",
+                                                                       key="ak_roster_apply", type="primary")
+        if save:
+            new, problems, added = pm.apply_roster(directory, rows, pid, first, set(roles))
+            if problems:
+                st.error("Nothing was saved:\n\n" + "\n\n".join(problems[:15]))
+            else:
+                pm.save(new)
+                content_sync.refresh()
+                st.cache_data.clear()
+                st.toast(f"Roster saved{f': {added} new people' if added else ''}.")
+                st.rerun()
 
 
 def practices_section() -> None:
@@ -687,10 +735,12 @@ def practices_section() -> None:
         st.caption("Each practice is its own space: courses, role families and skills, learning paths, demand, study material, news "
                    "sources and content workbook. People belong to one practice (column Practice in People); global owners open any "
                    "of them from the sidebar.")
-        df = st.data_editor(pd.DataFrame([{"Id": x.id, "Name": x.name, "Description": x.description, "Active": x.active} for x in items]),
-                            hide_index=True, width="stretch", key="ak_practices_ed", num_rows="fixed", disabled=["Id"],
-                            column_config={"Active": st.column_config.CheckboxColumn("Active")})
-        if st.button("Save practices", key="ak_practices_save"):
+        with st.form("ak_practices_form", border=False, enter_to_submit=False):
+            df = st.data_editor(pd.DataFrame([{"Id": x.id, "Name": x.name, "Description": x.description, "Active": x.active} for x in items]),
+                                hide_index=True, width="stretch", key="ak_practices_ed", num_rows="fixed", disabled=["Id"],
+                                column_config={"Active": st.column_config.CheckboxColumn("Active")})
+            save_practices = st.form_submit_button("Save practices", key="ak_practices_save")
+        if save_practices:
             try:
                 workspace.update([workspace.Practice(str(r.Id), str(r.Name or "").strip() or str(r.Id), str(r.Description or "").strip(), bool(r.Active))
                                   for r in df.itertuples()])
@@ -700,10 +750,14 @@ def practices_section() -> None:
                 st.toast("Practices saved.")
                 st.rerun()
         st.markdown("**Add a practice**")
-        c = st.columns([2, 3])
-        name = c[0].text_input("Name", key="ak_practice_new_name", placeholder="PPM")
-        desc = c[1].text_input("Description", key="ak_practice_new_desc", placeholder="Program and product management")
-        if st.button("Create the practice", key="ak_practice_new", type="primary", disabled=not name.strip()):
+        with st.form("ak_practice_new_form", border=False, enter_to_submit=False):
+            c = st.columns([2, 3])
+            name = c[0].text_input("Name", key="ak_practice_new_name", placeholder="PPM")
+            desc = c[1].text_input("Description", key="ak_practice_new_desc", placeholder="Program and product management")
+            create = st.form_submit_button("Create the practice", key="ak_practice_new", type="primary")
+        if create and not name.strip():
+            st.error("Write the practice's name.")
+        elif create:
             try:
                 new = workspace.create(name, desc)
             except ValueError as e:
@@ -797,17 +851,19 @@ def assistant_section(lang: str) -> None:
         st.caption(("Without an endpoint, the academy prepares the message and the person pastes it into the assistant. With an endpoint "
                      "and key, it answers right here. The key is never stored in files: it is read from an environment variable."))
         st.markdown("Current mode: " + (f"**API**" if cfg.mode == "api" else "**copy and open**"))
-        on = st.checkbox("Show the assistant to people", value=cfg.enabled, key="ak_ai_on")
-        name = st.text_input("Name", value=cfg.name, key="ak_ai_name")
-        url = st.text_input("Assistant page (to open it)", value=cfg.url, key="ak_ai_url",
-                            placeholder="https://…")
-        api = st.text_input("Endpoint for integrations (optional)", value=cfg.api_url,
-                            key="ak_ai_api", placeholder="https://…/chat/completions")
-        model = st.text_input("Model or deployment (optional)", value=cfg.model, key="ak_ai_model")
-        env = st.text_input("Environment variable holding the key", value=cfg.key_env, key="ak_ai_env")
-        hdr = st.selectbox("Auth header", ["Authorization", "api-key"],
-                           index=0 if cfg.auth_header == "Authorization" else 1, key="ak_ai_hdr")
-        if st.button("Save assistant", key="ak_ai_save"):
+        with st.form("ak_ai_form", border=False, enter_to_submit=False):
+            on = st.checkbox("Show the assistant to people", value=cfg.enabled, key="ak_ai_on")
+            name = st.text_input("Name", value=cfg.name, key="ak_ai_name")
+            url = st.text_input("Assistant page (to open it)", value=cfg.url, key="ak_ai_url",
+                                placeholder="https://…")
+            api = st.text_input("Endpoint for integrations (optional)", value=cfg.api_url,
+                                key="ak_ai_api", placeholder="https://…/chat/completions")
+            model = st.text_input("Model or deployment (optional)", value=cfg.model, key="ak_ai_model")
+            env = st.text_input("Environment variable holding the key", value=cfg.key_env, key="ak_ai_env")
+            hdr = st.selectbox("Auth header", ["Authorization", "api-key"],
+                               index=0 if cfg.auth_header == "Authorization" else 1, key="ak_ai_hdr")
+            saved = st.form_submit_button("Save assistant", key="ak_ai_save")
+        if saved:
             bad = [u for u in (url.strip(), api.strip()) if u and not u.startswith("https://")]
             if bad or not name.strip():
                 st.error("A name is required and addresses must start with https://")
@@ -904,6 +960,7 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
     if owner:  # team measurements are for owners and leaders only
 
         def team_view() -> None:
+            roster_section(packs)
             team_tab(conn, pack, lang)
             notices_section(conn, packs, exams, catalog, lang)
             content_section(lang)
@@ -916,6 +973,7 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
     elif families and catalog:  # a champion: only the people and notices of their own families
 
         def family_view() -> None:
+            roster_section(packs)
             people = champion_team(conn, packs, exams, catalog, families, lang)
             notices_section(conn, packs, exams, catalog, lang, only=people)
 

@@ -63,7 +63,7 @@ REPEATED = {"Theme", "Source", "Channel", "Provider", "Category", "Vendor", "Cha
 # when a new row leaves its id empty, it is made from this column
 ID_FROM = {("Families", "FamilyId"): "Name", ("Skills", "SkillId"): "Name", ("Lessons", "LessonId"): "Title",
            ("Resources", "ResourceKey"): "Title", ("Topics", "TopicId"): "Name"}
-LABEL = {"PackId": "Course", "LessonId": "Lesson", "SortOrder": "Order", "AnswerLetter": "Correct", "ResourceKey": "Video / link",
+LABEL = {"CourseRole": "Course role (what they learn)", "PackId": "Course", "LessonId": "Lesson", "SortOrder": "Order", "AnswerLetter": "Correct", "ResourceKey": "Video / link",
          "Note": "Note for this lesson", "TopicId": "Topic", "Who": "Expert", "FamilyId": "Family", "GapVolume": "Gap volume",
          "RoleImpact": "Roles affected", "ChampionEmail": "Champion e-mail", "SkillId": "Skill", "Target": "Target level",
          "ImpactedRoles": "Roles with the gap", "Provider": "Source", "RoleTitle": "Role title", "CatalogSkills": "Catalog skills",
@@ -125,6 +125,8 @@ def options(table: str, col: str, data: dict[str, list[dict]], extra: dict) -> l
         return _uniq(_split(_values(data.get("Lessons", []), "Skills")), own, added)
     if col == "Vendor":
         return _uniq(VENDORS, own, added)
+    if (table, col) == ("People", "CourseRole"):
+        return _uniq(_values(data.get("Roles", []), "Role"), own, added)
     if (table, col) == ("People", "Families"):
         return _uniq(_values(data.get("Families", []), "FamilyId"), own, added)
     if (table, col) == ("NewsSources", "Category"):
@@ -280,30 +282,36 @@ def edit_mode(section: str, pack_id: str = "", tables: list[str] | None = None) 
                     st.toast(f"\"{value.strip()}\" now shows in the list.")
                     st.rerun()
             st.caption("Columns with several values (skills, aliases) take new options by typing them directly in the cell.")
-        tabs = st.tabs([TABLE_NAME[t] for t in tables]) if len(tables) > 1 else [st.container()]
         edited: dict[str, tuple[list[dict], list[dict]]] = {}
         stamp = "_".join(f"{k}-{v}" for k, v in flt.items())
-        for tab, table in zip(tabs, tables):
-            with tab:
-                if table in ABOUT:
-                    st.caption(ABOUT[table])
-                shown = [r for r in data[table] if _match(table, r, flt)]
-                df = _frame(table, shown)
-                config = {c: _column(table, c, options(table, c, data, extra)) for c in df.columns}
-                for c, v in flt.items():  # the filter already says it: the column is hidden and new rows take its value
-                    if v and c in df.columns and not (c == "LessonId" and table == "Lessons"):
-                        config[c] = None
-                out = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", column_config=config,
-                                     key=f"ed_{section}_{table}_{stamp}_{version}")
-                st.caption(f"{len(out)} row(s)")
-                edited[table] = (shown, _rows(table, out))
-        changed = [t for t, (before, after) in edited.items() if _rows(t, _frame(t, before)) != after]
-        a, b, c = st.columns([2, 1, 3])
-        save = a.button("💾 Save changes", type="primary", key=f"ed_{section}_save", disabled=not changed, width="stretch")
-        if b.button("Discard", key=f"ed_{section}_undo", disabled=not changed, width="stretch"):
+        # a form: typing in the tables does not reload the page; everything is sent at once with «Save changes»
+        with st.form(f"ed_form_{section}_{stamp}_{version}", border=False, enter_to_submit=False):
+            tabs = st.tabs([TABLE_NAME[t] for t in tables]) if len(tables) > 1 else [st.container()]
+            for tab, table in zip(tabs, tables):
+                with tab:
+                    if table in ABOUT:
+                        st.caption(ABOUT[table])
+                    shown = [r for r in data[table] if _match(table, r, flt)]
+                    df = _frame(table, shown)
+                    config = {c: _column(table, c, options(table, c, data, extra)) for c in df.columns}
+                    for c, v in flt.items():  # the filter already says it: the column is hidden and new rows take its value
+                        if v and c in df.columns and not (c == "LessonId" and table == "Lessons"):
+                            config[c] = None
+                    out = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", column_config=config,
+                                         key=f"ed_{section}_{table}_{stamp}_{version}")
+                    st.caption(f"{len(shown)} row(s)")
+                    edited[table] = (shown, _rows(table, out))
+            a, b, c = st.columns([2, 1, 3])
+            save = a.form_submit_button("💾 Save changes", type="primary", width="stretch", key=f"ed_{section}_save")
+            discard = b.form_submit_button("Discard", width="stretch", key=f"ed_{section}_undo")
+            c.caption("Edit freely: the page does not reload while you type. Nothing is saved until «Save changes».")
+        if discard:
             st.session_state[f"ed_v_{section}"] = version + 1
             st.rerun()
-        c.caption(f"Tables with unsaved changes: {', '.join(TABLE_NAME[t] for t in changed)}" if changed else "No changes.")
+        changed = [t for t, (before, after) in edited.items() if _rows(t, _frame(t, before)) != after]
+        if save and not changed:
+            st.info("There are no changes to save.")
+            save = False
         if save:
             full = {name: [dict(r) for r in rows] for name, rows in data.items()}
             for t in changed:

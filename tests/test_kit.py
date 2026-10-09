@@ -172,8 +172,7 @@ def test_app_other_tabs(tmp_path, monkeypatch):
     for topic in ("fundamentals", "identity", "references"):
         at.selectbox(key="ak_lib_topic").set_value(topic).run()
         assert not at.exception
-    at.selectbox(key="ak_role").set_value("DevOps / SRE").run()
-    assert not at.exception
+    assert not any(s.key == "ak_role" for s in at.selectbox)  # the course role comes from the roster, not from a choice
     assert not any(r.key == "ak_lang" for r in at.radio)  # no language switch: English only
 
 
@@ -1617,8 +1616,12 @@ def test_your_role_narrows_the_dashboard_and_the_course(tmp_path, monkeypatch, p
     scope = pack.lessons_in_scope("Security analyst (SOC)")
     assert 0 < len(scope) < len(pack.lessons) and pack.lessons_in_scope(None) == list(pack.lessons)
     assert pack.lessons_in_scope("No such role") == list(pack.lessons)
-    at = _run(tmp_path, monkeypatch, ak_role="Security analyst (SOC)")
-    assert not at.exception
+    from academy import people
+
+    people.save([people.Person("Ana", "ana@x.com", "learner", course_role="Security analyst (SOC)")], tmp_path / "people.csv")
+    at = _run(tmp_path, monkeypatch, owners=None, ak_person="Ana")
+    assert not at.exception and not any(s.label == "Your role" for s in at.selectbox)  # set by the champion, not chosen
+    assert any("Your role: **Security analyst (SOC)**" in c.value for c in at.caption)
     page = " ".join(m.value for m in at.markdown)
     assert f"0 / {len(scope)}" in page and f"of {len(scope)} lessons completed" in page
     assert f"Showing the **{len(scope)}** lessons" in " ".join(c.value for c in at.caption)
@@ -1670,3 +1673,23 @@ def test_practices_are_separate_spaces(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch, owners=None, ak_person="Sam")
     assert not at.exception and not any(s.label == "Practice" for s in at.selectbox)
     assert any("Practice: **PPM**" in c.value for c in at.caption)
+
+
+def test_roster_sets_course_roles(tmp_path, monkeypatch):
+    from academy import people
+
+    d = [people.Person("Ana", "ana@x.com", "owner"), people.Person("Bo", "bo@x.com", "learner"),
+         people.Person("Sam", "sam@x.com", "learner", practice="ppm")]
+    raw = "Person,Email,Course role\nBo,BO@x.com,Cloud Engineer\nNew Person,new@x.com,\n".encode()
+    rows = people.parse_roster(raw)
+    assert rows[0] == {"Person": "Bo", "Email": "BO@x.com", "CourseRole": "Cloud Engineer"}
+    new, problems, added = people.apply_roster(d, rows, "main", "main", {"Cloud Engineer", "DevOps / SRE"})
+    assert problems == [] and added == 1 and next(p for p in new if p.name == "Bo").course_role == "Cloud Engineer"
+    assert next(p for p in new if p.name == "New Person").role == "learner" and len(new) == 4
+    assert people.apply_roster(d, [{"Person": "Bo", "Email": "", "CourseRole": "Pilot"}], "main", "main", {"Cloud Engineer"})[1]
+    assert people.apply_roster(d, [{"Person": "Sam", "Email": "sam@x.com", "CourseRole": ""}], "main", "main", set())[1]  # other practice
+    assert people.parse(people.to_csv(new))[0] == new
+    # the Team tab of an owner shows the roster
+    people.save(new, tmp_path / "people.csv")
+    at = _run(tmp_path, monkeypatch, owners=None, ak_person="Ana")
+    assert not at.exception and any(e.label.startswith("🧑‍🤝‍🧑 Roster and course roles") for e in at.expander)

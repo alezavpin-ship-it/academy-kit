@@ -58,7 +58,7 @@ SHEETS: dict[str, list[str]] = {
     "PracticeSkills": ["Term", "Aliases", "SkillId", "FamilyId", "Vendor", "Scope"],
     "PracticeRoles": ["RoleTitle", "Aliases", "Scope"],
     "NewsSources": ["Name", "Category", "Url", "FeedUrl", "Splash", "Enabled", "Description"],
-    "People": ["Person", "Email", "Role", "Families", "Active"],
+    "People": ["Person", "Email", "Role", "Families", "Active", "CourseRole"],
     "StudyMaterial": ["Title", "Url", "Source", "Category", "Theme", "Kind", "Level", "SkillId", "Notes"],
     "Courses": ["PackId", "Title", "Subtitle", "Disclaimer", "Version", "Updated"],
     "Levels": ["PackId", "SortOrder", "Level"],
@@ -162,7 +162,7 @@ def _rows(packs: list[dict], materials: dict[str, list[dict]], catalog, practice
                           for x in news.load_sources()]
     from academy import workspace
 
-    out["People"] = [x.row()[:len(people.SHEET_COLUMNS)] for x in people.members(people.load(), workspace.current(), workspace.default_id())]
+    out["People"] = [x.sheet_row() for x in people.members(people.load(), workspace.current(), workspace.default_id())]
     out["StudyMaterial"] = [x.row() for x in study.load()]
     for d in packs:
         m = d["meta"]
@@ -588,6 +588,9 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
     if data["People"]:
         directory, bad = people.parse(_as_csv(people.SHEET_COLUMNS, data["People"]), {f.id for f in catalog.families} if catalog else None)
         problems += bad
+        course_roles = {_text(r.get("Role")) for r in data["Roles"]}
+        problems += [f"[People] '{x.name}': course role '{x.course_role}' is not a course role ({', '.join(sorted(course_roles)) or 'none yet'})."
+                     for x in directory if x.course_role and x.course_role not in course_roles]
         if catalog and not bad:
             catalog, moved = people.sync_catalog(directory, catalog)
             new_catalog = new_catalog or moved

@@ -128,12 +128,10 @@ with st.sidebar:
     else:
         name = packs[0]
     pack = _pack(pid, name)
-    role = None
-    if pack.roles:
-        opts = [""] + list(pack.roles)
-        if st.session_state.get("ak_role") not in opts:  # the course's roles changed
-            st.session_state.pop("ak_role", None)
-        role = st.selectbox(T("role"), opts, key="ak_role", format_func=lambda r: r or T("any_role")) or None
+    # The course role (what the person learns) is set by the practice's owners and champions in People / the roster
+    role = person.course_role if person and person.course_role in pack.roles else None
+    if role:
+        st.caption(f"{T('role')}: **{role}**")
 
     st.toggle("Sounds", value=True, key="ak_sound",
               help="A short sound when you answer, finish a step or complete a lesson.")

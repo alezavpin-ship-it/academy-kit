@@ -43,23 +43,25 @@ def manage_family(catalog, fid: str, who: str) -> None:
         for col in ("Skill", "Title", "Url", "Kind", "Provider", "Status", "Notes"):
             df[col] = df[col].astype("string")
         providers = list(dict.fromkeys(PROVIDERS + [r["Provider"] for r in rows if r["Provider"]]))
-        ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key=f"fp_ed_{fid}_{len(rows)}", column_config={
-            "Skill": st.column_config.SelectboxColumn("Skill", options=list(by_name), required=True),
-            "Class": st.column_config.NumberColumn("Class", min_value=1, step=1, help="Order of the required classes inside the skill: 1, 2, 3…"),
-            "Title": st.column_config.TextColumn("Title", required=True, width="medium"),
-            "Url": st.column_config.TextColumn("Url", required=True, help="https://… or file:… for a file uploaded below", width="medium"),
-            "Kind": st.column_config.SelectboxColumn("Kind", options=fp.KINDS, required=True),
-            "Provider": st.column_config.SelectboxColumn("Provider", options=providers),
-            "Status": st.column_config.SelectboxColumn("Status", options=fp.STATUSES, required=True, default=fp.REQUIRED,
-                                                       help="required = part of the path · optional = recommended · off = hidden"),
-            "Minutes": st.column_config.NumberColumn("Minutes", min_value=0, step=5),
-            "Notes": st.column_config.TextColumn("Notes")})
+        with st.form(f"fp_form_{fid}_{len(rows)}", border=False, enter_to_submit=False):
+            ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key=f"fp_ed_{fid}_{len(rows)}", column_config={
+                "Skill": st.column_config.SelectboxColumn("Skill", options=list(by_name), required=True),
+                "Class": st.column_config.NumberColumn("Class", min_value=1, step=1, help="Order of the required classes inside the skill: 1, 2, 3…"),
+                "Title": st.column_config.TextColumn("Title", required=True, width="medium"),
+                "Url": st.column_config.TextColumn("Url", required=True, help="https://… or file:… for a file uploaded below", width="medium"),
+                "Kind": st.column_config.SelectboxColumn("Kind", options=fp.KINDS, required=True),
+                "Provider": st.column_config.SelectboxColumn("Provider", options=providers),
+                "Status": st.column_config.SelectboxColumn("Status", options=fp.STATUSES, required=True, default=fp.REQUIRED,
+                                                           help="required = part of the path · optional = recommended · off = hidden"),
+                "Minutes": st.column_config.NumberColumn("Minutes", min_value=0, step=5),
+                "Notes": st.column_config.TextColumn("Notes")})
+            save_path = st.form_submit_button("💾 Save the career path", key=f"fp_save_{fid}", type="primary")
         c = st.columns(3)
         n_req = sum(1 for s in ed["Status"].tolist() if s == fp.REQUIRED)
         c[0].metric("Required classes", n_req, border=True)
         c[1].metric("Optional", sum(1 for s in ed["Status"].tolist() if s == fp.OPTIONAL), border=True)
         c[2].metric("Off", sum(1 for s in ed["Status"].tolist() if s == fp.OFF), border=True)
-        if st.button("💾 Save the career path", key=f"fp_save_{fid}", type="primary"):
+        if save_path:
             table = [{"SkillId": by_name.get(r["Skill"], ""), "Class": "" if pd.isna(r["Class"]) else int(r["Class"]),
                       **{k: ("" if pd.isna(r[k]) else str(r[k])) for k in ("Title", "Url", "Kind", "Provider", "Status", "Notes")},
                       "Minutes": "" if pd.isna(r["Minutes"]) else int(r["Minutes"])}

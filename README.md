@@ -143,6 +143,11 @@ folder as always; every other one in `practices/<id>/` with the same folders. Th
 * Everyone else belongs to one practice (column **Practice** of `catalog/people.csv`; empty = the first practice) and
   only sees that one. Each practice can have up to 6 owners of its own (**Team → 👑 Owners of …**).
 * The People sheet of a practice's workbook lists that practice's people; saving it leaves the others untouched.
+* **Course roles come from the roster**: owners and champions set what each person learns (column CourseRole of People) in
+  **Team → 🧑‍🤝‍🧑 Roster and course roles**, in ✏️ Edit mode, or by uploading a roster CSV (Person, Email, CourseRole). The
+  dashboard and the Course tab show that role's lessons; there is no role choice in the sidebar.
+* Every table and form with a save button (edit mode, roster, owners, practices, career paths, certifications, skills,
+  rhythm) only sends the changes when you press it: the page does not reload while you type.
 
 ## Azure App Service
 `deploy/azure/startup.py` (startup command: `python deploy/azure/startup.py`), `deploy/azure/package.py` (the zip to deploy: no data, config or roles

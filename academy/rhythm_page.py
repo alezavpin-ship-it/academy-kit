@@ -149,10 +149,12 @@ def _room(conn, r: rh.Rhythm, catalog, packs, exams, me: str, owner: bool, famil
     acts = r.actions(sid)
     if acts:
         df = pd.DataFrame([{"Done": bool(a["done"]), "Action": a["text"], "Owner": a["owner"], "Due": a["due"], "From": a["meeting"], "_id": a["id"]} for a in acts])
-        ed = st.data_editor(df.drop(columns=["_id"]), hide_index=True, width="stretch", key=f"rh_acts_{sid}_{len(acts)}",
-                            disabled=["Action", "Owner", "Due", "From"], column_config={"Done": st.column_config.CheckboxColumn("Done")})
+        with st.form(f"rh_acts_form_{sid}_{len(acts)}", border=False, enter_to_submit=False):
+            ed = st.data_editor(df.drop(columns=["_id"]), hide_index=True, width="stretch", key=f"rh_acts_{sid}_{len(acts)}",
+                                disabled=["Action", "Owner", "Due", "From"], column_config={"Done": st.column_config.CheckboxColumn("Done")})
+            save_acts = st.form_submit_button("Save the actions", key=f"rh_acts_save_{sid}")
         changed = [(a, bool(row["Done"])) for a, row in zip(acts, ed.to_dict("records")) if bool(a["done"]) != bool(row["Done"])]
-        if changed and st.button("Save the actions", key=f"rh_acts_save_{sid}"):
+        if save_acts and changed:
             for a, done in changed:
                 r.set_done(a["id"], done)
             st.rerun()
@@ -214,15 +216,17 @@ def _manage(conn, r: rh.Rhythm, catalog, exams, me: str, owner: bool, families: 
                             "Week of month": rh.WEEKS.get(s.week, "first") if s.kind == rh.MONTHLY else "", "Time": s.time, "Minutes": s.minutes,
                             "Every (weeks)": s.every, "Exam date": s.end, "Place": s.place, "Active": s.active} for s in mine])
         cc = st.column_config
-        ed = st.data_editor(df, hide_index=True, width="stretch", key=f"rh_series_{len(mine)}", disabled=["Kind"], column_config={
-            "Day": cc.SelectboxColumn("Day", options=rh.WEEKDAYS, required=True),
-            "Week of month": cc.SelectboxColumn("Week of month", options=["", *rh.WEEKS.values()], help="Monthly review only"),
-            "Minutes": cc.NumberColumn("Minutes", min_value=15, max_value=240, step=15),
-            "Every (weeks)": cc.NumberColumn("Every (weeks)", min_value=1, max_value=4, step=1, help="2 = every other week"),
-            "Lead": cc.SelectboxColumn("Lead", options=list(dict.fromkeys([s.lead for s in mine] + list(ctx[0]) + [c for c in ctx[1].values() if c]))),
-            "Active": cc.CheckboxColumn("Active")})
+        with st.form(f"rh_series_form_{len(mine)}", border=False, enter_to_submit=False):
+            ed = st.data_editor(df, hide_index=True, width="stretch", key=f"rh_series_{len(mine)}", disabled=["Kind"], column_config={
+                "Day": cc.SelectboxColumn("Day", options=rh.WEEKDAYS, required=True),
+                "Week of month": cc.SelectboxColumn("Week of month", options=["", *rh.WEEKS.values()], help="Monthly review only"),
+                "Minutes": cc.NumberColumn("Minutes", min_value=15, max_value=240, step=15),
+                "Every (weeks)": cc.NumberColumn("Every (weeks)", min_value=1, max_value=4, step=1, help="2 = every other week"),
+                "Lead": cc.SelectboxColumn("Lead", options=list(dict.fromkeys([s.lead for s in mine] + list(ctx[0]) + [c for c in ctx[1].values() if c]))),
+                "Active": cc.CheckboxColumn("Active")})
+            save_series = st.form_submit_button("Save the series", key="rh_series_save", type="primary")
         a, b = st.columns([1, 2])
-        if a.button("Save the series", key="rh_series_save", type="primary"):
+        if save_series:
             week_of = {v: k for k, v in rh.WEEKS.items()}
             try:
                 for s, row in zip(mine, ed.to_dict("records")):

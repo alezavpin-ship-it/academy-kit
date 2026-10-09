@@ -68,9 +68,11 @@ def my_certs(conn, catalog, learner: str, lang: str) -> None:
                 c.set_records(me, mine + [{"Code": k, "Name": by_code[k]["Name"], "Vendor": by_code[k]["Vendor"], "Status": DESIRED} for k in pick], me)
                 ui.fx("step")
                 st.rerun()
-    rows = _records_editor(mine, lang, f"ce_mine_{len(mine)}")
+    with st.form(f"ce_mine_form_{len(mine)}", border=False, enter_to_submit=False):
+        rows = _records_editor(mine, lang, f"ce_mine_{len(mine)}")
+        save_mine = st.form_submit_button("Save my certifications", type="primary", key="ce_save")
     a, b = st.columns(2)
-    if a.button("Save my certifications", type="primary", key="ce_save", width="stretch"):
+    if save_mine:
         try:
             c.set_records(me, rows, me)
         except ValueError as e:
@@ -110,13 +112,15 @@ def certs_admin(conn, catalog, lang: str, admin_fams: set[str], who: str, roster
         cur = c.requirements({fam})
         df = pd.DataFrame([{"Code": r["Code"], "Name": r["Name"], "Vendor": r["Vendor"], "Level": level[r["Level"]], "Url": r["Url"]} for r in cur],
                           columns=["Code", "Name", "Vendor", "Level", "Url"]).astype("string")
-        ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key=f"ce_req_{fam}_{len(cur)}", column_config={
-            "Code": st.column_config.TextColumn("Code", required=True),
-            "Name": st.column_config.TextColumn("Certification"),
-            "Vendor": st.column_config.TextColumn("Vendor"),
-            "Level": st.column_config.SelectboxColumn("Level", options=list(level.values()), required=True, default=level[DESIRABLE]),
-            "Url": st.column_config.LinkColumn("Official page", validate=r"^https://.+")})
-        if st.button("Save the family's certifications", type="primary", key="ce_req_save"):
+        with st.form(f"ce_req_form_{fam}_{len(cur)}", border=False, enter_to_submit=False):
+            ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key=f"ce_req_{fam}_{len(cur)}", column_config={
+                "Code": st.column_config.TextColumn("Code", required=True),
+                "Name": st.column_config.TextColumn("Certification"),
+                "Vendor": st.column_config.TextColumn("Vendor"),
+                "Level": st.column_config.SelectboxColumn("Level", options=list(level.values()), required=True, default=level[DESIRABLE]),
+                "Url": st.column_config.LinkColumn("Official page", validate=r"^https://.+")})
+            save_req = st.form_submit_button("Save the family's certifications", type="primary", key="ce_req_save")
+        if save_req:
             c.set_requirements(fam, [{k: ("" if pd.isna(r.get(k)) else str(r[k]).strip()) for k in ("Code", "Name", "Vendor", "Level", "Url")}
                                      for r in ed.to_dict("records")])
             st.toast("Saved.")
@@ -145,8 +149,10 @@ def certs_admin(conn, catalog, lang: str, admin_fams: set[str], who: str, roster
     person = new or person
     if person:
         theirs = c.records(person)
-        rows = _records_editor(theirs, lang, f"ce_adm_{person}_{len(theirs)}")
-        if st.button(f"Save {person}'s certifications", type="primary", key="ce_adm_save"):
+        with st.form(f"ce_adm_form_{person}_{len(theirs)}", border=False, enter_to_submit=False):
+            rows = _records_editor(theirs, lang, f"ce_adm_{person}_{len(theirs)}")
+            save_theirs = st.form_submit_button(f"Save {person}'s certifications", type="primary", key="ce_adm_save")
+        if save_theirs:
             try:
                 c.set_records(person, rows, who)
             except ValueError as e:

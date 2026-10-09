@@ -3,13 +3,16 @@ workbook (tab People) or in the app's edit mode:
 
     catalog/people.csv      (or the file named by ACADEMY_PEOPLE)
 
-    Person, Email, Role, Families, Active, Practice
+    Person, Email, Role, Families, Active, Practice, CourseRole
 
 * Role = owner | champion (runs the role families listed in Families) | sme (answers in the forum as the expert of the
   families listed) | learner.
 * Practice = the id of the person's practice (catalog/practices.csv); empty = the first practice. A person belongs to one
   practice. An owner with an empty Practice is a GLOBAL owner (sees and runs every practice, adds practices); an owner with
   a Practice runs only that one. At most 6 active owners of each kind (ACADEMY_MAX_OWNERS changes it).
+* CourseRole = what the person learns: one of the course roles of their practice (Cloud Engineer, Security analyst…). The
+  practice's owners and champions set it (People, or a roster file in Team → 🧑‍🤝‍🧑 Roster); the dashboard and the course
+  show that role's lessons. Empty = every lesson.
 * Families = family ids separated by ";" (for champions and SMEs).
 * Active = no keeps the person in the file without showing them in the list of names.
 
@@ -29,8 +32,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PEOPLE_FILE = ROOT / "catalog" / "people.csv"
-COLUMNS = ["Person", "Email", "Role", "Families", "Active", "Practice"]
-SHEET_COLUMNS = COLUMNS[:5]  # the People sheet of a practice's content workbook: the practice is the workbook's own
+COLUMNS = ["Person", "Email", "Role", "Families", "Active", "Practice", "CourseRole"]
+SHEET_COLUMNS = ["Person", "Email", "Role", "Families", "Active", "CourseRole"]  # a practice's workbook: the practice is its own
 OWNER, CHAMPION, SME, LEARNER = "owner", "champion", "sme", "learner"
 ROLES = [OWNER, CHAMPION, SME, LEARNER]
 MAX_OWNERS = 6
@@ -51,9 +54,13 @@ class Person:
     families: tuple[str, ...] = ()
     active: bool = True
     practice: str = ""  # empty = the first practice (for an owner: every practice)
+    course_role: str = ""  # what they learn (a course role of their practice), set by owners and champions
 
     def row(self) -> list[str]:
-        return [self.name, self.email, self.role, "; ".join(self.families), "yes" if self.active else "no", self.practice]
+        return [self.name, self.email, self.role, "; ".join(self.families), "yes" if self.active else "no", self.practice, self.course_role]
+
+    def sheet_row(self) -> list[str]:
+        return [self.name, self.email, self.role, "; ".join(self.families), "yes" if self.active else "no", self.course_role]
 
     @property
     def global_owner(self) -> bool:
@@ -104,7 +111,7 @@ def parse(raw: bytes, family_ids: set[str] | None = None) -> tuple[list[Person],
             continue
         seen.add(name.lower())
         out.append(Person(name, email, role, fams, (r.get("Active") or "yes").strip().lower() not in ("no", "n", "false", "0"),
-                          (r.get("Practice") or "").strip()))
+                          (r.get("Practice") or "").strip(), (r.get("CourseRole") or r.get("Course role") or "").strip()))
     for scope in sorted({p.practice for p in out if p.role == OWNER}):
         active = [p.name for p in out if p.role == OWNER and p.active and p.practice == scope]
         if len(active) > max_owners():
@@ -237,3 +244,59 @@ def sync_catalog(people: list[Person], catalog):
             f, changed = replace(f, champion=c.name, champion_email=c.email), True
         fams.append(f)
     return type(catalog)(fams, catalog.skills), changed
+
+
+ROSTER_COLUMNS = ["Person", "Email", "CourseRole"]
+
+
+def parse_roster(raw: bytes) -> list[dict]:
+    """Rows of a roster file (Person, Email, CourseRole; «Course role» and a Role column are read too)."""
+    text = raw.decode("utf-8-sig", errors="replace")
+    first = text.split("\n", 1)[0]
+    out = []
+    for r in csv.DictReader(io.StringIO(text, newline=""), delimiter=";" if first.count(";") > first.count(",") else ","):
+        r = {str(k or "").strip().lower().replace(" ", ""): (v or "").strip() for k, v in r.items()}
+        if r.get("person") or r.get("email"):
+            out.append({"Person": r.get("person", ""), "Email": r.get("email", ""), "CourseRole": r.get("courserole", "")})
+    return out
+
+
+def roster_csv(people: list[Person]) -> bytes:
+    buf = io.StringIO(newline="")
+    w = csv.writer(buf, lineterminator="\r\n")
+    w.writerow(ROSTER_COLUMNS)
+    w.writerows([p.name, p.email, p.course_role] for p in people)
+    return buf.getvalue().encode("utf-8-sig")
+
+
+def apply_roster(people: list[Person], rows: list[dict], practice: str, first: str, course_roles: set[str]) -> tuple[list[Person], list[str], int]:
+    """The directory with the roster's course roles set (matched by e-mail, then by name) and its new people added as learners
+    of ``practice``. Nobody is removed. Returns (directory, problems, people added); nothing changes when there are problems."""
+    from dataclasses import replace
+
+    problems, out, added = [], list(people), 0
+    for n, r in enumerate(rows, start=1):
+        name, email, cr = (r.get("Person") or "").strip(), (r.get("Email") or "").strip(), (r.get("CourseRole") or "").strip()
+        if not name and not email:
+            continue
+        if email and "@" not in email:
+            problems.append(f"[roster row {n}] '{email}' is not an e-mail address.")
+            continue
+        if cr and cr not in course_roles:
+            problems.append(f"[roster row {n}] '{cr}' is not a course role ({', '.join(sorted(course_roles)) or 'none yet'}).")
+            continue
+        i = next((k for k, p in enumerate(out) if email and _norm(p.email) == _norm(email)), None)
+        if i is None:
+            i = next((k for k, p in enumerate(out) if name and _norm(p.name) == _norm(name)), None)
+        if i is not None:
+            p = out[i]
+            if (p.practice or first) != practice and not p.global_owner:
+                problems.append(f"[roster row {n}] {p.name} belongs to another practice ({p.practice or first}).")
+                continue
+            out[i] = replace(p, course_role=cr, email=p.email or email)
+        elif not name:
+            problems.append(f"[roster row {n}] a new person needs a name.")
+        else:
+            out.append(Person(name, email, LEARNER, practice="" if practice == first else practice, course_role=cr))
+            added += 1
+    return (people, problems, 0) if problems else (out, [], added)
