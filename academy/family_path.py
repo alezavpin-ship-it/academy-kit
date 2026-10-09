@@ -2,7 +2,7 @@
 
     content/families/<family-id>.csv      (one per family; ACADEMY_FAMILIES names another folder)
 
-    SkillId, Skill, Class, Title, Url, Kind, Provider, Status, Minutes, Notes
+    SkillId, Skill, Module, Class, Title, Url, Kind, Location, Provider, Status, Minutes, Notes
 
 * Status = required (a class of the path: it counts for the learner's progress) | optional (recommended material, shown
   but not counted) | off (kept in the plan, hidden from learners). A champion switches classes on and off without losing
@@ -29,10 +29,10 @@ from pathlib import Path
 from academy.catalog import load_materials, save_materials
 
 ROOT = Path(__file__).resolve().parents[1]
-COLUMNS = ["SkillId", "Skill", "Class", "Title", "Url", "Kind", "Provider", "Status", "Minutes", "Notes"]
+COLUMNS = ["SkillId", "Skill", "Module", "Class", "Title", "Url", "Kind", "Location", "Provider", "Status", "Minutes", "Notes"]
 REQUIRED, OPTIONAL, OFF = "required", "optional", "off"
 STATUSES = [REQUIRED, OPTIONAL, OFF]
-KINDS = ["module", "path", "course", "lab", "tutorial", "deck", "doc", "guide", "video", "exam"]
+KINDS = ["course", "module", "path", "lab", "tutorial", "doc", "guide", "video", "exam", "certification", "deck"]
 FILE_TYPES = ["pptx", "ppt", "pdf", "docx", "xlsx", "zip", "mp4"]
 MAX_FILE_MB = 50  # the upload limit of Streamlit (server.maxUploadSize)
 
@@ -105,9 +105,9 @@ def rows(family_id: str, catalog, materials: dict[str, list[dict]]) -> list[dict
         steps = class_order(items)
         number = {id(m): n for n, m in enumerate(steps, start=1)}
         for m in steps + [m for m in items if m not in steps]:
-            out.append({"SkillId": s.id, "Skill": s.name, "Class": number.get(id(m), m.get("order", "")), "Title": m.get("title", ""),
-                        "Url": m.get("url", ""), "Kind": m.get("kind", ""), "Provider": m.get("provider", ""), "Status": status_of(m),
-                        "Minutes": m.get("minutes", ""), "Notes": m.get("notes", "")})
+            out.append({"SkillId": s.id, "Skill": s.name, "Module": m.get("module", ""), "Class": number.get(id(m), m.get("order", "")),
+                        "Title": m.get("title", ""), "Url": m.get("url", ""), "Kind": m.get("kind", ""), "Location": m.get("location", ""),
+                        "Provider": m.get("provider", ""), "Status": status_of(m), "Minutes": m.get("minutes", ""), "Notes": m.get("notes", "")})
     return out
 
 
@@ -163,7 +163,14 @@ def parse(raw: bytes, family_id: str, catalog) -> tuple[dict[str, list[dict]], l
         item = {"title": r["Title"], "url": url, "kind": kind or "course", "provider": r.get("Provider") or "Champion"}
         if _int(r.get("Class")):
             item["order"] = _int(r["Class"])
-        for key, col in (("status", "Status"), ("minutes", "Minutes"), ("notes", "Notes")):
+        loc = r.get("Location", "")
+        if loc:
+            from academy.paths import LOCATIONS
+
+            if loc not in LOCATIONS:
+                problems.append(f"{tag} Location must be one of: {', '.join(LOCATIONS)}.")
+                continue
+        for key, col in (("status", "Status"), ("minutes", "Minutes"), ("notes", "Notes"), ("module", "Module"), ("location", "Location")):
             v = r.get(col, "").lower() if key == "status" else r.get(col, "")
             if v:
                 item[key] = _int(v) if key == "minutes" and _int(v) is not None else v

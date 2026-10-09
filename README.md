@@ -21,12 +21,11 @@ If the PDF buttons are greyed out, close the app and run **`Install components.b
 ## What learners see
 | Tab | What it does |
 |---|---|
-| Learning route | Per role family: vendor → skill → class 1, 2, 3… (Microsoft Learn first, then the vendor's own path or Workday Learning). Mark each step done. |
-| Course | Lesson (summary, key points, practice) + 3 check questions + a compact video panel that stays in view. |
+| Learning route | The person's role family and job role: vendor → learning path (with its certification) → skill → module → course. Each course opens where it lives (SharePoint, Percipio, Workday MyLearning, the vendor's site, a repo or a file of the academy) and is marked done here. |
 | Glossary | Term ↔ definition quiz and search. |
 | Video library | Every video by topic and the lessons that use it. |
 | Progress & badges | Ranks, badges, the path for your role, recent activity. |
-| Skills map | Families by gap, their champion and which lessons cover each skill. |
+| Skills map | Families by gap, their champion and how many required courses each skill has. |
 | Certifications | Your current and desired certifications; exam preparation (study, practice, mock exam). |
 | Forum | Ask the experts (SMEs) of a family; champions and owners run it. |
 | Rhythm | My next sessions (with Outlook invites), study groups to join, and the meeting room: an agenda built from the data plus action items. |
@@ -196,11 +195,35 @@ inside his channel, and his video index. To load **every** video of his index: o
 save it (File → Save as… → HTML) and upload it in *Study material tools*; every YouTube link becomes an item, with the
 heading above it as the theme. Champions select items and **Add to the learning path** of a skill.
 
-## Each family's career path (champions)
-In **Learning route**, the champion of a family (and owners) get **🧭 Manage the career path**: a table of every class of the
+## The learning structure
+The practice learns in this structure (one per practice; PPM and others have their own):
+
+    Practice → Role family (lead = champion, SMEs) → Vendor → Learning path → Skill → Module → Course
+
+| Level | Where it is kept | Key | Notes |
+|---|---|---|---|
+| Practice | `catalog/practices.csv` | Id | Its owners run it (Team → 🏢 Practices). |
+| Role family | `catalog/skills.json` (Families sheet) | FamilyId | Champion = the family lead; SMEs come from People (Role sme). |
+| Job role | `catalog/paths.json` (JobRoles sheet) | FamilyId + RoleId | sysadmin, architect… People.CourseRole takes one of them. |
+| Vendor | `catalog/paths.json` (Vendors sheet) | VendorId | Short and shared by every family: MSFT, CISCO, AWS… |
+| Learning path | `catalog/paths.json` (Paths sheet) | PathId | Family + vendor; CertId (e.g. AZ-900); Roles (empty = every role); Order; Active. |
+| Skill | `catalog/skills.json` + placement in `paths.json` (Skills sheet: PathId, Order, Active) | SkillId | |
+| Module | the Module column of each course | — | Groups the courses of a skill; empty = Core. |
+| Course | `catalog/materials.json` (LearningPaths sheet), `content/families/<family>.csv` | SkillId + Url | Kind course · module · path · lab · tutorial · doc · guide · video · exam · certification · deck; Location SharePoint · Percipio · Workday MyLearning · Vendor site · Repo · Academy file · Other; Status required · optional · off. |
+| Certification | Certifications tab (CSV `FamilyId, Code, Name, Vendor, Roles, Level, Url`) | FamilyId + Code | Level required · desirable · off, per job role (empty = all). |
+
+Learners see the active learning paths of their job role, the active skills in them and the required courses (optional
+ones as recommended material); the dashboard shows their next course, how many they completed and the certifications
+their role asks for. The former Course tab (lessons with quizzes) was retired; the glossary, video library and ranks stay.
+The first time a practice opens, `catalog/paths.json` is made from the catalog: one learning path per family and vendor.
+
+## Each family's learning paths (champions)
+In **Learning route**, the champion of a family (and owners) get **🧭 Manage the learning paths**, with tabs for **Job roles**,
+**Learning paths** (vendor, certification, roles, order, active), **Skills** (which path, order, active), **Courses** and
+**Certifications** (per job role; required, desirable or off). In Courses, a table of every course of the
 family with **Status = required** (part of the path, counts for progress) | **optional** (recommended material) | **off**
 (kept in the plan, hidden from learners), the class order, kind, provider, minutes and notes. They can upload their own
 material (PowerPoint, PDF, Word, Excel, video): it becomes a class learners download. The same path is a CSV per family,
-`content/families/<family-id>.csv` (`SkillId, Skill, Class, Title, Url, Kind, Provider, Status, Minutes, Notes`): edit it in
+`content/families/<family-id>.csv` (`SkillId, Skill, Module, Class, Title, Url, Kind, Location, Provider, Status, Minutes, Notes`): edit it in
 Excel and reopen the app (it is checked first), or download / upload it in the panel. The files, `catalog/materials.json` and
 the LearningPaths tab of the content workbook always match.

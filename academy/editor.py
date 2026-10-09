@@ -27,43 +27,54 @@ from academy.catalog import VENDORS, slug
 
 # the tables behind each section of the app (the order is the order of the inner tabs)
 SECTION_TABLES: dict[str, list[str]] = {
-    "tab_route": ["LearningPaths", "Skills", "Families"],
+    "tab_route": ["LearningPaths", "Skills", "Paths", "JobRoles", "Vendors", "Families"],
     "tab_course": ["Lessons", "Questions", "LessonResources", "Levels", "Courses"],
     "tab_glossary": ["Glossary"],
     "tab_library": ["Resources", "Topics", "StudyMaterial"],
     "tab_progress": ["Ranks", "Roles"],
-    "tab_skills": ["Families", "Skills", "LearningPaths"],
+    "tab_skills": ["Families", "Skills", "Paths", "LearningPaths"],
     "tab_reports": ["Families", "People"],
     "tab_demand": ["PracticeSkills", "PracticeRoles", "Practice"],
     "tab_news": ["NewsSources", "StudyMaterial"],
 }
 TABLE_NAME = {"Courses": "Courses", "Levels": "Levels", "Ranks": "Ranks", "Topics": "Topics", "Roles": "Course roles", "Lessons": "Lessons",
               "Questions": "Questions", "Resources": "Videos and links", "LessonResources": "Videos of each lesson", "Glossary": "Glossary",
-              "Families": "Role families (skills catalog)", "Skills": "Skills", "LearningPaths": "Learning paths (classes)", "Practice": "Practice",
+              "Families": "Role families (skills catalog)", "Skills": "Skills", "LearningPaths": "Courses (by skill and module)", "Practice": "Practice",
+              "Vendors": "Vendors", "JobRoles": "Job roles", "Paths": "Learning paths",
               "PracticeSkills": "Practice skills", "PracticeRoles": "Role families (roles the practice provides)", "NewsSources": "News sources", "StudyMaterial": "Study material", "People": "People and roles"}
 ABOUT = {"Lessons": "One row per lesson: level, title, summary, key points and the skills it builds.",
          "Questions": "The 3 questions of each lesson: 4 options and the correct letter.",
          "LessonResources": "Which videos each lesson shows and in what order (at least 2, from 2 channels).",
-         "LearningPaths": "Each skill's path: Class = 1, 2, 3… is the order; without a number it is reference material.",
+         "LearningPaths": "The courses of each skill, grouped by Module. Class = 1, 2, 3… is the order; Status: required (counts for "
+                          "progress) · optional (recommended) · off (hidden). Location: where the course lives.",
+         "Paths": "Learning paths of each family and vendor (e.g. AZ-900): the certification they prepare, the job roles they are for "
+                  "(empty = every role), their order and Active.",
+         "JobRoles": "The job roles of each role family (sysadmin, architect…). People's course role takes one of them.",
+         "Vendors": "Vendors shared by every family: short VendorId (MSFT, CISCO, AWS…).",
+         "Skills": "Each skill sits in a learning path (PathId) with its order; Active = no hides it.",
          "PracticeSkills": "How the demand writes each practice skill, which catalog skill it maps to and its scope.",
          "NewsSources": "The sites of the Knowledge exchange. FeedUrl (RSS / Atom) gives the latest items; Splash = yes opens the academy with its latest news."}
-NUMBERS = {"SortOrder", "Points", "GapVolume", "RoleImpact", "ImpactedRoles", "Class"}
-LINKS = {"Url", "PracticeUrl", "FeedUrl"}
+NUMBERS = {"SortOrder", "Points", "GapVolume", "RoleImpact", "ImpactedRoles", "Class", "Order"}
+LINKS = {"Url", "PracticeUrl", "FeedUrl", "Website"}
 LONG = {"Summary", "Question", "Why", "Definition", "Description", "Subtitle", "Disclaimer", "Title", "Note"}
 # primary keys: written freely (they are what the other tables choose from)
 KEYS = {("Courses", "PackId"), ("Lessons", "LessonId"), ("Resources", "ResourceKey"), ("Topics", "TopicId"), ("Families", "FamilyId"),
         ("Skills", "SkillId"), ("Levels", "Level"), ("Glossary", "Term"), ("PracticeSkills", "Term"), ("PracticeRoles", "RoleTitle"),
-        ("Roles", "Role"), ("Ranks", "Name"), ("Practice", "Name"), ("NewsSources", "Name"), ("StudyMaterial", "Title"), ("People", "Person")}
+        ("Roles", "Role"), ("Ranks", "Name"), ("Practice", "Name"), ("NewsSources", "Name"), ("StudyMaterial", "Title"), ("People", "Person"),
+        ("Vendors", "VendorId"), ("Paths", "PathId"), ("JobRoles", "RoleId")}
 # copied from Skills when the file is written: shown, not edited
-INFO = {("LearningPaths", "Family"), ("LearningPaths", "Vendor"), ("LearningPaths", "Skill")}
+INFO = {("LearningPaths", "Family"), ("LearningPaths", "Path"), ("LearningPaths", "Skill")}
 # several values in one cell, separated by ";"
-MULTI = {("People", "Families"), ("Lessons", "Skills"), ("Lessons", "CatalogSkills"), ("Roles", "Skills"), ("PracticeSkills", "Aliases"), ("PracticeRoles", "Aliases")}
+MULTI = {("People", "Families"), ("Paths", "Roles"), ("Lessons", "Skills"), ("Lessons", "CatalogSkills"), ("Roles", "Skills"), ("PracticeSkills", "Aliases"), ("PracticeRoles", "Aliases")}
 # free text columns that still repeat values: offered as a list of what is already used (+ new options)
-REPEATED = {"Theme", "Source", "Channel", "Provider", "Category", "Vendor", "Champion", "Target", "Who", "Level", "Emoji", "Color", "PracticeLabel"}
+REPEATED = {"Theme", "Source", "Channel", "Provider", "Category", "Vendor", "Champion", "Target", "Who", "Level", "Emoji", "Color", "PracticeLabel",
+            "Module", "CertId"}
 # when a new row leaves its id empty, it is made from this column
 ID_FROM = {("Families", "FamilyId"): "Name", ("Skills", "SkillId"): "Name", ("Lessons", "LessonId"): "Title",
-           ("Resources", "ResourceKey"): "Title", ("Topics", "TopicId"): "Name"}
-LABEL = {"CourseRole": "Course role (what they learn)", "PackId": "Course", "LessonId": "Lesson", "SortOrder": "Order", "AnswerLetter": "Correct", "ResourceKey": "Video / link",
+           ("Resources", "ResourceKey"): "Title", ("Topics", "TopicId"): "Name", ("Paths", "PathId"): "Name", ("JobRoles", "RoleId"): "Name",
+           ("Vendors", "VendorId"): "Name"}
+LABEL = {"CourseRole": "Job role (what they learn)", "PathId": "Learning path", "VendorId": "Vendor", "CertId": "Certification",
+         "RoleId": "Job role", "Roles": "Job roles", "Location": "Where it lives", "Module": "Module", "PackId": "Course", "LessonId": "Lesson", "SortOrder": "Order", "AnswerLetter": "Correct", "ResourceKey": "Video / link",
          "Note": "Note for this lesson", "TopicId": "Topic", "Who": "Expert", "FamilyId": "Family", "GapVolume": "Gap volume",
          "RoleImpact": "Roles affected", "ChampionEmail": "Champion e-mail", "SkillId": "Skill", "Target": "Target level",
          "ImpactedRoles": "Roles with the gap", "Provider": "Source", "RoleTitle": "Role title", "CatalogSkills": "Catalog skills",
@@ -113,7 +124,9 @@ def options(table: str, col: str, data: dict[str, list[dict]], extra: dict) -> l
         return _uniq(fixed, own, added)
     refs = {"PackId": ("Courses", "PackId"), "LessonId": ("Lessons", "LessonId"), "ResourceKey": ("Resources", "ResourceKey"),
             "TopicId": ("Topics", "TopicId"), "FamilyId": ("Families", "FamilyId"), "SkillId": ("Skills", "SkillId"),
-            "CatalogSkills": ("Skills", "SkillId")}
+            "CatalogSkills": ("Skills", "SkillId"), "PathId": ("Paths", "PathId"), "VendorId": ("Vendors", "VendorId")}
+    if (table, col) == ("Paths", "Roles"):
+        return _uniq(_values(data.get("JobRoles", []), "RoleId"), own, added)
     if (table, col) == ("Lessons", "Level"):
         return _uniq(_values(data.get("Levels", []), "Level"), own, added)
     if col in refs and (table, col) != refs[col]:
@@ -126,7 +139,7 @@ def options(table: str, col: str, data: dict[str, list[dict]], extra: dict) -> l
     if col == "Vendor":
         return _uniq(VENDORS, own, added)
     if (table, col) == ("People", "CourseRole"):
-        return _uniq(_values(data.get("Roles", []), "Role"), own, added)
+        return _uniq(_values(data.get("JobRoles", []), "Name"), own, added)
     if (table, col) == ("People", "Families"):
         return _uniq(_values(data.get("Families", []), "FamilyId"), own, added)
     if (table, col) == ("NewsSources", "Category"):

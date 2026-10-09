@@ -39,7 +39,7 @@ SKILL_COLUMNS = ["Role Primary Skill", "Role Secondary Skill", "Role Other Skill
 COLOR = {CORE: "#eb6834", THIRD: "#2a78d6", EMERGING: "#1baf7a", OUTSIDE: "#4a3aa7"}
 SCOPE_NAME = {CORE: "Core of the practice", THIRD: "Other vendors we handle",
               EMERGING: "Emerging focus", OUTSIDE: "Outside the practice"}
-COVER = {"lessons": "Has a course", "path": "Learning path only",
+COVER = {"lessons": "Has a course", "path": "Optional material only",
          "none": "No content", "new": "Not in the catalog"}
 
 
@@ -359,7 +359,10 @@ def _top(counter: Counter, n: int | None = None) -> list[tuple[str, int]]:
 
 
 def analyze(rows: list[dict], practice: Practice, catalog=None, packs: list | None = None, materials: dict | None = None, lang: str = "es") -> dict:
-    """Everything the report shows. Counts are numbers of ROLES (a skill counts once per role that asks for it)."""
+    """Everything the report shows. Counts are numbers of ROLES (a skill counts once per role that asks for it). A practice
+    skill «has a course» when its learning path has required courses."""
+    from academy.family_path import OPTIONAL, REQUIRED, status_of
+
     materials, packs = materials or {}, packs or []
     lessons_of = catalog.coverage(packs) if catalog else {}
     fam_name = {f.id: f.name for f in catalog.families} if catalog else {}
@@ -422,8 +425,9 @@ def analyze(rows: list[dict], practice: Practice, catalog=None, packs: list | No
         if entry is None or not entry.skill_id or entry.skill_id not in known:
             return "new", 0, 0
         n_les = len(lessons_of.get(entry.skill_id, []))
-        n_cls = sum(1 for m in materials.get(entry.skill_id, []) if m.get("kind") in ("path", "module", "course", "lab", "tutorial"))
-        return ("lessons" if n_les else "path" if n_cls else "none"), n_les, n_cls
+        n_cls = sum(1 for m in materials.get(entry.skill_id, []) if status_of(m) == REQUIRED)  # the courses of its learning path
+        n_opt = sum(1 for m in materials.get(entry.skill_id, []) if status_of(m) == OPTIONAL)
+        return ("lessons" if n_cls else "path" if n_opt else "none"), n_les, n_cls
 
     skill_rows = []
     for term, n in _top(skills):
@@ -453,7 +457,9 @@ def analyze(rows: list[dict], practice: Practice, catalog=None, packs: list | No
         sid = (t.skill_id if t else "") or names.get(skill.lower(), "")
         if not sid or sid not in known:
             return COVER["new"]
-        return COVER["lessons"] if lessons_of.get(sid) else (COVER["path"] if materials.get(sid) else COVER["none"])
+        items = materials.get(sid, [])
+        return (COVER["lessons"] if any(status_of(m) == REQUIRED for m in items)
+                else COVER["path"] if any(status_of(m) == OPTIONAL for m in items) else COVER["none"])
 
     matrix_rows = [{"Role family": fam, "Skill": skill, "Roles where it is a gap": c["gaps"], "Roles where it is aligned": c["aligned"],
                     "In the academy": in_academy(skill)} for (fam, skill), c in sorted(matrix.items(), key=lambda kv: (-kv[1]["gaps"], -kv[1]["aligned"], kv[0]))]

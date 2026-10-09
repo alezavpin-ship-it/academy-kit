@@ -7,7 +7,10 @@
 Both travel as CSV (import / export) with fixed columns:
 
     records       Learner, Code, Name, Vendor, Status, Obtained, Expires, CredentialUrl
-    requirements  FamilyId, Code, Name, Vendor, Level, Url
+    requirements  FamilyId, Code, Name, Vendor, Roles, Level, Url
+
+Requirements are per role family and, optionally, per job role of the family (Roles = role ids separated by ;, empty =
+every role). Level = required | desirable | off (off keeps the certification in the plan without asking for it).
 
 Importing records replaces the certifications of the people who appear in the file (other people are untouched);
 importing requirements replaces those of the families that appear in the file.
@@ -33,14 +36,15 @@ CREATE TABLE IF NOT EXISTS cert_records (
 );
 """
 CURRENT, DESIRED = "current", "desired"
-REQUIRED, DESIRABLE = "required", "desirable"
+REQUIRED, DESIRABLE, OFF = "required", "desirable", "off"
 RECORD_COLUMNS = ["Learner", "Code", "Name", "Vendor", "Status", "Obtained", "Expires", "CredentialUrl"]
-REQUIREMENT_COLUMNS = ["FamilyId", "Code", "Name", "Vendor", "Level", "Url"]
+REQUIREMENT_COLUMNS = ["FamilyId", "Code", "Name", "Vendor", "Roles", "Level", "Url"]
+OPTIONAL_COLUMNS = {"Roles"}  # files written before job roles still import
 EXPIRING_DAYS = 90
 _STATUS = {CURRENT: CURRENT, "actual": CURRENT, "obtenida": CURRENT, "vigente": CURRENT, "held": CURRENT, "": CURRENT,
            DESIRED: DESIRED, "deseable": DESIRED, "deseada": DESIRED, "planned": DESIRED, "planeada": DESIRED, "en curso": DESIRED}
 _LEVEL = {REQUIRED: REQUIRED, "requerida": REQUIRED, "obligatoria": REQUIRED, "": DESIRABLE, DESIRABLE: DESIRABLE, "deseable": DESIRABLE,
-          "desired": DESIRABLE, "opcional": DESIRABLE}
+          "desired": DESIRABLE, "opcional": DESIRABLE, OFF: OFF, "inactive": OFF, "disabled": OFF}
 # A starting point an owner can load and then edit: Microsoft role-based certifications that match each family. Nothing is
 # required until the family's champion says so, so they all start as «desirable».
 SUGGESTED = {
@@ -84,13 +88,13 @@ def _read_csv(raw: bytes, columns: list[str]) -> tuple[list[dict], list[str]]:
     if not rows:
         return [], ["The file is empty."]
     head = [h.strip() for h in rows[0]]
-    missing = [c for c in columns if c not in head]
+    missing = [c for c in columns if c not in head and c not in OPTIONAL_COLUMNS]
     if missing:
         return [], [f"Missing columns: {', '.join(missing)}. Expected: {', '.join(columns)}."]
     out = []
     for n, row in enumerate(rows[1:], start=2):
         if any(c.strip() for c in row):
-            rec = {k: _text(v) for k, v in zip(head, row)}
+            rec = {**{c: "" for c in columns}, **{k: _text(v) for k, v in zip(head, row)}}
             rec["_row"] = n
             out.append(rec)
     return out, []
@@ -109,24 +113,36 @@ class Certs:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
         conn.executescript(SCHEMA)
+        if "roles" not in {r[1] for r in conn.execute("PRAGMA table_info(cert_requirements)")}:  # databases of earlier versions
+            with conn:
+                conn.execute("ALTER TABLE cert_requirements ADD COLUMN roles TEXT NOT NULL DEFAULT ''")
 
     # ------------------------------------------------------------------ requirements per family
-    def requirements(self, families: set[str] | None = None) -> list[dict]:
+    def requirements(self, families: set[str] | None = None, role: str | None = None, include_off: bool = False) -> list[dict]:
+        """What the families ask for. ``role``: only what applies to that job role. «off» ones only with ``include_off``."""
         rows = self.conn.execute("SELECT * FROM cert_requirements ORDER BY family, level DESC, code").fetchall()
-        return [{"FamilyId": r["family"], "Code": r["code"], "Name": r["name"], "Vendor": r["vendor"], "Level": r["level"], "Url": r["url"]}
-                for r in rows if families is None or r["family"] in families]
+        out = []
+        for r in rows:
+            roles = [x.strip() for x in (r["roles"] or "").split(";") if x.strip()]
+            if (families is None or r["family"] in families) and (include_off or r["level"] != OFF) and (role is None or not roles or role in roles):
+                out.append({"FamilyId": r["family"], "Code": r["code"], "Name": r["name"], "Vendor": r["vendor"], "Roles": "; ".join(roles),
+                            "Level": r["level"], "Url": r["url"]})
+        return out
 
     def set_requirements(self, family: str, rows: list[dict]) -> None:
-        """Replace what a family asks for. Rows: Code, Name, Vendor, Level (required | desirable), Url."""
+        """Replace what a family asks for. Rows: Code, Name, Vendor, Roles (job role ids; empty = all), Level (required |
+        desirable | off), Url."""
         clean = {}
         for r in rows:
             code = _text(r.get("Code")).upper()
             if code:
+                roles = "; ".join(x.strip() for x in _text(r.get("Roles")).replace(",", ";").split(";") if x.strip())
                 clean[code] = (family, code, _text(r.get("Name")), _text(r.get("Vendor")), _LEVEL.get(_text(r.get("Level")).lower(), DESIRABLE),
-                               _text(r.get("Url")))
+                               _text(r.get("Url")), roles)
         with self.conn:
             self.conn.execute("DELETE FROM cert_requirements WHERE family=?", (family,))
-            self.conn.executemany("INSERT INTO cert_requirements(family, code, name, vendor, level, url) VALUES (?,?,?,?,?,?)", list(clean.values()))
+            self.conn.executemany("INSERT INTO cert_requirements(family, code, name, vendor, level, url, roles) VALUES (?,?,?,?,?,?,?)",
+                                  list(clean.values()))
 
     def load_suggested(self, family_ids: set[str]) -> int:
         """Add the suggested certifications (as desirable) to the families that have none yet. Returns how many were added."""
@@ -173,7 +189,7 @@ class Certs:
         return _csv(RECORD_COLUMNS, self.records(learner))
 
     def requirements_csv(self, families: set[str] | None = None) -> bytes:
-        return _csv(REQUIREMENT_COLUMNS, self.requirements(families))
+        return _csv(REQUIREMENT_COLUMNS, self.requirements(families, include_off=True))
 
     @staticmethod
     def parse_records(raw: bytes, only_learner: str | None = None) -> tuple[dict[str, list[dict]], list[str]]:
@@ -215,7 +231,7 @@ class Certs:
             elif allowed is not None and r["FamilyId"] not in allowed:
                 problems.append(f"{tag} you do not run the family '{r['FamilyId']}'.")
             elif r["Level"].lower() not in _LEVEL:
-                problems.append(f"{tag} Level must be required or desirable.")
+                problems.append(f"{tag} Level must be required, desirable or off.")
             else:
                 out.setdefault(r["FamilyId"], []).append(r)
         return out, problems

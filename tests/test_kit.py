@@ -149,19 +149,12 @@ def _run(tmp_path, monkeypatch, owners=("me",), **state):
 
 
 def test_app_renders_and_scores(tmp_path, monkeypatch):
+    """The Course tab (lessons with quizzes) was retired: the dashboard and the Learning route follow the learning paths."""
     at = _run(tmp_path, monkeypatch)
     assert not at.exception
-    assert any("Videos for this lesson" in m.value for m in at.markdown)
+    assert not any(x.endswith("· Course") for x in _tab_labels(at)) and _tab_labels(at)[0].endswith("Learning route")
     assert not any("deliverable" in m.value.lower() for m in at.markdown)  # value deliverables were retired
-    pack = load_pack("cloud-security")
-    les = pack.lessons[0]
-    opts, ci = quiz.shuffled(f"{les.id}:0", les.quiz[0].options, les.quiz[0].answer)
-    at.radio(key=f"ak_q_me_{les.id}:0").set_value(ci).run()
-    at.button(key=f"ak_check_{les.id}:0").click().run()
-    assert not at.exception and any("Correct" in s.value for s in at.success)
-    at.selectbox(key=f"ak_vid_{les.id}").set_value(1).run()  # change video without losing the answer
-    assert not at.exception and any("Correct" in s.value for s in at.success)
-    assert Tracker(connect(tmp_path / "app.db"), pack, "me").total_points() == 10
+    assert any("Your learning path" in m.value for m in at.markdown)
 
 
 def test_app_other_tabs(tmp_path, monkeypatch):
@@ -415,7 +408,7 @@ def _tab_labels(at):
 def test_end_user_does_not_see_team_measurements(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch, owners=("jefa",))  # "me" is not an owner
     assert not at.exception
-    assert not any("Team" in x for x in _tab_labels(at)) and len(_tab_labels(at)) == 10
+    assert not any("Team" in x for x in _tab_labels(at)) and len(_tab_labels(at)) == 9
     assert not any("Notices to send" in m.value for m in at.markdown)
     assert not any(m.label in ("Gap", "Roles affected") for m in at.metric)
     assert any("Microsoft 365 Security" in m.value for m in at.markdown)  # the map itself stays visible
@@ -424,28 +417,28 @@ def test_end_user_does_not_see_team_measurements(tmp_path, monkeypatch):
 
 def test_owner_view_and_switch_to_end_user(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch)  # "me" is an owner
-    assert any("Team" in x for x in _tab_labels(at)) and len(_tab_labels(at)) == 13
+    assert any("Team" in x for x in _tab_labels(at)) and len(_tab_labels(at)) == 12
     assert any(m.label == "Gap" for m in at.metric) and any("Notices to send" in m.value for m in at.markdown)
     at.toggle(key="ak_owner_view").set_value(False).run()  # preview what an end user sees
-    assert not at.exception and len(_tab_labels(at)) == 10 and not any(m.label == "Gap" for m in at.metric)
+    assert not at.exception and len(_tab_labels(at)) == 9 and not any(m.label == "Gap" for m in at.metric)
 
 
 def test_first_owner_claim_and_pin(tmp_path, monkeypatch):
     from academy.access import load_access, save_access
 
     at = _run(tmp_path, monkeypatch, owners=None)  # nothing configured yet
-    assert len(_tab_labels(at)) == 10
+    assert len(_tab_labels(at)) == 9
     at.button(key="ak_claim").click().run()
-    assert not at.exception and load_access(tmp_path / "access.json").owners == ["me"] and len(_tab_labels(at)) == 13
+    assert not at.exception and load_access(tmp_path / "access.json").owners == ["me"] and len(_tab_labels(at)) == 12
     acc = load_access(tmp_path / "access.json")
     acc.set_pin("2468")
     save_access(acc, tmp_path / "access.json")
     at = _run(tmp_path, monkeypatch, owners=None)
-    assert len(_tab_labels(at)) == 10  # owner, but the PIN has not been typed
+    assert len(_tab_labels(at)) == 9  # owner, but the PIN has not been typed
     at.text_input(key="ak_owner_pin").set_value("1111").run()
-    assert len(_tab_labels(at)) == 10
+    assert len(_tab_labels(at)) == 9
     at.text_input(key="ak_owner_pin").set_value("2468").run()
-    assert not at.exception and len(_tab_labels(at)) == 13
+    assert not at.exception and len(_tab_labels(at)) == 12
 
 
 def test_champion_sees_only_their_family(tmp_path, monkeypatch, pack, exam, conn):
@@ -470,7 +463,7 @@ def test_champion_sees_only_their_family(tmp_path, monkeypatch, pack, exam, conn
             f["champion"] = "me"
     (tmp_path / "skills.json").write_text(json.dumps(data), encoding="utf-8")
     at = _run(tmp_path, monkeypatch, owners=("jefa",))
-    assert not at.exception and len(_tab_labels(at)) == 13
+    assert not at.exception and len(_tab_labels(at)) == 12
     assert any("My family" in m.value and "Cloud & Network Security" in m.value for m in at.markdown)
     assert not any("Access" in e.label for e in at.expander) and not any(str(b.key).startswith("ak_sk_save") for b in at.button)
     assert [m.value for m in at.metric if m.label == "Gap"] == ["98"]  # only their own family's number
@@ -527,9 +520,9 @@ def test_family_lead_adds_a_workday_course(tmp_path, monkeypatch):
     base = json.loads((catmod.CATALOG_PATH.parent / "materials.json").read_text(encoding="utf-8"))
     (tmp_path / "materials.json").write_text(json.dumps(base), encoding="utf-8")
     at = _run(tmp_path, monkeypatch, owners=("jefa",))
-    assert not at.exception and any("Manage the career path" in e.label for e in at.expander) is False  # first family is not theirs
+    assert not at.exception and any("Manage the learning paths" in e.label for e in at.expander) is False  # first family is not theirs
     at.selectbox(key="rt_family").set_value("technical-delivery-leadership").run()
-    assert not at.exception and any("Manage the career path of Technical Delivery Leadership" in e.label for e in at.expander)
+    assert not at.exception and any("Manage the learning paths of Technical Delivery Leadership" in e.label for e in at.expander)
     cat = load_catalog(tmp_path / "skills.json")
     fid = "technical-delivery-leadership"
     rows = fp.rows(fid, cat, load_materials(tmp_path / "materials.json"))
@@ -684,7 +677,7 @@ def test_app_is_english_without_a_language_switch(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch)
     assert not at.exception and "ak_lang" not in at.session_state
     text = " ".join(m.value for m in at.markdown)
-    assert "Your next step" in text and 'The shared responsibility model' in text and "Tu siguiente paso" not in text
+    assert "Your learning path" in text and "Tu siguiente paso" not in text
 
 
 # ---------------------------------------------------------------------------------------------- reports, sound, motion
@@ -1218,7 +1211,7 @@ def test_edit_mode_lists_merge_and_save(tmp_path, monkeypatch):
 def test_edit_mode_shows_in_every_section_for_owners(tmp_path, monkeypatch):
     from academy import editor
 
-    for section in list(editor.SECTION_TABLES) + ["tab_certs", "tab_team"]:
+    for section in [x for x in editor.SECTION_TABLES if x != "tab_course"] + ["tab_certs", "tab_team"]:
         at = _run(tmp_path, monkeypatch, **{f"ed_on_{section}": True})
         assert not at.exception, (section, at.exception[0].stack_trace if at.exception else "")
         if section != "tab_certs":
@@ -1450,7 +1443,7 @@ def test_directory_name_gives_the_owner_view_and_study_sections_render(tmp_path,
     people.save([people.Person("Alejandro Zavala", "ale@x.com", "owner"), people.Person("Luis", "", "learner")], tmp_path / "people.csv")
     at = _run(tmp_path, monkeypatch, owners=None)
     assert not at.exception and at.session_state["ak_person"] == "Alejandro Zavala"
-    assert "ak_owner_view" in [t.key for t in at.toggle] and len(_tab_labels(at)) == 13  # owner by name, no e-mail typed
+    assert "ak_owner_view" in [t.key for t in at.toggle] and len(_tab_labels(at)) == 12  # owner by name, no e-mail typed
     assert not any(str(b.key) == "ak_claim" for b in at.button)  # an owner exists in the directory: nothing to claim
     at.selectbox(key="ak_person").set_value("Luis").run()
     assert not at.exception and "ak_owner_view" not in [t.key for t in at.toggle]
@@ -1612,21 +1605,6 @@ def test_course_titles_say_practice_not_academy(tmp_path):
     assert title == "Cloud Security Practice"
 
 
-def test_your_role_narrows_the_dashboard_and_the_course(tmp_path, monkeypatch, pack):
-    scope = pack.lessons_in_scope("Security analyst (SOC)")
-    assert 0 < len(scope) < len(pack.lessons) and pack.lessons_in_scope(None) == list(pack.lessons)
-    assert pack.lessons_in_scope("No such role") == list(pack.lessons)
-    from academy import people
-
-    people.save([people.Person("Ana", "ana@x.com", "learner", course_role="Security analyst (SOC)")], tmp_path / "people.csv")
-    at = _run(tmp_path, monkeypatch, owners=None, ak_person="Ana")
-    assert not at.exception and not any(s.label == "Your role" for s in at.selectbox)  # set by the champion, not chosen
-    assert any("Your role: **Security analyst (SOC)**" in c.value for c in at.caption)
-    page = " ".join(m.value for m in at.markdown)
-    assert f"0 / {len(scope)}" in page and f"of {len(scope)} lessons completed" in page
-    assert f"Showing the **{len(scope)}** lessons" in " ".join(c.value for c in at.caption)
-    lessons = next(s for s in at.selectbox if s.label == "Lesson")
-    assert set(lessons.options) <= {f"○ {x.title}" for x in scope} | {f"✅ {x.title}" for x in scope}
 
 
 def test_practices_are_separate_spaces(tmp_path, monkeypatch):
@@ -1669,7 +1647,7 @@ def test_practices_are_separate_spaces(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch, owners=None, ak_person="Ana", ak_practice="ppm")
     assert not at.exception
     assert next(s for s in at.selectbox if s.label == "Practice").value == "ppm"
-    assert any("PPM Practice" in m.value for m in at.markdown) and any("no lessons yet" in m.value for m in at.markdown)
+    assert any("PPM Practice" in m.value for m in at.markdown) and any("Getting started" in m.value for m in at.markdown)
     at = _run(tmp_path, monkeypatch, owners=None, ak_person="Sam")
     assert not at.exception and not any(s.label == "Practice" for s in at.selectbox)
     assert any("Practice: **PPM**" in c.value for c in at.caption)
@@ -1703,17 +1681,62 @@ def test_content_accepts_family_names_and_one_course_role(tmp_path, monkeypatch)
                       {"Person": "Bo Chen", "Email": "bo@contoso.com", "Role": "champion", "Families": "microsoft 365 security; identity-access-management",
                        "Active": "yes", "CourseRole": ""}]
     data["Roles"] = [{"PackId": "cloud-security", "Role": "Cloud Security Engineer", "Skills": "fundamentals; identity; iam"}]
+    data["JobRoles"] = [{"FamilyId": "AI Security & Governance", "RoleId": "cse", "Name": "Cloud Security Engineer", "Description": "", "Active": "yes"}]
     result = content.build(data)
     assert result["problems"] == [], result["problems"][:5]
     by = {p.name: p for p in result["people"]}
     assert by["Ana Lopez"].families == ("ai-security-governance",) and by["Ana Lopez"].course_role == "Cloud Security Engineer"
     assert by["Bo Chen"].families == ("microsoft-365-security", "identity-access-management")
     assert result["notes"] and "in no course role" in result["notes"][0]  # a note, not a problem
-    data["People"][1]["CourseRole"] = "Cloud Security Architect"  # not in Roles yet: a note, everyone sees every lesson
+    data["People"][1]["CourseRole"] = "Cloud Security Architect"  # not in JobRoles yet: a note, they see every path
     data["People"].append({"Person": "Lopez, Ana", "Email": "ANA@contoso.com", "Role": "learner", "Families": "", "Active": "yes", "CourseRole": ""})
     result = content.build(data)
-    assert result["problems"] == [] and any("'Cloud Security Architect' (1 people) has no lessons" in n for n in result["notes"])
+    assert result["problems"] == [] and any("'Cloud Security Architect' (1 people) is not in JobRoles" in n for n in result["notes"])
     assert any("ana@contoso.com is on several rows" in n for n in result["notes"])
     data["People"][0]["Families"] = "Quantum Security"
     bad = content.build(data)["problems"]
     assert any("unknown role family: Quantum Security" in m and "ai-security-governance" in m for m in bad)
+
+
+def test_job_role_narrows_the_learning_path(tmp_path, monkeypatch):
+    """Practice -> role family -> vendor -> learning path -> skill -> module -> course; the job role (People) picks the paths."""
+    from academy import paths as pathmod
+    from academy import people
+    from academy.catalog import load_materials
+    from academy.route import RouteTracker, family_route
+
+    cat = load_catalog(tmp_path / "skills.json") if (tmp_path / "skills.json").exists() else load_catalog()
+    mats = load_materials()
+    fid = "cyber-defense-security-operations"
+    s = pathmod.default(cat, mats)
+    assert s.vendors[0].id == "MSFT" and all(p.family in {f.id for f in cat.families} for p in s.paths) and pathmod.validate(s, cat) == []
+    base = s.paths_of(fid)
+    soc = pathmod.JobRole("soc", fid, "SOC analyst")
+    sc200 = pathmod.LearningPath("sc-200", fid, "MSFT", "SC-200 Security Operations Analyst", cert="SC-200", roles=("soc",), order=1)
+    sid = cat.in_family(fid)[0].id
+    s = pathmod.Structure(s.vendors, [soc, pathmod.JobRole("eng", fid, "Engineer")], s.paths + [sc200], {**s.skills, sid: pathmod.Placement("sc-200", 1)})
+    assert "sc-200" in [p.id for p in s.paths_of(fid, "soc")] and "sc-200" not in [p.id for p in s.paths_of(fid, "eng")]
+    assert s.role_of(fid, "soc analyst") == soc and s.role_of(fid, "SOC") == soc and s.role_of(fid, "x") is None
+    mats[sid] = [{"title": "KQL basics", "url": "https://learn.microsoft.com/kql", "kind": "module", "module": "Query", "order": 1},
+                 {"title": "Our runbook", "url": "https://contoso.sharepoint.com/runbook", "kind": "doc", "status": "required", "module": "Operate",
+                  "order": 2}]
+    route = family_route(cat, mats, s, fid, "soc")
+    first = [x for x in route.steps if x.path == "sc-200"]
+    assert [(x.module, x.title, x.location) for x in first] == [("Query", "KQL basics", "Vendor site"), ("Operate", "Our runbook", "SharePoint")]
+    assert any(p.cert == "SC-200" for p in route.paths) and len(route.paths) == len(base) + 1
+    assert pathmod.from_dict(pathmod.to_dict(s)) == s
+    # in the app: Ana (SOC analyst of the family) sees her path; no role choice in the sidebar
+    pathmod.save(s, tmp_path / "paths.json")
+    from academy.catalog import save_materials
+
+    save_materials(mats, tmp_path / "materials.json")
+    people.save([people.Person("Ana", "ana@x.com", "learner", (fid,), course_role="SOC analyst")], tmp_path / "people.csv")
+    at = _run(tmp_path, monkeypatch, owners=None, ak_person="Ana")
+    assert not at.exception and not any(x.label == "Your role" for x in at.selectbox)
+    assert any("Your role: **SOC analyst**" in c.value for c in at.caption)
+    page = " ".join(m.value for m in at.markdown)
+    assert "Your next course" in page and "KQL basics" in page
+    assert at.selectbox(key="rt_family").value == fid and at.selectbox(key=f"rt_role_{fid}").value == "soc"
+    assert any("SC-200 Security Operations Analyst" in e.label for e in at.expander)
+    at.button(key=f"rt_done_{sid}|https://learn.microsoft.com/kql").click().run()
+    assert not at.exception and RouteTracker(connect(tmp_path / "app.db"), "Ana").done()

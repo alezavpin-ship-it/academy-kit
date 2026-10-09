@@ -11,7 +11,7 @@ does not count as a step.
 from __future__ import annotations
 
 import sqlite3
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 ROUTE_PACK = "learn"  # value of events.pack for route activity
@@ -36,6 +36,11 @@ class Step:
     vendor: str = ""  # technology / vendor of the skill (Microsoft, AWS, Cisco…)
     number: int = 0  # class number inside the skill's path: class 1, class 2…
     category: str = ""
+    path: str = ""  # learning path id (e.g. the AZ-900 path of the family)
+    path_name: str = ""
+    module: str = ""
+    location: str = ""  # SharePoint, Percipio, Workday MyLearning, vendor site, repo…
+    minutes: int | None = None
 
     @property
     def key(self) -> str:
@@ -49,6 +54,8 @@ class FamilyRoute:
     steps: list[Step]  # the classes to complete, ordered by vendor, skill and class number
     extras: dict[str, list[dict]]  # skill name -> reference material that is not a step (docs, guides, videos)
     uncovered: list[str]  # skills of the family without any training step yet
+    paths: list = field(default_factory=list)  # the learning paths shown (academy.paths.LearningPath), in order
+    role: str = ""  # the job role id the route was built for ("" = every role)
 
     def vendors(self) -> list[str]:
         return list(dict.fromkeys(s.vendor for s in self.steps))
@@ -72,32 +79,37 @@ def class_order(items: list[dict]) -> list[dict]:
     return sorted(mine, key=key)
 
 
-def build_routes(catalog, materials: dict[str, list[dict]]) -> list[FamilyRoute]:
-    """One route per family (biggest gap first). Inside a family: Microsoft first, then the other vendors; inside a vendor
-    its skills; inside a skill its classes in order (any mix of sources: Microsoft Learn, the vendor's free training,
-    the company's own portal)."""
-    from academy.catalog import vendor_of
+def family_route(catalog, materials: dict[str, list[dict]], structure, family_id: str, role: str | None = None) -> FamilyRoute:
+    """A family's route for a job role (None = every role): its active learning paths in order; inside each path its
+    active skills in order; inside each skill its required courses in class order (optional ones as reference)."""
+    from academy import paths as pathmod
     from academy.family_path import OFF, status_of
 
-    out = []
-    for fam in catalog.by_gap():
-        steps, extras, uncovered = [], {}, []
-        skills = [(vendor_of(s, materials), s) for s in catalog.in_family(fam.id)]
-        vendors = list(dict.fromkeys(v for v, _ in skills))
-        vendors.sort(key=lambda v: (v != "Microsoft", v == "Vendor-neutral"))  # stable: keeps catalog order otherwise
-        for vendor in vendors:
-            for _, s in [x for x in skills if x[0] == vendor]:
-                items = materials.get(s.id, [])
-                mine = class_order(items)
-                steps += [Step(s.id, s.name, m["title"], m["url"], m.get("kind", "course"), m.get("provider") or "Champion", vendor, n, s.category)
-                          for n, m in enumerate(mine, start=1)]
-                rest = [m for m in items if m not in mine and status_of(m) != OFF]  # optional material; «off» is hidden
-                if rest:
-                    extras[s.name] = rest
-                if not mine:
-                    uncovered.append(s.name)
-        out.append(FamilyRoute(fam.id, fam.name, steps, extras, uncovered))
-    return out
+    fam = next(f for f in catalog.families if f.id == family_id)
+    steps, extras, uncovered = [], {}, []
+    shown = structure.paths_of(fam.id, role)
+    for path in shown:
+        vendor = structure.vendor_name(path.vendor)
+        for s in structure.skills_of(path.id, catalog):
+            items = materials.get(s.id, [])
+            mine = class_order(items)
+            steps += [Step(s.id, s.name, m["title"], m["url"], m.get("kind", "course"), m.get("provider") or "Champion", vendor, n, s.category,
+                           path.id, path.name, pathmod.module_of(m), pathmod.location_of(m), m.get("minutes") or None)
+                      for n, m in enumerate(mine, start=1)]
+            rest = [m for m in items if m not in mine and status_of(m) != OFF]  # optional material; «off» is hidden
+            if rest:
+                extras[s.name] = rest
+            if not mine:
+                uncovered.append(s.name)
+    return FamilyRoute(fam.id, fam.name, steps, extras, uncovered, shown, role or "")
+
+
+def build_routes(catalog, materials: dict[str, list[dict]], structure=None) -> list[FamilyRoute]:
+    """One route per family (biggest gap first), with every active learning path of the family (any role)."""
+    from academy import paths as pathmod
+
+    structure = structure if structure is not None else pathmod.load(catalog, materials)
+    return [family_route(catalog, materials, structure, fam.id) for fam in catalog.by_gap()]
 
 
 class RouteTracker:

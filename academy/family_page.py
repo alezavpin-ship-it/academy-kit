@@ -26,36 +26,46 @@ def _save(fid: str, new: dict, catalog) -> bool:
     return True
 
 
-def manage_family(catalog, fid: str, who: str) -> None:
+def manage_family(catalog, fid: str, who: str, embedded: bool = False) -> None:
+    """The courses of the family's skills (on / off, module, order, location, own files), as a table or as the family CSV.
+    ``embedded``: drawn inside the champion's panel of the learning paths (no expander of its own)."""
     fam = next(f for f in catalog.families if f.id == fid)
     skills = {s.id: s.name for s in catalog.in_family(fid)}
     by_name = {v: k for k, v in skills.items()}
-    with st.expander(f"🧭 Manage the career path of {fam.name} (champion)", expanded=False):
+    import contextlib
+
+    box = contextlib.nullcontext() if embedded else st.expander(f"🧭 Manage the career path of {fam.name} (champion)", expanded=False)
+    with box:
         st.caption("Switch classes on and off for the learners of this family: **required** classes form the path and count for progress, "
                    "**optional** ones are recommended material, **off** keeps them in your plan but hidden. Use Microsoft Learn, the vendor's "
                    "free training, Workday Learning, a SharePoint deck or a file you upload here (your own PowerPoint).")
         rows = fp.rows(fid, catalog, load_materials())
-        df = pd.DataFrame([{"Skill": r["Skill"], "Class": r["Class"] or None, "Title": r["Title"], "Url": r["Url"], "Kind": r["Kind"] or None,
-                            "Provider": r["Provider"] or None, "Status": r["Status"], "Minutes": r["Minutes"] or None, "Notes": r["Notes"] or None}
-                           for r in rows], columns=["Skill", "Class", "Title", "Url", "Kind", "Provider", "Status", "Minutes", "Notes"])
+        from academy.paths import LOCATIONS, location_of
+
+        df = pd.DataFrame([{"Skill": r["Skill"], "Module": r["Module"] or None, "Class": r["Class"] or None, "Title": r["Title"], "Url": r["Url"],
+                            "Kind": r["Kind"] or None, "Location": r["Location"] or location_of({"url": r["Url"]}), "Provider": r["Provider"] or None,
+                            "Status": r["Status"], "Minutes": r["Minutes"] or None, "Notes": r["Notes"] or None}
+                           for r in rows], columns=["Skill", "Module", "Class", "Title", "Url", "Kind", "Location", "Provider", "Status", "Minutes", "Notes"])
         for col in ("Class", "Minutes"):
             df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
-        for col in ("Skill", "Title", "Url", "Kind", "Provider", "Status", "Notes"):
+        for col in ("Skill", "Module", "Title", "Url", "Kind", "Location", "Provider", "Status", "Notes"):
             df[col] = df[col].astype("string")
         providers = list(dict.fromkeys(PROVIDERS + [r["Provider"] for r in rows if r["Provider"]]))
         with st.form(f"fp_form_{fid}_{len(rows)}", border=False, enter_to_submit=False):
             ed = st.data_editor(df, num_rows="dynamic", hide_index=True, width="stretch", key=f"fp_ed_{fid}_{len(rows)}", column_config={
                 "Skill": st.column_config.SelectboxColumn("Skill", options=list(by_name), required=True),
+                "Module": st.column_config.TextColumn("Module", help="Groups the courses of a skill (e.g. Identity basics); empty = Core"),
                 "Class": st.column_config.NumberColumn("Class", min_value=1, step=1, help="Order of the required classes inside the skill: 1, 2, 3…"),
                 "Title": st.column_config.TextColumn("Title", required=True, width="medium"),
                 "Url": st.column_config.TextColumn("Url", required=True, help="https://… or file:… for a file uploaded below", width="medium"),
                 "Kind": st.column_config.SelectboxColumn("Kind", options=fp.KINDS, required=True),
+                "Location": st.column_config.SelectboxColumn("Where it lives", options=LOCATIONS),
                 "Provider": st.column_config.SelectboxColumn("Provider", options=providers),
                 "Status": st.column_config.SelectboxColumn("Status", options=fp.STATUSES, required=True, default=fp.REQUIRED,
                                                            help="required = part of the path · optional = recommended · off = hidden"),
                 "Minutes": st.column_config.NumberColumn("Minutes", min_value=0, step=5),
                 "Notes": st.column_config.TextColumn("Notes")})
-            save_path = st.form_submit_button("💾 Save the career path", key=f"fp_save_{fid}", type="primary")
+            save_path = st.form_submit_button("💾 Save the courses", key=f"fp_save_{fid}", type="primary")
         c = st.columns(3)
         n_req = sum(1 for s in ed["Status"].tolist() if s == fp.REQUIRED)
         c[0].metric("Required classes", n_req, border=True)
@@ -63,7 +73,7 @@ def manage_family(catalog, fid: str, who: str) -> None:
         c[2].metric("Off", sum(1 for s in ed["Status"].tolist() if s == fp.OFF), border=True)
         if save_path:
             table = [{"SkillId": by_name.get(r["Skill"], ""), "Class": "" if pd.isna(r["Class"]) else int(r["Class"]),
-                      **{k: ("" if pd.isna(r[k]) else str(r[k])) for k in ("Title", "Url", "Kind", "Provider", "Status", "Notes")},
+                      **{k: ("" if pd.isna(r[k]) else str(r[k])) for k in ("Module", "Title", "Url", "Kind", "Location", "Provider", "Status", "Notes")},
                       "Minutes": "" if pd.isna(r["Minutes"]) else int(r["Minutes"])}
                      for r in ed.to_dict("records") if pd.notna(r.get("Title")) and pd.notna(r.get("Url"))]
             new, problems = fp.parse(fp.to_csv(table), fid, catalog)

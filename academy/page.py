@@ -444,8 +444,10 @@ def my_notices(conn, packs: list[Pack], exams: list, catalog, learner: str, lang
 
 def _skills_map(catalog: Catalog, packs: list[Pack], lang: str, owner: bool = True, families: set[str] | None = None) -> None:
     """``families``: for a champion, the families whose gap numbers they may see."""
-    cov = catalog.coverage(packs)
+    from academy.family_path import REQUIRED, status_of
+
     mats = load_materials()
+    cov = {s.id: [("", m.get("title", "")) for m in mats.get(s.id, []) if status_of(m) == REQUIRED] for s in catalog.skills}  # its courses
     st.markdown(T("sk_total", lang, c=sum(1 for v in cov.values() if v), n=len(cov)) + " "
                 + f"**{sum(1 for s in catalog.skills if mats.get(s.id))}** have support material.")
     for fam in catalog.by_gap():
@@ -476,7 +478,7 @@ def _skills_map(catalog: Catalog, packs: list[Pack], lang: str, owner: bool = Tr
                     row[T("sk_col_target", lang)] = s.target
                 if numbers and any(x.impacted_roles is not None for x in skills):
                     row[T("sk_col_impact", lang)] = s.impacted_roles
-                row[T("sk_col_lessons", lang)] = " · ".join(t for _, t in cov[s.id]) or T("sk_none", lang)
+                row[T("sk_col_lessons", lang)] = str(len(cov[s.id])) if cov[s.id] else T("sk_none", lang)
                 row["Material"] = len(mats.get(s.id, []))
                 rows.append(row)
             st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
@@ -772,79 +774,10 @@ def practices_section() -> None:
 
 
 def route_tab(catalog: Catalog | None, conn, learner: str, lang: str, manage: set[str] | None = None) -> None:
-    """The learning route: per role family, the vendor's own training (Microsoft Learn for Microsoft skills) as steps."""
-    if not catalog:
-        st.info("The skills catalog is not loaded yet.")
-        return
-    routes = build_routes(catalog, load_materials())
-    tr = RouteTracker(conn, learner)
-    st.markdown(("Your route follows the vendor's official training: **Microsoft Learn** for Microsoft skills and the vendor's own "
-                  "career path for the rest. Open each step, complete it on its site and mark it here."))
-    labels = {r.family_id: f"{r.family} ({len(r.steps)} {'steps'})" for r in routes}
-    fid = st.selectbox("Role family", list(labels), key="rt_family", format_func=lambda k: labels[k])
-    if fid in (manage or set()):  # the family's champion (or an owner) runs its path here
-        from academy.family_page import manage_family
+    """The learning route: role family -> vendor -> learning path -> skill -> module -> course (academy/path_page.py)."""
+    from academy.path_page import route_tab as learning_paths
 
-        manage_family(catalog, fid, learner.strip() or "me")
-    route = next(r for r in routes if r.family_id == fid)
-    vendors, vendor = route.vendors(), "*"
-    if len(vendors) > 1:  # family -> technology / vendor -> skill -> class 1, class 2…
-        vendor = st.segmented_control("Technology / vendor", ["*"] + vendors, default="*", key=f"rt_vendor_{fid}",
-                                      format_func=lambda v: "All" if v == "*" else v) or "*"
-    shown = [x for x in route.steps if vendor == "*" or x.vendor == vendor]
-    done = tr.done()
-    got, total = tr.progress(route)
-    c = st.columns(3)
-    c[0].metric("Steps completed", f"{got} / {total}", border=True)
-    c[1].metric("Route points", f"{tr.total_points():,}", border=True)
-    nxt = tr.next_step(route)
-    c[2].metric("Next step", nxt.skill if nxt else ("✅" if total else "—"), border=True)
-    st.progress(got / total if total else 0.0)
-    fb = st.session_state.pop("rt_fb", None)
-    if fb is not None:
-        st.toast("Step completed!" + (f" +{fb} pts" if fb else ""))
-    if not route.steps:
-        st.info("This family has no official training steps yet. An owner can add them with ✏️ Edit mode at the top of this tab.")
-    kind_name = {"path": "Path", "module": "Module", "course": "Course",
-                 "lab": "Lab", "tutorial": "Tutorial"}
-    last_skill = None
-    for stp in shown:
-        ok = stp.key in done
-        if stp.skill_id != last_skill:  # one block per skill: its classes in order
-            last_skill = stp.skill_id
-            mine = [x for x in shown if x.skill_id == stp.skill_id]
-            st.markdown(f"##### {stp.skill}")
-            st.caption(" · ".join(x for x in (stp.vendor, stp.category, f"{sum(x.key in done for x in mine)} / {len(mine)} "
-                                                + "classes") if x))
-        with st.container(border=True):
-            st.markdown(f"{'✅' if ok else '🟠' if nxt and stp.key == nxt.key else '○'} **{'Class'} {stp.number} · {stp.title}**")
-            st.caption(f"{kind_name.get(stp.kind, stp.kind)} · {stp.provider}")
-            a, b = st.columns([1, 2])
-            from academy.family_page import download_step
-
-            if not download_step(stp.url, stp.title, f"rt_dl_{stp.key}", a):
-                a.link_button(f"Open on {stp.provider} ↗", stp.url, width="stretch")
-            if ok:
-                b.caption("Completed" + (f" · [{'evidence'}]({done[stp.key]})" if done[stp.key].startswith("https://") else ""))
-            else:
-                ev = b.text_input("Link to your achievement (optional)", key=f"rt_ev_{stp.key}",
-                                  label_visibility="collapsed", placeholder="Link to your achievement or badge (optional)")
-                if b.button(f"Mark as completed (+{ITEM_POINTS} pts)", key=f"rt_done_{stp.key}"):
-                    st.session_state["rt_fb"] = tr.complete(stp, ev)
-                    ui.fx("step")
-                    st.rerun()
-    if nxt:
-        target = next((s.target for s in catalog.skills if s.id == nxt.skill_id), "")
-        assistant_box(ai.prompt_step_coach(route.family, nxt.skill, nxt.title, nxt.provider, target, lang=lang), lang, f"coach_{nxt.key}",
-                      "Get ready for your next step with the AI tutor")
-    if route.uncovered:
-        st.caption("Skills of this family without official training yet: "
-                   + ", ".join(route.uncovered) + ".")
-    if route.extras:
-        with st.expander("Reference material (does not count as a step)"):
-            for skill, items in route.extras.items():
-                st.markdown(f"**{skill}**")
-                material_links(items)
+    learning_paths(catalog, conn, learner, lang, manage)
 
 
 def assistant_section(lang: str) -> None:
@@ -938,11 +871,11 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
     tr = Tracker(conn, pack, learner)
     ui.inject_css()
     st.title(pack.title)
-    if pack.subtitle:
-        st.caption(pack.subtitle)
     editor.saved_notice()
     news_page.splash()  # the latest Microsoft security news, once per session, in a window that closes
-    ui.hero(pack, tr, lang, role)  # what to study next + overall progress; ranks and medals live in the Progress tab
+    from academy.path_page import hero
+
+    hero(catalog, conn, learner, pack, tr)  # the next course of the person's learning path, progress, certifications, rank
     my_notices(conn, packs, exams, catalog, learner, lang)
     if catalog:  # experts, champions and owners: questions of their families still waiting in the forum
         forum = Forum(conn)
@@ -950,7 +883,7 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
         pending = len(forum.waiting(mine)) if mine else 0
         if pending:
             st.warning(f"**Forum:** {pending} question(s) in your role families are waiting for an expert's answer. Open them in the Forum tab.")
-    sections = [("tab_route", lambda: route_tab(catalog, conn, learner, lang, ({f.id for f in catalog.families} if owner else families) if catalog else set())), ("tab_course", lambda: course(pack, tr, lang, role)), ("tab_glossary", lambda: glossary(pack, tr, lang)),
+    sections = [("tab_route", lambda: route_tab(catalog, conn, learner, lang, ({f.id for f in catalog.families} if owner else families) if catalog else set())), ("tab_glossary", lambda: glossary(pack, tr, lang)),
                 ("tab_library", lambda: library(pack, lang)), ("tab_progress", lambda: progress_tab(pack, tr, lang, role)),
                 ("tab_skills", lambda: skills_tab(catalog, packs, lang, owner, families)),
                 ("tab_certs", lambda: certifications_tab(exams, conn, learner, lang, catalog, leader=owner or bool(families))),
