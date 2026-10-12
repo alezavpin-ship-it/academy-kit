@@ -52,7 +52,9 @@ def my_certs(conn, catalog, learner: str, lang: str) -> None:
     m = st.columns(3)
     m[0].metric("Current", sum(r["Status"] == CURRENT for r in mine), border=True)
     m[1].metric("Desired", sum(r["Status"] == DESIRED for r in mine), border=True)
-    reqs = c.requirements()
+    from academy import paths as pathmod
+
+    reqs = c.asked(None, pathmod.load(catalog) if catalog else None)  # the families' requirements and their paths' certifications
     have = {r["Code"] for r in mine}
     m[2].metric("Required by the families and missing",
                 len({r["Code"] for r in reqs if r["Level"] == REQUIRED} - {r["Code"] for r in mine if r["Status"] == CURRENT}), border=True)
@@ -97,6 +99,18 @@ def my_certs(conn, catalog, learner: str, lang: str) -> None:
                 st.rerun()
 
 
+def path_certs_note(c: Certs, fam: str, structure=None) -> None:
+    """The certifications the family's learning paths prepare: asked of everyone in the family unless listed here."""
+    from academy import paths as pathmod
+
+    structure = structure if structure is not None else pathmod.load()
+    written = {r["Code"] for r in c.requirements({fam}, include_off=True)}
+    extra = [p for p in structure.certs_of(fam) if p.cert not in written]
+    if extra:
+        st.caption("Also asked by its learning paths (required for everyone in the family; add the code here to make it desirable or "
+                   "off): " + ", ".join(f"**{p.cert}** ({p.name})" for p in extra) + ".")
+
+
 def certs_admin(conn, catalog, lang: str, admin_fams: set[str], who: str, roster: list[str]) -> None:
     """Owners / champions: what each family asks for, and anyone's register (to correct it or set desired certifications)."""
     c = Certs(conn)
@@ -110,6 +124,7 @@ def certs_admin(conn, catalog, lang: str, admin_fams: set[str], who: str, roster
     fam = st.selectbox("Role family", list(fams), format_func=lambda k: fams[k], key="ce_fam")
     if fam:
         cur = c.requirements({fam})
+        path_certs_note(c, fam)
         df = pd.DataFrame([{"Code": r["Code"], "Name": r["Name"], "Vendor": r["Vendor"], "Level": level[r["Level"]], "Url": r["Url"]} for r in cur],
                           columns=["Code", "Name", "Vendor", "Level", "Url"]).astype("string")
         with st.form(f"ce_req_form_{fam}_{len(cur)}", border=False, enter_to_submit=False):

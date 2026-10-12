@@ -265,7 +265,7 @@ def champion_team(conn, packs: list[Pack], exams: list, catalog, families: set[s
     names = [f.name for f in catalog.families if f.id in families]
     st.markdown("#### My family: " + ", ".join(names))
     st.caption("You only see people taking lessons or certifications of your role family.")
-    st.caption("Run your family's learning paths (job roles, paths, skills, courses on / off, certifications) in **Learning paths**.")
+    st.caption("Run your family's learning paths (paths, skills, courses on / off, certifications) in **Learning paths**.")
     rows = notify.family_team(conn, packs, exams, catalog, families)
     if not rows:
         st.info("Nobody has started your family's content yet.")
@@ -899,7 +899,7 @@ def has_management(owner: bool, families: set[str], duties: set[str]) -> bool:
 
 
 def paths_admin(catalog: Catalog | None, conn, learner: str, families: set[str]) -> None:
-    """Management → Learning paths: the job roles, learning paths, skills, courses and certifications of a family."""
+    """Management → Learning paths: the learning paths, skills, courses and certifications of a family."""
     from academy import paths as pathmod
     from academy.path_page import manage_paths
 
@@ -907,8 +907,8 @@ def paths_admin(catalog: Catalog | None, conn, learner: str, families: set[str])
         st.info("The role families are not loaded yet: load them in Administration (content workbook or ✏️ Edit mode).")
         return
     fams = [f for f in catalog.families if f.id in families]
-    st.caption("Switch job roles, learning paths, skills, courses and certifications on and off without deleting them. Learners see the "
-               "result in their 🎓 Learning view.")
+    st.caption("Switch learning paths, skills, courses and certifications on and off without deleting them. Everyone in the family "
+               "sees the result in their 🎓 Learning view.")
     fid = st.selectbox("Role family", [f.id for f in fams], key="mg_family", format_func=lambda k: next(f.name for f in fams if f.id == k))
     manage_paths(catalog, conn, fid, pathmod.load(), learner)
 
@@ -957,7 +957,7 @@ def admin_section(pack: Pack, lang: str, learner: str, email: str, global_owner:
 
 
 def certs_section(conn, catalog, exams: list, lang: str, who: str, fams: set[str]) -> None:
-    """Management → Certifications: what each family and job role asks for, everyone's register and the exam questions."""
+    """Management → Certifications: what each family and its learning paths ask for, everyone's register and the exam questions."""
     part = st.segmented_control("certs_admin", ["🏅 Requirements and register", "📝 Exam preparation (AI drafts)"],
                                 default="🏅 Requirements and register", key="mg_cert_part", label_visibility="collapsed") or "🏅 Requirements and register"
     if part.startswith("🏅"):

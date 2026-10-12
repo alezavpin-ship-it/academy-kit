@@ -55,7 +55,6 @@ class FamilyRoute:
     extras: dict[str, list[dict]]  # skill name -> reference material that is not a step (docs, guides, videos)
     uncovered: list[str]  # skills of the family without any training step yet
     paths: list = field(default_factory=list)  # the learning paths shown (academy.paths.LearningPath), in order
-    role: str = ""  # the job role id the route was built for ("" = every role)
 
     def vendors(self) -> list[str]:
         return list(dict.fromkeys(s.vendor for s in self.steps))
@@ -79,15 +78,15 @@ def class_order(items: list[dict]) -> list[dict]:
     return sorted(mine, key=key)
 
 
-def family_route(catalog, materials: dict[str, list[dict]], structure, family_id: str, role: str | None = None) -> FamilyRoute:
-    """A family's route for a job role (None = every role): its active learning paths in order; inside each path its
-    active skills in order; inside each skill its required courses in class order (optional ones as reference)."""
+def family_route(catalog, materials: dict[str, list[dict]], structure, family_id: str) -> FamilyRoute:
+    """A family's route: its active learning paths in order; inside each path its active skills in order; inside each skill
+    its required courses in class order (optional ones as reference)."""
     from academy import paths as pathmod
     from academy.family_path import OFF, status_of
 
     fam = next(f for f in catalog.families if f.id == family_id)
     steps, extras, uncovered = [], {}, []
-    shown = structure.paths_of(fam.id, role)
+    shown = structure.paths_of(fam.id)
     for path in shown:
         vendor = structure.vendor_name(path.vendor)
         for s in structure.skills_of(path.id, catalog):
@@ -101,11 +100,11 @@ def family_route(catalog, materials: dict[str, list[dict]], structure, family_id
                 extras[s.name] = rest
             if not mine:
                 uncovered.append(s.name)
-    return FamilyRoute(fam.id, fam.name, steps, extras, uncovered, shown, role or "")
+    return FamilyRoute(fam.id, fam.name, steps, extras, uncovered, shown)
 
 
 def build_routes(catalog, materials: dict[str, list[dict]], structure=None) -> list[FamilyRoute]:
-    """One route per family (biggest gap first), with every active learning path of the family (any role)."""
+    """One route per family (biggest gap first), with every active learning path of the family."""
     from academy import paths as pathmod
 
     structure = structure if structure is not None else pathmod.load(catalog, materials)
