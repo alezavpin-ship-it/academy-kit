@@ -7,10 +7,12 @@
 Both travel as CSV (import / export) with fixed columns:
 
     records       Learner, Code, Name, Vendor, Status, Obtained, Expires, CredentialUrl
-    requirements  FamilyId, Code, Name, Vendor, Roles, Level, Url
+    requirements  FamilyId, Code, Name, Vendor, Level, Url
 
-Requirements are per role family and, optionally, per job role of the family (Roles = role ids separated by ;, empty =
-every role). Level = required | desirable | off (off keeps the certification in the plan without asking for it).
+Requirements are per role family. Level = required | desirable | off (off keeps the certification in the plan without
+asking for it). A learning path that prepares a certification (its CertId) also asks for it, as required, of everyone in
+its family: ``asked`` joins both, and a requirement written for the family wins over the path's (to make it desirable or
+off). Files and databases of the time families had job roles («Roles») still load; the roles are ignored.
 
 Importing records replaces the certifications of the people who appear in the file (other people are untouched);
 importing requirements replaces those of the families that appear in the file.
@@ -38,8 +40,8 @@ CREATE TABLE IF NOT EXISTS cert_records (
 CURRENT, DESIRED = "current", "desired"
 REQUIRED, DESIRABLE, OFF = "required", "desirable", "off"
 RECORD_COLUMNS = ["Learner", "Code", "Name", "Vendor", "Status", "Obtained", "Expires", "CredentialUrl"]
-REQUIREMENT_COLUMNS = ["FamilyId", "Code", "Name", "Vendor", "Roles", "Level", "Url"]
-OPTIONAL_COLUMNS = {"Roles"}  # files written before job roles still import
+REQUIREMENT_COLUMNS = ["FamilyId", "Code", "Name", "Vendor", "Level", "Url"]
+OPTIONAL_COLUMNS: set[str] = set()  # columns a file may leave out (an extra column, such as the retired «Roles», is ignored)
 EXPIRING_DAYS = 90
 _STATUS = {CURRENT: CURRENT, "actual": CURRENT, "obtenida": CURRENT, "vigente": CURRENT, "held": CURRENT, "": CURRENT,
            DESIRED: DESIRED, "deseable": DESIRED, "deseada": DESIRED, "planned": DESIRED, "planeada": DESIRED, "en curso": DESIRED}
@@ -113,32 +115,43 @@ class Certs:
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
         conn.executescript(SCHEMA)
-        if "roles" not in {r[1] for r in conn.execute("PRAGMA table_info(cert_requirements)")}:  # databases of earlier versions
+        # «roles» held the job roles of a requirement while families had them; it is kept (always empty) so older databases work
+        if "roles" not in {r[1] for r in conn.execute("PRAGMA table_info(cert_requirements)")}:
             with conn:
                 conn.execute("ALTER TABLE cert_requirements ADD COLUMN roles TEXT NOT NULL DEFAULT ''")
 
     # ------------------------------------------------------------------ requirements per family
-    def requirements(self, families: set[str] | None = None, role: str | None = None, include_off: bool = False) -> list[dict]:
-        """What the families ask for. ``role``: only what applies to that job role. «off» ones only with ``include_off``."""
+    def requirements(self, families: set[str] | None = None, include_off: bool = False) -> list[dict]:
+        """What the families ask for, as written for each family. «off» ones only with ``include_off``."""
         rows = self.conn.execute("SELECT * FROM cert_requirements ORDER BY family, level DESC, code").fetchall()
-        out = []
-        for r in rows:
-            roles = [x.strip() for x in (r["roles"] or "").split(";") if x.strip()]
-            if (families is None or r["family"] in families) and (include_off or r["level"] != OFF) and (role is None or not roles or role in roles):
-                out.append({"FamilyId": r["family"], "Code": r["code"], "Name": r["name"], "Vendor": r["vendor"], "Roles": "; ".join(roles),
-                            "Level": r["level"], "Url": r["url"]})
+        return [{"FamilyId": r["family"], "Code": r["code"], "Name": r["name"], "Vendor": r["vendor"], "Level": r["level"], "Url": r["url"]}
+                for r in rows if (families is None or r["family"] in families) and (include_off or r["level"] != OFF)]
+
+    def asked(self, families: set[str] | None = None, structure=None) -> list[dict]:
+        """Everything the families ask for: their requirements plus the certification of each active learning path (as
+        required, «Path» = the path's name). A requirement written for the family wins over its path's, so a champion can
+        make a path's certification desirable or switch it off."""
+        out = self.requirements(families)
+        if structure is None:
+            return out
+        written = {(r["FamilyId"], r["Code"]) for r in self.requirements(families, include_off=True)}
+        fams = {p.family for p in structure.paths} if families is None else families
+        for fam in sorted(fams):
+            for p in structure.certs_of(fam):
+                if (fam, p.cert) not in written:
+                    written.add((fam, p.cert))
+                    out.append({"FamilyId": fam, "Code": p.cert, "Name": p.name, "Vendor": structure.vendor_name(p.vendor), "Level": REQUIRED,
+                                "Url": "", "Path": p.name})
         return out
 
     def set_requirements(self, family: str, rows: list[dict]) -> None:
-        """Replace what a family asks for. Rows: Code, Name, Vendor, Roles (job role ids; empty = all), Level (required |
-        desirable | off), Url."""
+        """Replace what a family asks for. Rows: Code, Name, Vendor, Level (required | desirable | off), Url."""
         clean = {}
         for r in rows:
             code = _text(r.get("Code")).upper()
             if code:
-                roles = "; ".join(x.strip() for x in _text(r.get("Roles")).replace(",", ";").split(";") if x.strip())
                 clean[code] = (family, code, _text(r.get("Name")), _text(r.get("Vendor")), _LEVEL.get(_text(r.get("Level")).lower(), DESIRABLE),
-                               _text(r.get("Url")), roles)
+                               _text(r.get("Url")), "")
         with self.conn:
             self.conn.execute("DELETE FROM cert_requirements WHERE family=?", (family,))
             self.conn.executemany("INSERT INTO cert_requirements(family, code, name, vendor, level, url, roles) VALUES (?,?,?,?,?,?,?)",
@@ -237,10 +250,12 @@ class Certs:
         return out, problems
 
     # ------------------------------------------------------------------ reports
-    def report(self, catalog, lang: str = "es", only: set[str] | None = None, roster: list[str] | None = None, today: date | None = None) -> dict:
+    def report(self, catalog, lang: str = "es", only: set[str] | None = None, roster: list[str] | None = None, today: date | None = None,
+               structure=None) -> dict:
         """{"families": one row per family and certification it asks for, "people": one row per person, "expiring": [...]}.
 
-        ``only``: the families a champion runs. ``roster``: everyone in the academy, so people without any record show up too."""
+        ``only``: the families a champion runs. ``roster``: everyone in the academy, so people without any record show up too.
+        ``structure``: the learning structure (loaded from the practice when left out) whose paths' certifications count too."""
         today = today or datetime.now(timezone.utc).date()
         recs = self.records()
         fam_name = {f.id: f.name for f in catalog.families} if catalog else {}
@@ -256,7 +271,11 @@ class Certs:
              "next": "Next to expire", "missing": "Required and missing",
              "days": "Days left"}
         level = {REQUIRED: "Required", DESIRABLE: "Desirable"}
-        reqs = self.requirements(only)
+        if structure is None and catalog:
+            from academy import paths as pathmod
+
+            structure = pathmod.load(catalog)
+        reqs = self.asked(only, structure)
         families = [{k["family"]: fam_name.get(r["FamilyId"], r["FamilyId"]), k["cert"]: f"{r['Code']} · {r['Name']}".rstrip(" ·"),
                      k["level"]: level[r["Level"]], k["have"]: len(holders.get(r["Code"], [])), k["want"]: len(wanting.get(r["Code"], [])),
                      k["who"]: ", ".join(sorted(holders.get(r["Code"], []), key=str.lower)) or "—"} for r in reqs]

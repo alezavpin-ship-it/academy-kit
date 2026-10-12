@@ -25,7 +25,7 @@ The sidebar's **View** switch appears only to people with something to manage. L
 
 | Tab | What it does |
 |---|---|
-| Learning route | The person's role family and job role: vendor → learning path (with its certification) → skill → module → course. Each course opens where it lives (SharePoint, Percipio, Workday MyLearning, the vendor's site, a repo or a file of the academy) and is marked done here. |
+| Learning route | Every active learning path of the person's role family: vendor → learning path (with its certification) → skill → module → course. Each course opens where it lives (SharePoint, Percipio, Workday MyLearning, the vendor's site, a repo or a file of the academy) and is marked done here. |
 | Progress | 📈 points, badges and rank · 🏅 my certifications (current and desired) · 🧠 my skills · 📝 exam preparation (study, practice, mock exam). |
 | Forum | Ask the experts (SMEs) of a family; champions and owners answer and moderate in place. |
 | Study groups | The study groups of the person's role family (and the ones open to the whole practice), opened by its champion or the owners: next sessions with Outlook invites, join / leave, the group's agenda and actions. |
@@ -37,10 +37,10 @@ When the app opens, a window shows the **latest Microsoft security news** once p
 
 | Tab | Who | What |
 |---|---|---|
-| Learning paths | Owners (every family), champions (their families) | Job roles, learning paths, skills, courses and certifications on / off (✏️ Edit mode for owners). |
-| Team | Upskilling & learning (everyone), champions (their families' people) | Roster and job roles, progress, notices to send. |
+| Learning paths | Owners (every family), champions (their families) | Learning paths, skills, courses and certifications on / off (✏️ Edit mode for owners). |
+| Team | Upskilling & learning (everyone), champions (their families' people) | Roster and course roles, progress, notices to send. |
 | Reports | Upskilling & learning | Status by family, who keeps up with the path, certifications, skills matrix; Excel and PDF. |
-| Certifications | Owners, Upskilling & learning | What each family and job role asks for, everyone's register, exam questions (AI drafts). |
+| Certifications | Owners, Upskilling & learning | What each family and its learning paths ask for, everyone's register, exam questions (AI drafts). |
 | Demand | Demand | The role requests against the practice and the courses, trend, executive PDF. |
 | Skills map | Owners | Families by gap and the catalog import. |
 | Rhythm | Owners, Upskilling & learning, champions | Monthly review, family syncs, study groups (by role family), meeting room. |
@@ -197,23 +197,25 @@ The practice learns in this structure (one per practice; PPM and others have the
 |---|---|---|---|
 | Practice | `catalog/practices.csv` | Id | Its owners run it (Team → 🏢 Practices). |
 | Role family | `catalog/skills.json` (Families sheet) | FamilyId | Champion = the family lead; SMEs come from People (Role sme). |
-| Job role | `catalog/paths.json` (JobRoles sheet) | FamilyId + RoleId | sysadmin, architect… People.CourseRole takes one of them. |
 | Vendor | `catalog/paths.json` (Vendors sheet) | VendorId | Short and shared by every family: MSFT, CISCO, AWS… |
-| Learning path | `catalog/paths.json` (Paths sheet) | PathId | Family + vendor; CertId (e.g. AZ-900); Roles (empty = every role); Order; Active. |
+| Learning path | `catalog/paths.json` (Paths sheet) | PathId | Family + vendor; CertId (e.g. AZ-900, asked of everyone in the family); Order; Active. |
 | Skill | `catalog/skills.json` + placement in `paths.json` (Skills sheet: PathId, Order, Active) | SkillId | |
 | Module | the Module column of each course | — | Groups the courses of a skill; empty = Core. |
 | Course | `catalog/materials.json` (LearningPaths sheet), `content/families/<family>.csv` | SkillId + Url | Kind course · module · path · lab · tutorial · doc · guide · video · exam · certification · deck; Location SharePoint · Percipio · Workday MyLearning · Vendor site · Repo · Academy file · Other; Status required · optional · off. |
-| Certification | Certifications tab (CSV `FamilyId, Code, Name, Vendor, Roles, Level, Url`) | FamilyId + Code | Level required · desirable · off, per job role (empty = all). |
+| Certification | Certifications tab (CSV `FamilyId, Code, Name, Vendor, Level, Url`) + each path's CertId | FamilyId + Code | Level required · desirable · off for the whole family. A path's CertId counts as required unless the family lists it with another level. |
 
-Learners see the active learning paths of their job role, the active skills in them and the required courses (optional
-ones as recommended material); the dashboard shows their next course, how many they completed and the certifications
-their role asks for. The former Course tab (lessons with quizzes) was retired; the glossary, video library and ranks stay.
+Belonging to a role family is what puts a person on its learning paths: everyone in the family sees its active paths, the
+active skills in them and the required courses (optional ones as recommended material). There are no job roles inside a
+family; the person's role in People (CourseRole) is a label for reports, and picks the lessons of the course when it
+matches a course role. The dashboard shows their next course, how many they completed and the certifications their family
+and its paths ask for. Files written while families had job roles (a JobRoles sheet, a Roles column in Paths or in the
+certifications CSV) still import: the roles are ignored. The former Course tab (lessons with quizzes) was retired; the glossary, video library and ranks stay.
 The first time a practice opens, `catalog/paths.json` is made from the catalog: one learning path per family and vendor.
 
 ## Each family's learning paths (champions)
-In **Learning route**, the champion of a family (and owners) get **🧭 Manage the learning paths**, with tabs for **Job roles**,
-**Learning paths** (vendor, certification, roles, order, active), **Skills** (which path, order, active), **Courses** and
-**Certifications** (per job role; required, desirable or off). In Courses, a table of every course of the
+In **Learning route**, the champion of a family (and owners) get **🧭 Manage the learning paths**, with tabs for
+**Learning paths** (vendor, certification, order, active), **Skills** (which path, order, active), **Courses** and
+**Certifications** (for the whole family; required, desirable or off). In Courses, a table of every course of the
 family with **Status = required** (part of the path, counts for progress) | **optional** (recommended material) | **off**
 (kept in the plan, hidden from learners), the class order, kind, provider, minutes and notes. They can upload their own
 material (PowerPoint, PDF, Word, Excel, video): it becomes a class learners download. The same path is a CSV per family,

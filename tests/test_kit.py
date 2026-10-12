@@ -1726,27 +1726,30 @@ def test_content_accepts_family_names_and_one_course_role(tmp_path, monkeypatch)
                        "Active": "yes", "CourseRole": ""}]
     data["Roles"] = [{"PackId": "cloud-security", "Role": "Cloud Security Engineer", "Skills": "fundamentals; identity; iam"}]
     data["JobRoles"] = [{"FamilyId": "AI Security & Governance", "RoleId": "cse", "Name": "Cloud Security Engineer", "Description": "", "Active": "yes"}]
-    result = content.build(data)
+    result = content.build(data)  # a JobRoles sheet of an older file is ignored
     assert result["problems"] == [], result["problems"][:5]
     by = {p.name: p for p in result["people"]}
     assert by["Ana Lopez"].families == ("ai-security-governance",) and by["Ana Lopez"].course_role == "Cloud Security Engineer"
     assert by["Bo Chen"].families == ("microsoft-365-security", "identity-access-management")
     assert result["notes"] and "in no course role" in result["notes"][0]  # a note, not a problem
-    data["People"][1]["CourseRole"] = "Cloud Security Architect"  # not in JobRoles yet: a note, they see every path
+    data["People"][1]["CourseRole"] = "Cloud Security Architect"  # the role is a label: any value is kept, with no note
     data["People"].append({"Person": "Lopez, Ana", "Email": "ANA@contoso.com", "Role": "learner", "Families": "", "Active": "yes", "CourseRole": ""})
     result = content.build(data)
-    assert result["problems"] == [] and any("'Cloud Security Architect' (1 people) is not in JobRoles" in n for n in result["notes"])
+    assert result["problems"] == [] and not any("Cloud Security Architect" in n or "JobRoles" in n for n in result["notes"])
+    assert {p.name: p for p in result["people"]}["Bo Chen"].course_role == "Cloud Security Architect"
     assert any("ana@contoso.com is on several rows" in n for n in result["notes"])
     data["People"][0]["Families"] = "Quantum Security"
     bad = content.build(data)["problems"]
     assert any("unknown role family: Quantum Security" in m and "ai-security-governance" in m for m in bad)
 
 
-def test_job_role_narrows_the_learning_path(tmp_path, monkeypatch):
-    """Practice -> role family -> vendor -> learning path -> skill -> module -> course; the job role (People) picks the paths."""
+def test_everyone_in_the_family_sees_its_paths_and_their_certifications(tmp_path, monkeypatch):
+    """Practice -> role family -> vendor -> learning path -> skill -> module -> course. Belonging to the family puts a person on
+    every active path of it (no job roles); a path's certification is asked of the whole family unless the family says otherwise."""
     from academy import paths as pathmod
     from academy import people
     from academy.catalog import load_materials
+    from academy.certs import DESIRABLE, REQUIRED, Certs
     from academy.route import RouteTracker, family_route
 
     cat = load_catalog(tmp_path / "skills.json") if (tmp_path / "skills.json").exists() else load_catalog()
@@ -1755,33 +1758,49 @@ def test_job_role_narrows_the_learning_path(tmp_path, monkeypatch):
     s = pathmod.default(cat, mats)
     assert s.vendors[0].id == "MSFT" and all(p.family in {f.id for f in cat.families} for p in s.paths) and pathmod.validate(s, cat) == []
     base = s.paths_of(fid)
-    soc = pathmod.JobRole("soc", fid, "SOC analyst")
-    sc200 = pathmod.LearningPath("sc-200", fid, "MSFT", "SC-200 Security Operations Analyst", cert="SC-200", roles=("soc",), order=1)
+    sc200 = pathmod.LearningPath("sc-200", fid, "MSFT", "SC-200 Security Operations Analyst", cert="SC-200", order=1)
     sid = cat.in_family(fid)[0].id
-    s = pathmod.Structure(s.vendors, [soc, pathmod.JobRole("eng", fid, "Engineer")], s.paths + [sc200], {**s.skills, sid: pathmod.Placement("sc-200", 1)})
-    assert "sc-200" in [p.id for p in s.paths_of(fid, "soc")] and "sc-200" not in [p.id for p in s.paths_of(fid, "eng")]
-    assert s.role_of(fid, "soc analyst") == soc and s.role_of(fid, "SOC") == soc and s.role_of(fid, "x") is None
+    s = pathmod.Structure(s.vendors, s.paths + [sc200], {**s.skills, sid: pathmod.Placement("sc-200", 1)})
+    assert "sc-200" in [p.id for p in s.paths_of(fid)] and [p.id for p in s.certs_of(fid)] == ["sc-200"]
     mats[sid] = [{"title": "KQL basics", "url": "https://learn.microsoft.com/kql", "kind": "module", "module": "Query", "order": 1},
                  {"title": "Our runbook", "url": "https://contoso.sharepoint.com/runbook", "kind": "doc", "status": "required", "module": "Operate",
                   "order": 2}]
-    route = family_route(cat, mats, s, fid, "soc")
+    route = family_route(cat, mats, s, fid)
     first = [x for x in route.steps if x.path == "sc-200"]
     assert [(x.module, x.title, x.location) for x in first] == [("Query", "KQL basics", "Vendor site"), ("Operate", "Our runbook", "SharePoint")]
     assert any(p.cert == "SC-200" for p in route.paths) and len(route.paths) == len(base) + 1
-    assert pathmod.from_dict(pathmod.to_dict(s)) == s
-    # in the app: Ana (SOC analyst of the family) sees her path; no role choice in the sidebar
+    assert pathmod.from_dict(pathmod.to_dict(s)) == s and "roles" not in pathmod.to_dict(s)
+    # a file written while families had job roles still loads: the roles are dropped, every path stays
+    old = pathmod.to_dict(s)
+    old["roles"] = [{"id": "soc", "family": fid, "name": "SOC analyst", "description": "", "active": True}]
+    old["paths"] = [{**p, "roles": ["soc"]} for p in old["paths"]]
+    assert pathmod.from_dict(old) == s
+    # the path's certification is asked of the family, as required; a requirement written for the family wins
+    c = Certs(connect(tmp_path / "certs.db"))
+    assert [(r["Code"], r["Level"], r.get("Path")) for r in c.asked({fid}, s)] == [("SC-200", REQUIRED, "SC-200 Security Operations Analyst")]
+    c.set_requirements(fid, [{"Code": "SC-200", "Level": "desirable"}, {"Code": "AZ-500", "Level": "required", "Roles": "soc"}])
+    assert sorted((r["Code"], r["Level"]) for r in c.asked({fid}, s)) == [("AZ-500", REQUIRED), ("SC-200", DESIRABLE)]  # «Roles» ignored
+    c.set_requirements(fid, [{"Code": "SC-200", "Level": "off"}])
+    assert c.asked({fid}, s) == [] and c.asked({"identity-access-management"}, s) == []
+    rep_ = c.report(cat, "en", roster=["Ana"], structure=pathmod.Structure(s.vendors, s.paths, s.skills))
+    assert rep_["families"] == []  # switched off for the family
+    c.set_requirements(fid, [])
+    assert any(r["Required and missing"] == "SC-200" for r in c.report(cat, "en", roster=["Ana"], structure=s)["people"])
+    assert "Roles" not in c.requirements_csv().decode("utf-8-sig").splitlines()[0]
+    # in the app: Ana (in the family, with a role that is only a label) sees every path of it and no job-role choice
     pathmod.save(s, tmp_path / "paths.json")
     from academy.catalog import save_materials
 
     save_materials(mats, tmp_path / "materials.json")
     people.save([people.Person("Ana", "ana@x.com", "learner", (fid,), course_role="SOC analyst")], tmp_path / "people.csv")
     at = _run(tmp_path, monkeypatch, owners=None, ak_person="Ana")
-    assert not at.exception and not any(x.label == "Your role" for x in at.selectbox)
+    assert not at.exception and not any(x.label in ("Your role", "Job role") for x in at.selectbox)
     assert any("Your role: **SOC analyst**" in c.value for c in at.caption)
     page = " ".join(m.value for m in at.markdown)
     assert "Your next course" in page and "KQL basics" in page
-    assert at.selectbox(key="rt_family").value == fid and at.selectbox(key=f"rt_role_{fid}").value == "soc"
+    assert at.selectbox(key="rt_family").value == fid and not any(x.key == f"rt_role_{fid}" for x in at.selectbox)
     assert any("SC-200 Security Operations Analyst" in e.label for e in at.expander)
+    assert "SC-200" in page  # the path's certification, asked of her
     at.button(key=f"rt_done_{sid}|https://learn.microsoft.com/kql").click().run()
     assert not at.exception and RouteTracker(connect(tmp_path / "app.db"), "Ana").done()
 

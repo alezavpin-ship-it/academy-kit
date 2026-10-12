@@ -3,10 +3,9 @@
     Practice -> Role family (lead = champion, SMEs) -> Vendor -> Learning path (e.g. AZ-900) -> Skill -> Module -> Course
 
 * Vendors (VendorId: MSFT, CISCO, AWS…) are shared by every family; a family uses the vendors of its learning paths.
-* Job roles belong to a role family (sysadmin, architect…). A person's role is set in People (CourseRole) by owners and
-  champions; it decides which learning paths and certifications they see.
-* A learning path belongs to one family and one vendor, may lead to a certification (CertId) and may be limited to some
-  job roles (empty = every role of the family).
+* A learning path belongs to one family and one vendor and may lead to a certification (CertId). Every learner of the
+  family sees every active path of it: belonging to the family is what puts a person on its paths. There are no job roles
+  inside a family, and a person's role in People does not change which paths they see.
 * Skills (catalog/skills.json) are placed in a learning path, with an order; Modules group the courses of a skill.
 * Courses are the classes of each skill (catalog/materials.json): title, link, kind (course, doc, guide, video, exam,
   certification…), location (SharePoint, Percipio, Workday MyLearning, vendor site, repo…), status required / optional /
@@ -50,22 +49,12 @@ class Vendor:
 
 
 @dataclass(frozen=True)
-class JobRole:
-    id: str
-    family: str
-    name: str
-    description: str = ""
-    active: bool = True
-
-
-@dataclass(frozen=True)
 class LearningPath:
     id: str
     family: str
     vendor: str  # VendorId
     name: str
-    cert: str = ""  # the certification it prepares (code, e.g. AZ-500)
-    roles: tuple[str, ...] = ()  # job role ids of the family; empty = every role
+    cert: str = ""  # the certification it prepares (code, e.g. AZ-500): asked of everyone on the path
     order: int = 0
     active: bool = True
     description: str = ""
@@ -81,7 +70,6 @@ class Placement:
 @dataclass
 class Structure:
     vendors: list[Vendor] = field(default_factory=list)
-    roles: list[JobRole] = field(default_factory=list)
     paths: list[LearningPath] = field(default_factory=list)
     skills: dict[str, Placement] = field(default_factory=dict)
 
@@ -89,19 +77,14 @@ class Structure:
     def vendor_name(self, vid: str) -> str:
         return next((v.name for v in self.vendors if v.id == vid), vid)
 
-    def roles_of(self, family: str, active_only: bool = True) -> list[JobRole]:
-        return [r for r in self.roles if r.family == family and (r.active or not active_only)]
-
-    def role_of(self, family: str, text: str) -> JobRole | None:
-        """The family's job role written as ``text`` (its id or its name, any case)."""
-        t = str(text or "").strip().lower()
-        return next((r for r in self.roles if r.family == family and t and t in (r.id.lower(), r.name.lower())), None) if t else None
-
-    def paths_of(self, family: str, role: str | None = None, active_only: bool = True) -> list[LearningPath]:
-        """The family's learning paths for a job role id (None = all of them), in order."""
-        out = [p for p in self.paths if p.family == family and (p.active or not active_only)
-               and (role is None or not p.roles or role in p.roles)]
+    def paths_of(self, family: str, active_only: bool = True) -> list[LearningPath]:
+        """The family's learning paths, in order."""
+        out = [p for p in self.paths if p.family == family and (p.active or not active_only)]
         return sorted(out, key=lambda p: (p.order or 9999, p.name.lower()))
+
+    def certs_of(self, family: str) -> list[LearningPath]:
+        """The family's active learning paths that prepare a certification, in order."""
+        return [p for p in self.paths_of(family) if p.cert]
 
     def place(self, skill_id: str) -> Placement:
         return self.skills.get(skill_id, Placement())
@@ -150,14 +133,14 @@ def structure_path() -> Path:
 
 def to_dict(s: Structure) -> dict:
     return {"vendors": [vars(v) for v in s.vendors],
-            "roles": [vars(r) for r in s.roles],
-            "paths": [{**vars(p), "roles": list(p.roles)} for p in s.paths],
+            "paths": [vars(p) for p in s.paths],
             "skills": {k: vars(v) for k, v in s.skills.items()}}
 
 
 def from_dict(d: dict) -> Structure:
-    return Structure([Vendor(**v) for v in d.get("vendors", [])], [JobRole(**r) for r in d.get("roles", [])],
-                     [LearningPath(**{**p, "roles": tuple(p.get("roles", []))}) for p in d.get("paths", [])],
+    """Files written while families had job roles («roles», and «roles» on each path) still load: the roles are dropped."""
+    return Structure([Vendor(**v) for v in d.get("vendors", [])],
+                     [LearningPath(**{k: v for k, v in p.items() if k != "roles"}) for p in d.get("paths", [])],
                      {k: Placement(**v) for k, v in d.get("skills", {}).items()})
 
 
@@ -194,7 +177,7 @@ def complete(s: Structure, catalog, materials: dict | None = None) -> Structure:
     if not missing:
         return s
     base = default(type(catalog)(catalog.families, missing), materials)
-    out = Structure(list(s.vendors), list(s.roles), list(s.paths), dict(s.skills))
+    out = Structure(list(s.vendors), list(s.paths), dict(s.skills))
     for v in base.vendors:
         if not any(x.id == v.id for x in out.vendors):
             out.vendors.append(v)
@@ -240,12 +223,6 @@ def validate(s: Structure, catalog) -> list[str]:
     vids = [v.id for v in s.vendors]
     if len(vids) != len(set(vids)):
         errs.append("[Vendors] a VendorId is repeated.")
-    keys = [(r.family, r.id) for r in s.roles]
-    if len(keys) != len(set(keys)):
-        errs.append("[JobRoles] a RoleId is repeated inside a family.")
-    for r in s.roles:
-        if fams and r.family not in fams:
-            errs.append(f"[JobRoles] '{r.name}': the family '{r.family}' does not exist.")
     pids = [p.id for p in s.paths]
     if len(pids) != len(set(pids)):
         errs.append("[Paths] a PathId is repeated.")
@@ -254,9 +231,6 @@ def validate(s: Structure, catalog) -> list[str]:
             errs.append(f"[Paths] '{p.name}': the family '{p.family}' does not exist.")
         if p.vendor not in vids:
             errs.append(f"[Paths] '{p.name}': the vendor '{p.vendor}' is not in Vendors.")
-        for r in p.roles:
-            if not any(x.family == p.family and x.id == r for x in s.roles):
-                errs.append(f"[Paths] '{p.name}': the role '{r}' is not a job role of its family.")
     for sid, pl in s.skills.items():
         if pl.path and pl.path not in pids:
             errs.append(f"[Skills] '{sid}': the learning path '{pl.path}' does not exist.")

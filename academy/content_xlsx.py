@@ -54,8 +54,7 @@ LETTERS = "ABCD"
 SHEETS: dict[str, list[str]] = {
     "Families": ["FamilyId", "Name", "GapVolume", "RoleImpact", "Champion", "ChampionEmail"],
     "Vendors": ["VendorId", "Name", "Website", "Active"],
-    "JobRoles": ["FamilyId", "RoleId", "Name", "Description", "Active"],
-    "Paths": ["PathId", "FamilyId", "VendorId", "Name", "CertId", "Roles", "Order", "Active", "Description"],
+    "Paths": ["PathId", "FamilyId", "VendorId", "Name", "CertId", "Order", "Active", "Description"],
     "Skills": ["SkillId", "Name", "FamilyId", "PathId", "Order", "Active", "Vendor", "Category", "Confirmed", "Severity", "Target", "ImpactedRoles"],
     "LearningPaths": ["SkillId", "Family", "Path", "Skill", "Module", "Class", "Title", "Url", "Kind", "Location", "Provider", "Status", "Minutes",
                       "Notes", "Verified"],
@@ -79,8 +78,8 @@ SHEETS: dict[str, list[str]] = {
 }
 # The workbook groups the tables by what they manage; each group has its tab color (the order of the tabs follows it).
 SECTIONS = [
-    ("Learning structure", "FF5800", ["Families", "Vendors", "JobRoles", "Paths", "Skills", "LearningPaths"],
-     "Role families -> vendors -> learning paths (e.g. AZ-900) -> skills -> modules -> courses, and the job roles of each family."),
+    ("Learning structure", "FF5800", ["Families", "Vendors", "Paths", "Skills", "LearningPaths"],
+     "Role families -> vendors -> learning paths (e.g. AZ-900) -> skills -> modules -> courses."),
     ("Practice", "2A78D6", ["Practice", "PracticeSkills", "PracticeRoles", "NewsSources", "People"],
      "What the practice is, the skills and roles it covers (demand analysis), the news it follows and who is who (owners, champions, SMEs)."),
     ("Courses", "6B6762", ["Courses", "Levels", "Ranks", "Topics", "Roles"],
@@ -105,13 +104,13 @@ CHOICES = {"AnswerLetter": list("ABCD"), "Confirmed": ["yes", "no"], "Severity":
            "Active": ["yes", "no"]}
 NEW_COLUMNS = {"Status", "Minutes", "Notes", "PathId", "Order", "Active", "Module", "Location", "Path", "Vendor", "CourseRole",
                "Responsibilities", "Families"}  # added later: older files still import
-OPTIONAL = {"Families", "Skills", "Practice", "PracticeSkills", "PracticeRoles", "NewsSources", "People", "StudyMaterial", "Vendors", "JobRoles", "Paths"}  # without them the catalog / practice on disk stays
+OPTIONAL = {"Families", "Skills", "Practice", "PracticeSkills", "PracticeRoles", "NewsSources", "People", "StudyMaterial", "Vendors", "Paths"}  # without them the catalog / practice on disk stays
 TABLE = "Table"  # first column of the single CSV: the sheet each row belongs to
 # names used by earlier versions of the file
 LEGACY_SHEETS = {"Cursos": "Courses", "Niveles": "Levels", "Rangos": "Ranks", "Temas": "Topics", "Lecciones": "Lessons", "Preguntas": "Questions",
                  "Recursos": "Resources", "LeccionRecursos": "LessonResources", "Glosario": "Glossary", "Familias": "Families",
                  "Practica": "Practice", "PracticaSkills": "PracticeSkills", "PracticaRoles": "PracticeRoles"}
-RETIRED = {"VBD", "LEEME", "README"}  # sheets that are not content tables (or no longer exist): ignored on import
+RETIRED = {"VBD", "LEEME", "README", "JobRoles"}  # sheets that are not content tables (or no longer exist): ignored on import
 LEGACY_TABLE = "Tabla"
 LEVEL_EN = {"básico": "basic", "basico": "basic", "intermedio": "intermediate", "avanzado": "advanced"}
 _KEYS = ["PackId", "LessonId", "ResourceKey", "FamilyId", "SkillId", "SortOrder"]  # the columns that tie rows together go first
@@ -130,10 +129,9 @@ README = [
     "5. Kind in Resources: video | playlist | link. Videos must be YouTube; anything else is a link.",
     "6. Learning structure: Practice -> Role family (Families; Champion = the family lead) -> Vendor (Vendors) -> learning path",
     "   (Paths, e.g. 'AZ-900 Azure Fundamentals') -> Skill (Skills.PathId) -> Module -> Course (LearningPaths).",
-    "7. Vendors: VendorId is short and shared by every family (MSFT, CISCO, AWS...). JobRoles: the roles of each family",
-    "   (FamilyId + RoleId, e.g. sysadmin, architect). People.CourseRole takes one of them (its id or name).",
-    "8. Paths: one row per learning path of a family and a vendor. CertId = the certification it prepares (optional);",
-    "   Roles = job role ids separated by ; (empty = every role of the family); Order = position; Active = no hides it.",
+    "7. Vendors: VendorId is short and shared by every family (MSFT, CISCO, AWS...).",
+    "8. Paths: one row per learning path of a family and a vendor; everyone in the family sees its active paths. CertId = the",
+    "   certification it prepares (optional; asked of everyone in the family); Order = position; Active = no hides it.",
     "9. Skills: PathId places the skill in a learning path; Order = its position there; Active = no hides it.",
     "10. LearningPaths (the courses): one row per course of a skill. Module groups them (e.g. 'Identity basics');",
     "   Class = 1, 2, 3... is the order; Kind = course | module | path | lab | tutorial | doc | guide | video | exam |",
@@ -145,11 +143,12 @@ README = [
     "12. NewsSources: the sites of the Knowledge exchange. FeedUrl is the RSS / Atom feed (optional); Splash = yes opens the academy",
     "    with that source's latest news; Enabled = no hides it. Addresses must start with https://.",
     "13. People: Role = owner | champion | sme | learner; Families = family ids or names separated by ; (the first one is the",
-    "    person's family); CourseRole = a job role of that family. A champion listed here becomes the champion of those families.",
+    "    person's family; it decides which learning paths they see). CourseRole = the person's role: a label for reports, and the",
+    "    course role (Roles tab) whose lessons they see in the course. A champion listed here becomes the champion of those families.",
     "    Responsibilities = demand and / or learning (Upskilling & learning), separated by ;: only they see the Demand tools and the",
     "    learning reports, team, certifications and Knowledge exchange tools (while nobody holds one, the owners do).",
-    "14. Certifications required or desirable per family and job role are kept in the Certifications tab (CSV FamilyId, Code,",
-    "    Name, Vendor, Roles, Level = required | desirable | off, Url).",
+    "14. Certifications required or desirable per family are kept in the Certifications tab (CSV FamilyId, Code, Name, Vendor,",
+    "    Level = required | desirable | off, Url). A path's CertId is asked too, as required, unless the family lists it.",
     "15. StudyMaterial: Kind = video | playlist | search | page; SkillId (optional) ties an item to a skill of the catalog.",
     "    NewsSources and StudyMaterial: Families = the role families whose learners see the item (ids or names, separated by ;);",
     "    empty = the family of its SkillId, or every family.",
@@ -216,8 +215,7 @@ def _rows(packs: list[dict], materials: dict[str, list[dict]], catalog, practice
         struct = pathmod.load(catalog, materials) if structure is None else structure
         out["Families"] = [[f.id, f.name, f.gap_volume, f.role_impact, f.champion, f.champion_email] for f in catalog.families]
         out["Vendors"] = [[v.id, v.name, v.url, "yes" if v.active else "no"] for v in struct.vendors]
-        out["JobRoles"] = [[r.family, r.id, r.name, r.description, "yes" if r.active else "no"] for r in struct.roles]
-        out["Paths"] = [[x.id, x.family, x.vendor, x.name, x.cert, "; ".join(x.roles), x.order or "", "yes" if x.active else "no", x.description]
+        out["Paths"] = [[x.id, x.family, x.vendor, x.name, x.cert, x.order or "", "yes" if x.active else "no", x.description]
                         for f in catalog.families for x in struct.paths_of(f.id, active_only=False)]
         out["Skills"] = [[x.id, x.name, x.family, struct.place(x.id).path, struct.place(x.id).order or "", "yes" if struct.place(x.id).active else "no",
                           vendor_of(x, materials), x.category, "yes" if x.confirmed else "no", x.severity, x.target, x.impacted_roles]
@@ -459,11 +457,12 @@ def _catalog(data: dict, previous, problems: list[str]):
 
 
 def _structure(data: dict, catalog, materials: dict, problems: list[str]):
-    """The learning structure from the Vendors / JobRoles / Paths sheets and the placement columns of Skills; what is on disk
-    for the sheets the file does not carry. None when the file carries none of it."""
+    """The learning structure from the Vendors / Paths sheets and the placement columns of Skills; what is on disk for the
+    sheets the file does not carry. None when the file carries none of it. A JobRoles sheet or a Roles column of Paths
+    (files of the time families had job roles) is ignored."""
     from academy import paths as pathmod
 
-    carries = data["Vendors"] or data["JobRoles"] or data["Paths"] or any(_text(r.get("PathId")) for r in data["Skills"])
+    carries = data["Vendors"] or data["Paths"] or any(_text(r.get("PathId")) for r in data["Skills"])
     if not carries or not catalog:
         return None
     old = pathmod.load(catalog, materials)
@@ -471,18 +470,12 @@ def _structure(data: dict, catalog, materials: dict, problems: list[str]):
     def active(v) -> bool:
         return _text(v).lower() not in ("no", "n", "false", "0", "off")
 
-    def ids(v) -> tuple[str, ...]:
-        return tuple(dict.fromkeys(x.strip() for x in _text(v).replace(",", ";").split(";") if x.strip()))
-
     vendors = [pathmod.Vendor(_text(r["VendorId"]).upper(), _text(r["Name"]) or _text(r["VendorId"]), _text(r.get("Website")), active(r.get("Active")))
                for r in data["Vendors"] if _text(r.get("VendorId"))] if data["Vendors"] else list(old.vendors)
     fam_by = {**{f.id.lower(): f.id for f in catalog.families}, **{f.name.lower(): f.id for f in catalog.families}}
-    roles = [pathmod.JobRole(_text(r["RoleId"]) or pathmod.slug(_text(r["Name"])), fam_by.get(_text(r["FamilyId"]).lower(), _text(r["FamilyId"])),
-                             _text(r["Name"]) or _text(r["RoleId"]), _text(r.get("Description")), active(r.get("Active")))
-             for r in data["JobRoles"] if _text(r.get("RoleId")) or _text(r.get("Name"))] if data["JobRoles"] else list(old.roles)
     paths_ = [pathmod.LearningPath(_text(r["PathId"]) or pathmod.slug(_text(r["Name"])), fam_by.get(_text(r["FamilyId"]).lower(), _text(r["FamilyId"])),
                                    _text(r["VendorId"]).upper(), _text(r["Name"]) or _text(r["PathId"]), _text(r.get("CertId")).upper(),
-                                   ids(r.get("Roles")), _int(r.get("Order")) or 0, active(r.get("Active")), _text(r.get("Description")))
+                                   _int(r.get("Order")) or 0, active(r.get("Active")), _text(r.get("Description")))
               for r in data["Paths"] if _text(r.get("PathId")) or _text(r.get("Name"))] if data["Paths"] else list(old.paths)
     skills = dict(old.skills)
     for r in data["Skills"]:
@@ -490,7 +483,7 @@ def _structure(data: dict, catalog, materials: dict, problems: list[str]):
         if sid and (_text(r.get("PathId")) or "PathId" in r):
             skills[sid] = pathmod.Placement(_text(r.get("PathId")) or old.place(sid).path, _int(r.get("Order")) or 0,
                                             active(r.get("Active")) if _text(r.get("Active")) else old.place(sid).active)
-    out = pathmod.complete(pathmod.Structure(vendors, roles, paths_, {k: v for k, v in skills.items() if k in catalog.skill_ids()}), catalog, materials)
+    out = pathmod.complete(pathmod.Structure(vendors, paths_, {k: v for k, v in skills.items() if k in catalog.skill_ids()}), catalog, materials)
     problems += pathmod.validate(out, catalog)
     return out
 
@@ -656,20 +649,12 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
         fams = {**{f.id: f.id for f in catalog.families}, **{f.name: f.id for f in catalog.families}} if catalog else None
         directory, bad = people.parse(_as_csv(people.SHEET_COLUMNS, data["People"]), fams)
         problems += bad
-        from academy import paths as pathmod
-
-        jobs = (structure or pathmod.load(catalog, materials)).roles if catalog else []
-        course_roles = {**{j.id.lower(): j.name for j in jobs}, **{j.name.lower(): j.name for j in jobs}}
+        # CourseRole is the person's role: a label. Written like a course role (Roles tab) in any case, it takes that role's
+        # spelling, so the course shows that role's lessons; any other role is simply kept as written (no note: not an error).
         from dataclasses import replace as _replace
 
+        course_roles = {r.lower(): r for pk in packs.values() for r in (pk.get("roles") or {})}
         directory = [_replace(x, course_role=course_roles.get(x.course_role.lower(), x.course_role)) for x in directory]
-        undefined: dict[str, int] = {}
-        for x in directory:
-            if x.course_role and x.course_role.lower() not in course_roles:
-                undefined[x.course_role] = undefined.get(x.course_role, 0) + 1
-        role_msgs += [f"[People] job role '{r}' ({n} people) is not in JobRoles yet: they see every learning path of their family. "
-                      f"Add it to the JobRoles sheet of their family to narrow it (job roles today: "
-                      f"{', '.join(sorted(set(course_roles.values()))) or 'none'})." for r, n in undefined.items()]
         seen_mail: dict[str, list[str]] = {}
         for x in directory:
             if x.email:

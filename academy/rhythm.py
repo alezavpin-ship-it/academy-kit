@@ -354,7 +354,9 @@ def agenda(conn, s: Series, day: date, packs: list, exams: list, catalog, owners
             out.append(("Demo of the week (5 min)", [f"{members[week % len(members)]}: something learned or built this week."]))
         from academy.certs import Certs
 
-        reqs = Certs(conn).requirements({s.family})
+        from academy import paths as pathmod
+
+        reqs = Certs(conn).asked({s.family}, pathmod.load(catalog) if catalog else None)
         out.append(("Certifications this family asks for", [f"{r['Code']} ({r['Level']})" for r in reqs] or ["None defined yet."]))
     else:
         n, total = session_number(s, day)
