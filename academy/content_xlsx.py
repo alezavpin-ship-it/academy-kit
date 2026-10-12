@@ -36,6 +36,7 @@ import csv
 import io
 import json
 import shutil
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 
@@ -61,9 +62,9 @@ SHEETS: dict[str, list[str]] = {
     "Practice": ["Name", "Description"],
     "PracticeSkills": ["Term", "Aliases", "SkillId", "FamilyId", "Vendor", "Scope"],
     "PracticeRoles": ["RoleTitle", "Aliases", "Scope"],
-    "NewsSources": ["Name", "Category", "Url", "FeedUrl", "Splash", "Enabled", "Description"],
-    "People": ["Person", "Email", "Role", "Families", "Active", "CourseRole"],
-    "StudyMaterial": ["Title", "Url", "Source", "Category", "Theme", "Kind", "Level", "SkillId", "Notes"],
+    "NewsSources": ["Name", "Category", "Url", "FeedUrl", "Splash", "Enabled", "Description", "Families"],
+    "People": ["Person", "Email", "Role", "Families", "Active", "CourseRole", "Responsibilities"],
+    "StudyMaterial": ["Title", "Url", "Source", "Category", "Theme", "Kind", "Level", "SkillId", "Notes", "Families"],
     "Courses": ["PackId", "Title", "Subtitle", "Disclaimer", "Version", "Updated"],
     "Levels": ["PackId", "SortOrder", "Level"],
     "Ranks": ["PackId", "Name", "Points", "Emoji", "Color", "Image"],
@@ -102,7 +103,8 @@ CHOICES = {"AnswerLetter": list("ABCD"), "Confirmed": ["yes", "no"], "Severity":
            ("LearningPaths", "Status"): ["required", "optional", "off"],
            ("LearningPaths", "Location"): ["SharePoint", "Percipio", "Workday MyLearning", "Vendor site", "Repo", "Academy file", "Other"],
            "Active": ["yes", "no"]}
-NEW_COLUMNS = {"Status", "Minutes", "Notes", "PathId", "Order", "Active", "Module", "Location", "Path", "Vendor", "CourseRole"}  # added later: older files still import
+NEW_COLUMNS = {"Status", "Minutes", "Notes", "PathId", "Order", "Active", "Module", "Location", "Path", "Vendor", "CourseRole",
+               "Responsibilities", "Families"}  # added later: older files still import
 OPTIONAL = {"Families", "Skills", "Practice", "PracticeSkills", "PracticeRoles", "NewsSources", "People", "StudyMaterial", "Vendors", "JobRoles", "Paths"}  # without them the catalog / practice on disk stays
 TABLE = "Table"  # first column of the single CSV: the sheet each row belongs to
 # names used by earlier versions of the file
@@ -144,9 +146,13 @@ README = [
     "    with that source's latest news; Enabled = no hides it. Addresses must start with https://.",
     "13. People: Role = owner | champion | sme | learner; Families = family ids or names separated by ; (the first one is the",
     "    person's family); CourseRole = a job role of that family. A champion listed here becomes the champion of those families.",
+    "    Responsibilities = demand and / or learning (Upskilling & learning), separated by ;: only they see the Demand tools and the",
+    "    learning reports, team, certifications and Knowledge exchange tools (while nobody holds one, the owners do).",
     "14. Certifications required or desirable per family and job role are kept in the Certifications tab (CSV FamilyId, Code,",
     "    Name, Vendor, Roles, Level = required | desirable | off, Url).",
     "15. StudyMaterial: Kind = video | playlist | search | page; SkillId (optional) ties an item to a skill of the catalog.",
+    "    NewsSources and StudyMaterial: Families = the role families whose learners see the item (ids or names, separated by ;);",
+    "    empty = the family of its SkillId, or every family.",
     "",
     "On import the app checks everything and saves nothing if it finds a problem; it makes a backup before saving.",
 ]
@@ -173,8 +179,8 @@ def _rows(packs: list[dict], materials: dict[str, list[dict]], catalog, practice
         out["Practice"] = [[practice.name, practice.description]]
         out["PracticeSkills"] = [[t.term, "; ".join(t.aliases), t.skill_id, t.family, t.vendor, t.scope] for t in practice.skills]
         out["PracticeRoles"] = [[r.title, "; ".join(r.aliases), r.scope] for r in practice.roles]
-    out["NewsSources"] = [[x.name, x.category, x.url, x.feed, "yes" if x.splash else "no", "yes" if x.enabled else "no", x.description]
-                          for x in news.load_sources()]
+    out["NewsSources"] = [[x.name, x.category, x.url, x.feed, "yes" if x.splash else "no", "yes" if x.enabled else "no", x.description,
+                           x.families] for x in news.load_sources()]
     from academy import workspace
 
     out["People"] = [x.sheet_row() for x in people.members(people.load(), workspace.current(), workspace.default_id())]
@@ -643,6 +649,8 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
         sources, bad = news.parse_sources(news.to_csv([]) + "\r\n".join(
             ",".join('"' + _text(r.get(c)).replace('"', '""') + '"' for c in news.COLUMNS) for r in data["NewsSources"]).encode("utf-8"))
         problems += bad
+        if sources and catalog:
+            sources = [replace(x, families=_fam_ids(x.families, catalog, problems, f"[NewsSources] '{x.name}'")) for x in sources]
     directory = None
     if data["People"]:
         fams = {**{f.id: f.id for f in catalog.families}, **{f.name: f.id for f in catalog.families}} if catalog else None
@@ -677,11 +685,25 @@ def build(data: dict[str, list[dict]], catalog=None, problems: list[str] | None 
         problems += bad
         known = catalog.skill_ids() if catalog else set()
         problems += [f"[StudyMaterial] '{i.title}': SkillId '{i.skill_id}' is not in Skills." for i in bank if i.skill_id and known and i.skill_id not in known]
+        if catalog:
+            bank = [replace(i, families=_fam_ids(i.families, catalog, problems, f"[StudyMaterial] '{i.title}'")) if i.families else i for i in bank]
     return {"packs": packs, "materials": materials, "catalog": catalog, "new_catalog": new_catalog, "practice": practice, "news": sources,
             "people": directory, "study": bank,
             "problems": problems, "summary": summary, "notes": role_msgs, "structure": structure,
             "learning_paths": sum(len(v) for v in materials.values()),
             "families": len(catalog.families) if catalog else 0, "skills": len(catalog.skills) if catalog else 0}
+
+
+def _fam_ids(text: str, catalog, problems: list[str], where: str) -> str:
+    """«Cloud & Network Security; m365» -> the family ids (names or ids, any case); an unknown one is a problem."""
+    look = {**{f.id.lower(): f.id for f in catalog.families}, **{f.name.lower(): f.id for f in catalog.families}}
+    out = []
+    for x in [x.strip() for x in str(text or "").split(";") if x.strip()]:
+        if x.lower() in look:
+            out.append(look[x.lower()])
+        else:
+            problems.append(f"{where}: unknown role family '{x}' in Families.")
+    return "; ".join(dict.fromkeys(out))
 
 
 def _as_csv(columns: list[str], rows: list[dict]) -> bytes:

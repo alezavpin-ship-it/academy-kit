@@ -1,5 +1,9 @@
-"""The «Rhythm» tab: my upcoming sessions, study groups to join, the meeting room (agenda + actions) and, for owners and
-champions, the management of the series."""
+"""Rhythm in the app.
+
+* 🎓 Learning view → «Study groups»: the learner's study sessions, the study groups of their role family (opened by its
+  champion or the owners, so every group a learner sees is authorized) and the room of the groups they are in.
+* 🛠️ Management view → «Rhythm»: every series (monthly review, family syncs, study groups), the meeting room and the
+  management of the series, for owners, the Upskilling & learning team and the champions (their families)."""
 
 from __future__ import annotations
 
@@ -35,7 +39,44 @@ def _invite(r: rh.Rhythm, s: rh.Series, ctx, me: str, key: str, label: str = "�
 
 
 def _can_manage(s: rh.Series, me: str, owner: bool, families: set[str]) -> bool:
-    return owner or (s.kind == rh.WEEKLY and s.family in families) or (s.kind == rh.STUDY and (s.lead.lower() == me.lower() or bool(families)))
+    return owner or (s.kind in (rh.WEEKLY, rh.STUDY) and s.family in families) or (s.kind == rh.STUDY and s.lead.lower() == me.lower())
+
+
+def _family_ok(s: rh.Series, family: str | None) -> bool:
+    """A study group for a learner of ``family``: one of that family, or one open to the whole practice (no family)."""
+    return family is None or not s.family or s.family == family
+
+
+def study_tab(conn, catalog, packs: list, exams: list, learner: str, family: str | None) -> None:
+    """The learner's study groups: their next sessions, the groups of their family to join and the room of their groups."""
+    me = learner.strip() or "me"
+    r = rh.Rhythm(conn)
+    if not catalog:
+        st.info("Study groups are organized by role family: the catalog is not loaded yet.")
+        return
+    ctx = _ctx(conn, catalog, packs, exams)
+    st.markdown("#### Study groups")
+    fam = next((f.name for f in catalog.families if f.id == family), "")
+    st.caption("Groups that prepare a certification together, with an exam date, a session per week and an agenda built from the "
+               "exam's domains. They are opened by your role family's champion or the practice's owners"
+               + (f": you see the groups of **{fam}** and the ones open to the whole practice." if fam else "."))
+    mine = {s.id for s in r.all() if s.kind == rh.STUDY and (me.lower() in [m.lower() for m in r.members(s.id)] or s.lead.lower() == me.lower())}
+    soon = r.upcoming(35, only=mine)
+    st.markdown("##### My next study sessions")
+    if not soon:
+        st.info("No study session in the next 5 weeks. Join a group below.")
+    for n, (day, s) in enumerate(soon[:8]):
+        with st.container(border=True):
+            a, b, c = st.columns([5, 2, 2], vertical_alignment="center")
+            a.markdown(f"**{day.strftime('%a %d %b')} · {s.time}** — {s.title}  \n{s.minutes} min" + (f" · [join]({s.place})" if s.place.startswith("https://")
+                                                                                                    else (f" · {s.place}" if s.place else "")))
+            if b.button("Open the agenda", key=f"sg_open_{s.id}_{day}", width="stretch"):
+                st.session_state["rh_room"] = s.id
+                st.session_state[f"rh_day_{s.id}"] = day.isoformat()
+            with c:
+                _invite(r, s, ctx, me, key=f"sg_ics_{s.id}_{n}")
+    _study_groups(conn, r, catalog, exams, me, family)
+    _room(conn, r, catalog, packs, exams, me, False, set(), ctx, mine)
 
 
 def rhythm_tab(conn, catalog, packs: list, exams: list, learner: str, owner: bool, families: set[str] | None = None) -> None:
@@ -77,10 +118,10 @@ def rhythm_tab(conn, catalog, packs: list, exams: list, learner: str, owner: boo
 
 
 # ---------------------------------------------------------------------------------------------- study groups
-def _study_groups(conn, r: rh.Rhythm, catalog, exams, me: str) -> None:
-    st.markdown("##### Study groups")
+def _study_groups(conn, r: rh.Rhythm, catalog, exams, me: str, family: str | None = None) -> None:
+    st.markdown("##### Study groups to join")
     today = date.today()
-    groups = [s for s in r.all() if s.kind == rh.STUDY and (rh._day(s.end) or today) >= today]
+    groups = [s for s in r.all() if s.kind == rh.STUDY and (rh._day(s.end) or today) >= today and _family_ok(s, family)]
     wanted = {c["Code"] for c in Certs(conn).records(me) if c["Status"] == DESIRED}
     if not groups:
         st.caption("No study group is running." + (f" You aim for {', '.join(sorted(wanted))}: ask your champion to open a group." if wanted else ""))
@@ -172,7 +213,7 @@ def _room(conn, r: rh.Rhythm, catalog, packs, exams, me: str, owner: bool, famil
 
 # ---------------------------------------------------------------------------------------------- management
 def _manage(conn, r: rh.Rhythm, catalog, exams, me: str, owner: bool, families: set[str], ctx) -> None:
-    with st.expander("⚙️ Manage the rhythm (owners and champions)"):
+    with st.expander("⚙️ Manage the rhythm and open study groups", expanded=True):
         fams = [f for f in catalog.families if f.id in families]
         if owner:
             missing = not any(s.kind == rh.MONTHLY for s in r.all(None)) or any(not any(s.kind == rh.WEEKLY and s.family == f.id for s in r.all(None)) for f in fams)
@@ -188,7 +229,11 @@ def _manage(conn, r: rh.Rhythm, catalog, exams, me: str, owner: bool, families: 
         st.markdown("**New study group**")
         codes = sorted({c["Code"] for c in Certs(conn).requirements(families)} | {e.code.upper() for e in exams} |
                        {c["Code"] for c in Certs(conn).records() if c["Status"] == DESIRED})
+        fam_names = {"": "Whole practice (every family)", **{f.id: f.name for f in catalog.families}}
+        fam_opts = ([""] if owner else []) + [f.id for f in catalog.families if f.id in families]
         with st.form("rh_new_group", clear_on_submit=True):
+            group_family = st.selectbox("Role family", fam_opts, format_func=lambda k: fam_names[k], key="rh_g_family",
+                                        help="Learners see the study groups of their own role family and the ones open to the whole practice.")
             a, b, c = st.columns(3)
             code = a.selectbox("Certification", codes + ["Other…"], key="rh_g_code")
             other = a.text_input("Other certification code", placeholder="e.g. SC-401", key="rh_g_other")
@@ -201,7 +246,7 @@ def _manage(conn, r: rh.Rhythm, catalog, exams, me: str, owner: bool, families: 
             if st.form_submit_button("Open the study group", type="primary"):
                 cert = (other.strip() if code == "Other…" else code).upper()
                 try:
-                    sid = r.create(rh.STUDY, f"{cert} study group", cert=cert, lead=me, weekday=weekday, time=time_.strip(), minutes=int(minutes),
+                    sid = r.create(rh.STUDY, f"{cert} study group", cert=cert, lead=me, family=group_family or "", weekday=weekday, time=time_.strip(), minutes=int(minutes),
                                    end=exam_day.isoformat(), place=place, open=open_, start=date.today().isoformat())
                     r.join(sid, me)
                     st.toast(f"{cert} study group opened: {rh.session_number(r.get(sid), date.today())[1]} sessions until the exam.")
@@ -212,12 +257,13 @@ def _manage(conn, r: rh.Rhythm, catalog, exams, me: str, owner: bool, families: 
         if not mine:
             return
         st.markdown("**Series**")
-        df = pd.DataFrame([{"Title": s.title, "Kind": rh.KINDS[s.kind], "Lead": s.lead, "Day": rh.WEEKDAYS[s.weekday],
+        fam_of = {f.id: f.name for f in catalog.families}
+        df = pd.DataFrame([{"Title": s.title, "Kind": rh.KINDS[s.kind], "Family": fam_of.get(s.family, "Whole practice" if s.kind != rh.WEEKLY else s.family), "Lead": s.lead, "Day": rh.WEEKDAYS[s.weekday],
                             "Week of month": rh.WEEKS.get(s.week, "first") if s.kind == rh.MONTHLY else "", "Time": s.time, "Minutes": s.minutes,
                             "Every (weeks)": s.every, "Exam date": s.end, "Place": s.place, "Active": s.active} for s in mine])
         cc = st.column_config
         with st.form(f"rh_series_form_{len(mine)}", border=False, enter_to_submit=False):
-            ed = st.data_editor(df, hide_index=True, width="stretch", key=f"rh_series_{len(mine)}", disabled=["Kind"], column_config={
+            ed = st.data_editor(df, hide_index=True, width="stretch", key=f"rh_series_{len(mine)}", disabled=["Kind", "Family"], column_config={
                 "Day": cc.SelectboxColumn("Day", options=rh.WEEKDAYS, required=True),
                 "Week of month": cc.SelectboxColumn("Week of month", options=["", *rh.WEEKS.values()], help="Monthly review only"),
                 "Minutes": cc.NumberColumn("Minutes", min_value=15, max_value=240, step=15),

@@ -37,7 +37,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES_FILE = ROOT / "catalog" / "news_sources.csv"
 CACHE_FILE = ROOT / "data" / "news_cache.json"
-COLUMNS = ["Name", "Category", "Url", "FeedUrl", "Splash", "Enabled", "Description"]
+COLUMNS = ["Name", "Category", "Url", "FeedUrl", "Splash", "Enabled", "Description", "Families"]
 CATEGORIES = ["Microsoft", "Cloud providers", "Security vendors", "Frameworks and standards", "Government advisories"]
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AcademiaCloud/1.0 (+news reader)"
 TIMEOUT = 5
@@ -53,6 +53,10 @@ class Source:
     splash: bool = False
     enabled: bool = True
     description: str = ""
+    families: str = ""  # role family ids separated by ";" whose learners see it; empty = every family
+
+    def for_family(self, family: str | None) -> bool:
+        return for_family(self.families, family)
 
 
 @dataclass
@@ -103,11 +107,22 @@ def parse_sources(raw: bytes) -> tuple[list[Source], list[str]]:
             problems.append(f"[news row {n}] needs a Name and https addresses (Url, FeedUrl).")
             continue
         out.append(Source(name, (r.get("Category") or "").strip(), url, feed, _yes(r.get("Splash")),
-                          r.get("Enabled") in (None, "") or _yes(r.get("Enabled")), (r.get("Description") or "").strip()))
+                          r.get("Enabled") in (None, "") or _yes(r.get("Enabled")), (r.get("Description") or "").strip(),
+                          _fams(r.get("Families"))))
     names = [s.name.lower() for s in out]
     if len(names) != len(set(names)):
         problems.append("There are repeated news sources (Name).")
     return out, problems
+
+
+def _fams(text) -> str:
+    return "; ".join(x.strip() for x in str(text or "").replace(",", ";").split(";") if x.strip())
+
+
+def for_family(families: str, family: str | None) -> bool:
+    """Shown to a learner of ``family``: tagged with it, or not tagged with any family (practice-wide). None = everything."""
+    tags = {x.strip().lower() for x in str(families or "").split(";") if x.strip()}
+    return family is None or not tags or family.lower() in tags
 
 
 def load_sources(path: str | Path | None = None) -> list[Source]:
@@ -122,7 +137,7 @@ def to_csv(sources: list[Source]) -> bytes:
     w = csv.writer(buf, lineterminator="\r\n")
     w.writerow(COLUMNS)
     for s in sources:
-        w.writerow([s.name, s.category, s.url, s.feed, "yes" if s.splash else "no", "yes" if s.enabled else "no", s.description])
+        w.writerow([s.name, s.category, s.url, s.feed, "yes" if s.splash else "no", "yes" if s.enabled else "no", s.description, s.families])
     return buf.getvalue().encode("utf-8-sig")
 
 

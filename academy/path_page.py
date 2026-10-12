@@ -7,8 +7,8 @@ set by owners and champions); they can switch to all the paths of the family or 
 opens where it lives (SharePoint, Percipio, Workday MyLearning, the vendor's site, a repo or a file of the academy) and is
 marked done here.
 
-The family's champion (and the owners) get «🧭 Manage the learning paths of …»: job roles, learning paths, skills,
-courses and certifications, each one switched on and off without deleting it.
+The family's champion (and the owners) run them in the 🛠️ Management view → Learning paths («🧭 Manage the learning paths
+of …»): job roles, learning paths, skills, courses and certifications, each one switched on and off without deleting it.
 """
 
 from __future__ import annotations
@@ -28,6 +28,12 @@ def _person(learner: str):
     from academy import people
 
     return people.find([p for p in people.load() if p.active], learner)
+
+
+def learner_family(catalog, learner: str) -> str | None:
+    """The learner's role family (the first of People → Families that exists); None when they have none (they see everything)."""
+    person = _person(learner)
+    return next((f for f in (person.families if person else ()) if catalog and any(x.id == f for x in catalog.families)), None)
 
 
 def route_tab(catalog, conn, learner: str, lang: str = "en", manage: set[str] | None = None) -> None:
@@ -179,7 +185,7 @@ def manage_paths(catalog, conn, fid: str, structure, who: str) -> None:
     from academy.family_page import manage_family
 
     fam = next(f for f in catalog.families if f.id == fid)
-    with st.expander(f"🧭 Manage the learning paths of {fam.name} (champion)"):
+    with st.expander(f"🧭 Manage the learning paths of {fam.name} (champion)", expanded=True):
         st.caption("Switch anything on or off without deleting it. Learners see the active learning paths of their job role, the active "
                    "skills in them and the required courses; optional courses are shown as recommended material.")
         t = st.tabs(["Job roles", "Learning paths", "Skills", "Courses", "Certifications"])

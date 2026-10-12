@@ -28,9 +28,11 @@ def _embed(url: str) -> str | None:
     return f"https://www.youtube-nocookie.com/embed/{vid}" if vid else None
 
 
-def study_bank(catalog, leader: bool, key: str = "sm", player: bool = False) -> None:
-    """The bank: filters, the list grouped by theme with a link to the source, an optional player, and (leaders) the tools."""
-    items = study.load()
+def study_bank(catalog, leader: bool, key: str = "sm", player: bool = False, family: str | None = None) -> None:
+    """The bank: filters, the list grouped by theme with a link to the source, an optional player, and (leaders) the tools.
+    ``family``: only the items of that role family and the ones for the whole practice."""
+    everything = study.load()
+    items = [i for i in everything if i.for_family(family, catalog)]
     st.markdown("#### Study material")
     st.caption("Training content the practice recommends, by theme: open it on the author's site. Champions can promote any item to a "
                "skill's learning path. Kinds: ▶ video · ☰ playlist · 🔎 search in the author's channel · ↗ page.")
@@ -56,7 +58,7 @@ def study_bank(catalog, leader: bool, key: str = "sm", player: bool = False) -> 
                 a.markdown(f"{icon.get(i.kind, '↗')} **{_md(i.title)}**  \n{_md(meta)}")
                 b.link_button("Open ↗", i.url, width="stretch")
     if leader:
-        _tools(items, shown, catalog, key)
+        _tools(everything, shown, catalog, key)  # imports merge into the whole bank, never into a filtered view
 
 
 def _md(text: str) -> str:
@@ -64,7 +66,7 @@ def _md(text: str) -> str:
 
 
 def _tools(items: list[study.Item], shown: list[study.Item], catalog, key: str) -> None:
-    with st.expander("⚙️ Study material tools (owners and champions)"):
+    with st.expander("⚙️ Study material tools", expanded=True):
         st.markdown("**Add to a learning path**: the chosen items become classes of a skill's route (videos as reference, playlists as steps).")
         if catalog and shown:
             names = {s.id: f"{s.name} ({next((f.name for f in catalog.families if f.id == s.family), s.family)})" for s in catalog.skills}

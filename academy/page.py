@@ -265,7 +265,7 @@ def champion_team(conn, packs: list[Pack], exams: list, catalog, families: set[s
     names = [f.name for f in catalog.families if f.id in families]
     st.markdown("#### My family: " + ", ".join(names))
     st.caption("You only see people taking lessons or certifications of your role family.")
-    st.caption("Run your family's career path (classes on / off, your own decks, the family's CSV) in **Learning route → 🧭 Manage the career path**.")
+    st.caption("Run your family's learning paths (job roles, paths, skills, courses on / off, certifications) in **Learning paths**.")
     rows = notify.family_team(conn, packs, exams, catalog, families)
     if not rows:
         st.info("Nobody has started your family's content yet.")
@@ -338,8 +338,7 @@ def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: s
     else:
         b.button("Download the report as PDF", disabled=True, key="ak_rep_pdf_off", width="stretch",
                  help="The PDF component is missing: close the app, double-click «Install components.bat» and open it again.")
-    tabs = st.tabs(["Role families", "People and career path",
-                    "Certifications", "Manage certifications", "Skills matrix"])
+    tabs = st.tabs(["Role families", "People and career path", "Certifications", "Skills matrix"])  # managed in the Certifications tab
     with tabs[0]:
         st.markdown(f"#### {t['report']}")
         st.dataframe(pd.DataFrame(report.visible(rep["status"])), hide_index=True, width="stretch")
@@ -379,7 +378,7 @@ def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: s
         if rep["certs"]["families"]:
             st.dataframe(pd.DataFrame(rep["certs"]["families"]), hide_index=True, width="stretch")
         else:
-            st.info("No family has certifications defined yet: add them under Manage certifications.")
+            st.info("No family has certifications defined yet: add them in the Certifications tab.")
         st.markdown(f"#### {t['certs_people']}")
         if rep["certs"]["people"]:
             st.dataframe(pd.DataFrame(rep["certs"]["people"]), hide_index=True, width="stretch")
@@ -387,11 +386,6 @@ def reports_tab(conn, packs: list[Pack], exams: list, catalog, lang: str, who: s
             st.markdown(f"#### {t['certs_exp']}")
             st.dataframe(pd.DataFrame(rep["certs"]["expiring"]), hide_index=True, width="stretch")
     with tabs[3]:
-        if st.session_state.get("ed_on_tab_certs") and only is None:  # the same editor is open in the Certifications tab
-            st.info("Certification management is open in the Certifications tab (✏️ Edit mode).")
-        else:
-            certs_admin(conn, catalog, lang, {f.id for f in catalog.families} if only is None else set(only), who, people_names)
-    with tabs[4]:
         inventory_page.skills_matrix(conn, catalog, who, owner=only is None,
                                      people=None if only is None else {r[next(iter(r))] for r in rep["people"]})
 
@@ -842,96 +836,234 @@ def _team_editor(pack: Pack) -> None:
     editor.edit_mode(f"team_{list(groups).index(pick)}", pack.id, groups[pick])
 
 
-def _editable(key: str, draw, pack: Pack, conn, catalog, learner: str, lang: str):
-    """The section with its «✏️ Edit mode» switch: on, the section shows its editor instead of the learner's view."""
-    special = {"tab_certs": lambda: certs_admin(conn, catalog, lang, {f.id for f in catalog.families} if catalog else set(),
-                                                learner.strip() or "me", report.roster(conn)),
-               "tab_team": lambda: _team_editor(pack)}
-    if key not in editor.SECTION_TABLES and key not in special:
-        return draw  # the forum is run in place by owners and champions; nothing else to edit there
+def _with_editor(draw, section: str, pack: Pack):
+    """A management section with its «✏️ Edit mode» switch: on, it shows the editor of its tables (editor.SECTION_TABLES)."""
 
     def run() -> None:
-        if editor.toggle(key):
-            st.caption("Switch edit mode off to see the section as learners see it.")
-            special[key]() if key in special else editor.edit_mode(key, pack.id)
+        if editor.toggle(section):
+            st.caption("Switch edit mode off to go back to the section.")
+            editor.edit_mode(section, pack.id)
             return
         draw()
 
     return run
 
 
+def duties_section(email_of_me: str = "") -> None:
+    """Owners: who holds each responsibility of the practice (Demand; Upskilling & learning). People → Responsibilities."""
+    from academy import content_sync, workspace
+    from academy import people as pm
+
+    pid, first = workspace.current(), workspace.default_id()
+    directory = pm.load()
+    pool = [p for p in directory if p.active and (p.global_owner or (p.practice or first) == pid)]
+    names = [p.name for p in pool]
+    with st.expander("🧭 Responsibilities: Demand · Upskilling & learning"):
+        st.caption("Only the people listed see these tools in the 🛠️ Management view: **Demand** (the demand analysis and its executive "
+                   "report) and **Upskilling & learning** (the learning reports, the team, certifications and the Knowledge exchange). "
+                   "While nobody holds one, the owners do. Champions always run the team and learning paths of their own families.")
+        if pid != first:
+            st.caption("Global owners keep the responsibilities set in the first practice.")
+        with st.form("ak_duties_form", border=False, enter_to_submit=False):
+            picks = {}
+            for duty, label in pm.RESPONSIBILITIES.items():
+                now = [p.name for p in pm.responsible(directory, duty, pid, first)]
+                picks[duty] = st.multiselect(label, names, default=[n for n in now if n in names], key=f"ak_duty_{duty}",
+                                             placeholder="Nobody: the owners")
+            save = st.form_submit_button("Save the responsibilities", key="ak_duties_save", type="primary")
+        if save:
+            for duty, chosen in picks.items():
+                directory = pm.set_responsible(directory, duty, chosen, pid, first)
+            pm.save(directory)
+            content_sync.refresh()
+            st.cache_data.clear()
+            st.toast("Responsibilities saved.")
+            st.rerun()
+
+
+# ---------------------------------------------------------------------------------------------- the two views
+LEARNING_VIEW, MANAGE_VIEW = "learning", "manage"
+VIEWS = {LEARNING_VIEW: "🎓 Learning", MANAGE_VIEW: "🛠️ Management"}
+
+
+def manage_access(owner: bool, families: set[str], duties: set[str]) -> dict[str, bool]:
+    """Which management sections a person gets (the same rules the page uses to draw them)."""
+    learning, demand = "learning" in duties, "demand" in duties
+    return {"tab_paths": owner or bool(families), "tab_team": learning or bool(families), "tab_reports": learning,
+            "tab_certs": owner or learning, "tab_demand": demand, "tab_skills": owner, "tab_rhythm": owner or learning or bool(families),
+            "tab_kx": learning, "tab_admin": owner}
+
+
+def has_management(owner: bool, families: set[str], duties: set[str]) -> bool:
+    return any(manage_access(owner, families, duties).values())
+
+
+def paths_admin(catalog: Catalog | None, conn, learner: str, families: set[str]) -> None:
+    """Management → Learning paths: the job roles, learning paths, skills, courses and certifications of a family."""
+    from academy import paths as pathmod
+    from academy.path_page import manage_paths
+
+    if not catalog or not catalog.families:
+        st.info("The role families are not loaded yet: load them in Administration (content workbook or ✏️ Edit mode).")
+        return
+    fams = [f for f in catalog.families if f.id in families]
+    st.caption("Switch job roles, learning paths, skills, courses and certifications on and off without deleting them. Learners see the "
+               "result in their 🎓 Learning view.")
+    fid = st.selectbox("Role family", [f.id for f in fams], key="mg_family", format_func=lambda k: next(f.name for f in fams if f.id == k))
+    manage_paths(catalog, conn, fid, pathmod.load(), learner)
+
+
+def team_admin(conn, pack: Pack, packs: list[Pack], exams: list, catalog, lang: str, learning: bool, families: set[str]) -> None:
+    """Management → Team: the Upskilling & learning team sees everyone; a champion, the people of their families."""
+    roster_section(packs)
+    if learning:
+        team_tab(conn, pack, lang)
+        notices_section(conn, packs, exams, catalog, lang)
+    elif families and catalog:
+        people_ = champion_team(conn, packs, exams, catalog, families, lang)
+        notices_section(conn, packs, exams, catalog, lang, only=people_)
+
+
+def knowledge_admin(pack: Pack, catalog, lang: str) -> None:
+    """Management → Knowledge exchange: the news sources and study material (and the role families each one is for)."""
+    part = st.segmented_control("kx_admin", ["✏️ Sources and material", "📚 Study material tools", "👀 Preview"], default="✏️ Sources and material",
+                                key="kxm_part", label_visibility="collapsed") or "✏️ Sources and material"
+    if part == "✏️ Sources and material":
+        st.caption("Families = the role families whose learners see a source or an item; empty = the whole practice (study material "
+                   "with a Skill goes to that skill's family).")
+        editor.edit_mode("tab_news", pack.id)
+    elif part == "📚 Study material tools":
+        from academy.study_page import study_bank
+
+        study_bank(catalog, True, key="kxm_sm")
+    else:
+        news_page.knowledge_tab(lang, catalog, leader=False, family=None)
+
+
+def admin_section(pack: Pack, lang: str, learner: str, email: str, global_owner: bool) -> None:
+    """Management → Administration (owners): content workbook, every table, owners, responsibilities, practices, assistant."""
+    part = st.segmented_control("admin", ["📦 Content", "✏️ Every table", "👑 People and access"], default="📦 Content", key="mg_admin_part",
+                                label_visibility="collapsed") or "📦 Content"
+    if part == "📦 Content":
+        content_section(lang)
+    elif part == "✏️ Every table":
+        _team_editor(pack)
+    else:
+        access_section(lang, learner, email, global_owner)
+        duties_section(email)
+        if global_owner:
+            practices_section()
+        assistant_section(lang)
+
+
+def certs_section(conn, catalog, exams: list, lang: str, who: str, fams: set[str]) -> None:
+    """Management → Certifications: what each family and job role asks for, everyone's register and the exam questions."""
+    part = st.segmented_control("certs_admin", ["🏅 Requirements and register", "📝 Exam preparation (AI drafts)"],
+                                default="🏅 Requirements and register", key="mg_cert_part", label_visibility="collapsed") or "🏅 Requirements and register"
+    if part.startswith("🏅"):
+        if catalog:
+            certs_admin(conn, catalog, lang, fams, who, report.roster(conn))
+        else:
+            st.info("Load the role families first.")
+    else:
+        exams_tab(exams, conn, who, lang, catalog, leader=True)
+
+
+def progress_section(pack: Pack, tr: Tracker, conn, learner: str, lang: str, role: str | None, exams: list, catalog) -> None:
+    """Learning → Progress: points, badges and rank, my certifications, my skills and the preparation for an exam."""
+    views = {"progress": "📈 My progress", "mine": "🏅 My certifications", "skills": "🧠 My skills", "prep": "📝 Prepare for an exam"}
+    if st.session_state.get("ak_cert_view") not in views:
+        st.session_state["ak_cert_view"] = "progress"
+    view = st.segmented_control("progress_view", list(views), key="ak_cert_view", format_func=lambda k: views[k],
+                                label_visibility="collapsed") or "progress"
+    if view == "progress":
+        progress_tab(pack, tr, lang, role)
+    elif view == "mine":
+        my_certs(conn, catalog, learner, lang)
+    elif view == "skills":
+        inventory_page.my_skills(conn, catalog, learner)
+    else:
+        exams_tab(exams, conn, learner, lang, catalog, leader=False)
+
+
 # ---------------------------------------------------------------------------------------------- page
 def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = None, catalog: Catalog | None = None,
            packs: list[Pack] | None = None, exams: list | None = None, owner: bool = False, families: set[str] | None = None,
-           email: str = "", global_owner: bool = False) -> None:
-    """``owner``: the owner view (whole team's measurements, notices, gap numbers, catalog administration).
-    ``families``: for a champion who is not an owner, the role families they lead; they see only those people and numbers."""
-    families = set() if owner else (families or set())
+           email: str = "", global_owner: bool = False, view: str = LEARNING_VIEW, duties: set[str] | None = None) -> None:
+    """Two views, picked in the sidebar:
+
+    * 🎓 Learning (everyone): Learning route · Progress · Forum · Study groups · Knowledge exchange (of the learner's family).
+    * 🛠️ Management: the tools each person is responsible for (``manage_access``). ``owner`` = an owner of this practice;
+      ``families`` = the role families the person leads as champion; ``duties`` = demand / learning (people.duties_of)."""
+    families = set(families or set())
+    duties = set(duties or set())
     packs, exams = packs or [pack], exams or []
     tr = Tracker(conn, pack, learner)
     ui.inject_css()
-    st.title(pack.title)
     editor.saved_notice()
-    news_page.splash()  # the latest Microsoft security news, once per session, in a window that closes
-    from academy.path_page import hero
+    me = learner.strip() or "me"
+    all_fams = {f.id for f in catalog.families} if catalog else set()
+    led = all_fams if owner else families & all_fams  # the families whose learning paths the person runs
+    if view == MANAGE_VIEW and has_management(owner, families, duties):
+        st.title(f"🛠️ {pack.title}")
+        can = manage_access(owner, families, duties)
+        mine = [k for k, v in can.items() if v]
+        st.caption("Management view: the tools you are responsible for. Learners never see this view; switch to 🎓 Learning in the "
+                   "sidebar to see the academy as they do.")
+        learning = "learning" in duties
+        draw = {
+            "tab_paths": _with_editor(lambda: paths_admin(catalog, conn, me, led), "tab_route", pack) if owner
+            else (lambda: paths_admin(catalog, conn, me, led)),
+            "tab_team": _with_editor(lambda: team_admin(conn, pack, packs, exams, catalog, lang, learning, families), "tab_reports", pack)
+            if learning else (lambda: team_admin(conn, pack, packs, exams, catalog, lang, learning, families)),
+            "tab_reports": lambda: reports_tab(conn, packs, exams, catalog, lang, me, None),
+            "tab_certs": lambda: certs_section(conn, catalog, exams, lang, me, all_fams),
+            "tab_demand": _with_editor(lambda: demand_tab(catalog, packs, lang, True, conn), "tab_demand", pack),
+            "tab_skills": _with_editor(lambda: skills_tab(catalog, packs, lang, True, None), "tab_skills", pack),
+            "tab_rhythm": lambda: rhythm_page.rhythm_tab(conn, catalog, packs, exams, me, owner or learning, families),
+            "tab_kx": lambda: knowledge_admin(pack, catalog, lang),
+            "tab_admin": lambda: admin_section(pack, lang, learner, email, global_owner),
+        }
+        sections = [(k, draw[k]) for k in mine]
+        tabs_key = "ak_mtabs"
+    else:
+        st.title(pack.title)
+        news_page.splash()  # the latest Microsoft security news, once per session, in a window that closes
+        from academy.path_page import hero, learner_family
 
-    hero(catalog, conn, learner, pack, tr)  # the next course of the person's learning path, progress, certifications, rank
-    my_notices(conn, packs, exams, catalog, learner, lang)
-    if catalog:  # experts, champions and owners: questions of their families still waiting in the forum
-        forum = Forum(conn)
-        mine = ({f.id for f in catalog.families} if owner else set(families)) | forum.sme_families(learner.strip() or "me", email)
-        pending = len(forum.waiting(mine)) if mine else 0
-        if pending:
-            st.warning(f"**Forum:** {pending} question(s) in your role families are waiting for an expert's answer. Open them in the Forum tab.")
-    sections = [("tab_route", lambda: route_tab(catalog, conn, learner, lang, ({f.id for f in catalog.families} if owner else families) if catalog else set())), ("tab_glossary", lambda: glossary(pack, tr, lang)),
-                ("tab_library", lambda: library(pack, lang)), ("tab_progress", lambda: progress_tab(pack, tr, lang, role)),
-                ("tab_skills", lambda: skills_tab(catalog, packs, lang, owner, families)),
-                ("tab_certs", lambda: certifications_tab(exams, conn, learner, lang, catalog, leader=owner or bool(families))),
-                ("tab_forum", lambda: forum_tab(conn, catalog, learner, email, lang, owner, families)),
-                ("tab_rhythm", lambda: rhythm_page.rhythm_tab(conn, catalog, packs, exams, learner, owner, families)),
-                ("tab_news", lambda: news_page.knowledge_tab(lang, catalog, leader=owner or bool(families)))]  # Knowledge exchange: the practice's reading bank
-    if owner or families:  # reports are for owners (every family) and champions (their own)
-        sections.append(("tab_reports", lambda: reports_tab(conn, packs, exams, catalog, lang, learner.strip() or "me", None if owner else families)))
-        sections.append(("tab_demand", lambda: demand_tab(catalog, packs, lang, owner, conn)))  # what the market asks for, against the practice and the courses
-    if owner:  # team measurements are for owners and leaders only
-
-        def team_view() -> None:
-            roster_section(packs)
-            team_tab(conn, pack, lang)
-            notices_section(conn, packs, exams, catalog, lang)
-            content_section(lang)
-            access_section(lang, learner, email, global_owner)
-            if global_owner:
-                practices_section()
-            assistant_section(lang)
-
-        sections.append(("tab_team", team_view))
-    elif families and catalog:  # a champion: only the people and notices of their own families
-
-        def family_view() -> None:
-            roster_section(packs)
-            people = champion_team(conn, packs, exams, catalog, families, lang)
-            notices_section(conn, packs, exams, catalog, lang, only=people)
-
-        sections.append(("tab_team", family_view))
-    if owner:  # ✏️ Edit mode: the owner edits the section's own content with drop-down lists
-        sections = [(key, _editable(key, draw, pack, conn, catalog, learner, lang)) for key, draw in sections]
+        hero(catalog, conn, learner, pack, tr)  # the next course of the person's learning path, progress, certifications, rank
+        my_notices(conn, packs, exams, catalog, learner, lang)
+        if catalog:  # experts, champions and owners: questions of their families still waiting in the forum
+            forum = Forum(conn)
+            waiting = (all_fams if owner else set(families)) | forum.sme_families(me, email)
+            pending = len(forum.waiting(waiting)) if waiting else 0
+            if pending:
+                st.warning(f"**Forum:** {pending} question(s) in your role families are waiting for an expert's answer. Open them in the Forum tab.")
+        fam = learner_family(catalog, learner)
+        extra = {}
+        if pack.glossary:
+            extra["📖 Glossary"] = lambda: glossary(pack, tr, lang)
+        if pack.resources:
+            extra["🎬 Video library"] = lambda: library(pack, lang)
+        sections = [("tab_route", lambda: route_tab(catalog, conn, learner, lang, None)),
+                    ("tab_progress", lambda: progress_section(pack, tr, conn, learner, lang, role, exams, catalog)),
+                    ("tab_forum", lambda: forum_tab(conn, catalog, learner, email, lang, owner, families)),
+                    ("tab_study", lambda: rhythm_page.study_tab(conn, catalog, packs, exams, learner, fam)),
+                    ("tab_news", lambda: news_page.knowledge_tab(lang, catalog, leader=False, family=fam, extra=extra))]
+        tabs_key = "ak_tabs"
     labels = [f"{n} · {T(key, lang)}" for n, (key, _) in enumerate(sections, start=1)]
-    leader_tabs = [n for n, (key, _) in enumerate(sections) if key in ("tab_reports", "tab_demand", "tab_team")]
-    if leader_tabs:  # two rows: the learner's sections, then the owner / champion tools in another color
-        ui.tab_rows(leader_tabs[0], "Owner tools" if owner else "Champion tools")
-    goto = st.session_state.pop("ak_goto", None)  # set by the «start lesson» button: open that tab
+    goto = st.session_state.pop("ak_goto", None)  # set by a «start» button: open that tab
     target = next((lb for lb, (key, _) in zip(labels, sections) if key == goto), None)
     try:
         if target:
-            st.session_state["ak_tabs"] = target
-        tabs = st.tabs(labels, key="ak_tabs", on_change="rerun")
-    except Exception:  # older Streamlit: tabs cannot be opened from code, the learner clicks «Curso»
-        st.session_state.pop("ak_tabs", None)
+            st.session_state[tabs_key] = target
+        tabs = st.tabs(labels, key=tabs_key, on_change="rerun")
+    except Exception:  # older Streamlit: tabs cannot be opened from code
+        st.session_state.pop(tabs_key, None)
         tabs = st.tabs(labels)
-    for tab, (_, draw) in zip(tabs, sections):
+    for tab, (_, draw_) in zip(tabs, sections):
         with tab:
-            draw()
+            draw_()
     if pack.disclaimer:
         st.caption(pack.disclaimer)
     st.caption(f"{pack.title} · v{pack.version}")

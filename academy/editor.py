@@ -65,7 +65,7 @@ KEYS = {("Courses", "PackId"), ("Lessons", "LessonId"), ("Resources", "ResourceK
 # copied from Skills when the file is written: shown, not edited
 INFO = {("LearningPaths", "Family"), ("LearningPaths", "Path"), ("LearningPaths", "Skill")}
 # several values in one cell, separated by ";"
-MULTI = {("People", "Families"), ("Paths", "Roles"), ("Lessons", "Skills"), ("Lessons", "CatalogSkills"), ("Roles", "Skills"), ("PracticeSkills", "Aliases"), ("PracticeRoles", "Aliases")}
+MULTI = {("People", "Families"), ("People", "Responsibilities"), ("NewsSources", "Families"), ("StudyMaterial", "Families"), ("Paths", "Roles"), ("Lessons", "Skills"), ("Lessons", "CatalogSkills"), ("Roles", "Skills"), ("PracticeSkills", "Aliases"), ("PracticeRoles", "Aliases")}
 # free text columns that still repeat values: offered as a list of what is already used (+ new options)
 REPEATED = {"Theme", "Source", "Channel", "Provider", "Category", "Vendor", "Champion", "Target", "Who", "Level", "Emoji", "Color", "PracticeLabel",
             "Module", "CertId"}
@@ -140,7 +140,11 @@ def options(table: str, col: str, data: dict[str, list[dict]], extra: dict) -> l
         return _uniq(VENDORS, own, added)
     if (table, col) == ("People", "CourseRole"):
         return _uniq(_values(data.get("JobRoles", []), "Name"), own, added)
-    if (table, col) == ("People", "Families"):
+    if (table, col) == ("People", "Responsibilities"):
+        from academy.people import RESPONSIBILITIES
+
+        return _uniq(list(RESPONSIBILITIES), own, added)
+    if (table, col) in (("People", "Families"), ("NewsSources", "Families"), ("StudyMaterial", "Families")):
         return _uniq(_values(data.get("Families", []), "FamilyId"), own, added)
     if (table, col) == ("NewsSources", "Category"):
         from academy.news import CATEGORIES

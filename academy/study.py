@@ -29,7 +29,7 @@ from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[1]
 STUDY_FILE = ROOT / "catalog" / "study_material.csv"
-COLUMNS = ["Title", "Url", "Source", "Category", "Theme", "Kind", "Level", "SkillId", "Notes"]
+COLUMNS = ["Title", "Url", "Source", "Category", "Theme", "Kind", "Level", "SkillId", "Notes", "Families"]
 KINDS = ["video", "playlist", "search", "page"]
 LEVELS = ["basic", "intermediate", "advanced"]
 SAVILL = "John Savill's Technical Training"
@@ -48,9 +48,19 @@ class Item:
     level: str = ""
     skill_id: str = ""
     notes: str = ""
+    families: str = ""  # role family ids separated by ";"; empty = the family of its SkillId, or every family
 
     def row(self) -> list[str]:
-        return [self.title, self.url, self.source, self.category, self.theme, self.kind, self.level, self.skill_id, self.notes]
+        return [self.title, self.url, self.source, self.category, self.theme, self.kind, self.level, self.skill_id, self.notes, self.families]
+
+    def for_family(self, family: str | None, catalog=None) -> bool:
+        """Shown to a learner of ``family``: tagged with it (Families, or the family of its skill), or practice-wide."""
+        from academy.news import for_family
+
+        tags = self.families
+        if not tags and self.skill_id and catalog:
+            tags = next((s.family for s in catalog.skills if s.id == self.skill_id), "")
+        return for_family(tags, family)
 
 
 def study_path() -> Path:
@@ -85,7 +95,8 @@ def parse(raw: bytes) -> tuple[list[Item], list[str]]:
             continue  # the same link twice: kept once
         seen.add(url)
         out.append(Item(title, url, _text(r.get("Source")), _text(r.get("Category")), _text(r.get("Theme")), kind,
-                        _text(r.get("Level")).lower(), _text(r.get("SkillId")), _text(r.get("Notes"))))
+                        _text(r.get("Level")).lower(), _text(r.get("SkillId")), _text(r.get("Notes")),
+                        "; ".join(x.strip() for x in _text(r.get("Families")).replace(",", ";").split(";") if x.strip())))
     return out, problems
 
 

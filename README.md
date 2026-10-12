@@ -18,62 +18,52 @@ streamlit run app.py
 Progress is stored in `data\academy.db` (`set ACADEMY_DB=...` for another path). Tests: `pip install pytest` and `pytest`.
 If the PDF buttons are greyed out, close the app and run **`Install components.bat`** once.
 
-## What learners see
+## Two views: 🎓 Learning and 🛠️ Management
+The sidebar's **View** switch appears only to people with something to manage. Learners never see the management tools.
+
+**🎓 Learning** (everyone, including owners and champions when they learn):
+
 | Tab | What it does |
 |---|---|
 | Learning route | The person's role family and job role: vendor → learning path (with its certification) → skill → module → course. Each course opens where it lives (SharePoint, Percipio, Workday MyLearning, the vendor's site, a repo or a file of the academy) and is marked done here. |
-| Glossary | Term ↔ definition quiz and search. |
-| Video library | Every video by topic and the lessons that use it. |
-| Progress & badges | Ranks, badges, the path for your role, recent activity. |
-| Skills map | Families by gap, their champion and how many required courses each skill has. |
-| Certifications | Your current and desired certifications; exam preparation (study, practice, mock exam). |
-| Forum | Ask the experts (SMEs) of a family; champions and owners run it. |
-| Rhythm | My next sessions (with Outlook invites), study groups to join, and the meeting room: an agenda built from the data plus action items. |
-| Knowledge exchange | A reading bank of security news from the sources the practice follows (Microsoft, cloud providers, vendors, NIST, CIS, ISO 27001, CISA…). |
+| Progress | 📈 points, badges and rank · 🏅 my certifications (current and desired) · 🧠 my skills · 📝 exam preparation (study, practice, mock exam). |
+| Forum | Ask the experts (SMEs) of a family; champions and owners answer and moderate in place. |
+| Study groups | The study groups of the person's role family (and the ones open to the whole practice), opened by its champion or the owners: next sessions with Outlook invites, join / leave, the group's agenda and actions. |
+| Knowledge exchange | News, study material (and the glossary / video library of the course) for the person's role family and for the whole practice. |
 
-When the app opens, a window shows the **latest Microsoft security news** (title, short summary, a medium-size image and
-links to the publisher). It closes with «Continue to the academy» and shows once per session.
+When the app opens, a window shows the **latest Microsoft security news** once per session.
 
-Owners and champions also get **Reports** (status by family, who keeps up with the career path, certifications; Excel and
-**PDF**) and **Demand** (what the role requests ask for against the practice and the courses, with the weekly trend; CSV
-and **PDF**). Owners get **Team** (measurements, notices, the content file, access, AI assistant).
+**🛠️ Management** — each person sees only the tools they are responsible for:
 
-## Rhythm: the meetings that keep it alive
-| Series | Who | Default | The agenda brings |
-|---|---|---|---|
-| Monthly review | Owner lead + every champion | 1st Tuesday, 10:00, 60 min | Families in red, people behind, certifications expiring, **demand against the bench** (most requested practice skills, people at level 3+, whether a course exists), study groups running, open actions |
-| Family sync | The family's champion and members | Every Thursday, 30 min | The family's progress, people to follow up, forum questions waiting, a rotating 5-minute demo, the certifications the family asks for |
-| Study group | 4–8 people, one certification, **an exam date** | Weekly until the exam | Session n of N, this session's topic (the exam's modules spread over the sessions, then a mock exam and a final review), each member's best mock score against the pass mark |
+| Tab | Who | What |
+|---|---|---|
+| Learning paths | Owners (every family), champions (their families) | Job roles, learning paths, skills, courses and certifications on / off (✏️ Edit mode for owners). |
+| Team | Upskilling & learning (everyone), champions (their families' people) | Roster and job roles, progress, notices to send. |
+| Reports | Upskilling & learning | Status by family, who keeps up with the path, certifications, skills matrix; Excel and PDF. |
+| Certifications | Owners, Upskilling & learning | What each family and job role asks for, everyone's register, exam questions (AI drafts). |
+| Demand | Demand | The role requests against the practice and the courses, trend, executive PDF. |
+| Skills map | Owners | Families by gap and the catalog import. |
+| Rhythm | Owners, Upskilling & learning, champions | Monthly review, family syncs, study groups (by role family), meeting room. |
+| Knowledge exchange | Upskilling & learning | News sources and study material, and the families each one is for. |
+| Administration | Owners | Content workbook, every table, owners, responsibilities, practices, AI assistant. |
 
-- Owners create the recommended rhythm with one button; champions create their family's sync and open study groups; anyone joins an open group (people who aim for that certification see it first).
-- Every series downloads as an **.ics invitation** (recurrence, attendees with e-mail, 15-minute reminder) to open in Outlook.
-- Every meeting ends with **actions** (what, who, by when); the open ones lead the next agenda. The agenda downloads as text to paste in Teams.
-
-## Team inventory: certifications and skills
-- One collection file for the whole team: **`team_inventory_template.xlsx`** (drop-down lists and instructions) or **`.csv`**, one row per
-  certification or skill: `Person, Email, Type, Name, Code, Vendor, Level, Years, Status, Obtained, Expires, EvidenceUrl, Notes`.
-- `Type = certification` goes to the certification register (Code, current / desired, dates, Credly link); `Type = skill` goes to the skills
-  inventory with the same 1–5 scale for everyone: 1 Aware · 2 Basic · 3 Practitioner · 4 Advanced · 5 Expert.
-- Free skill names are matched to the catalog through the practice's aliases (KQL → Microsoft Sentinel, PowerShell → Automation…).
-- Reports → **Skills matrix**: download the template, import the filled file (replaces the inventory of the people in it), the person × skill
-  matrix, **«Who can take this role?»** (skills + minimum level → people, levels and certifications) and the champion's validation (✓).
-- Each person keeps theirs in Certifications → **My skills**; changing a level removes its validation.
+**Responsibilities** are set in People (column `Responsibilities` = `demand` and / or `learning`) or in **Administration →
+👑 People and access → 🧭 Responsibilities**. While nobody of a practice holds one, the practice's owners do. An optional
+PIN (Administration → Access) is asked before the Management view opens.
 
 ## Edit mode (owners)
-Every section has a **✏️ Edit mode** switch at the top. On, the section shows the tables it is made of:
+In the 🛠️ Management view, Learning paths, Team, Demand and Skills map have a **✏️ Edit mode** switch; Knowledge exchange
+edits its sources and material, and **Administration → ✏️ Every table** edits every table of the workbook (glossary, videos,
+ranks…). The tables of each part:
 
-| Section | Tables |
+| Management tab | Tables |
 |---|---|
-| Learning route / Skills map | LearningPaths, Skills, Families |
-| Course | Lessons, Questions, LessonResources (videos of each lesson), Levels, Courses |
-| Glossary | Glossary |
-| Video library | Resources, Topics |
-| Progress & badges | Ranks, Roles |
-| Certifications | What each family requires and everyone's register |
-| Reports | Families (champions, gap) |
+| Learning paths | LearningPaths, Skills, Paths, JobRoles, Vendors, Families |
+| Team | Families, People |
 | Demand | PracticeSkills, PracticeRoles, Practice |
-| Knowledge exchange | NewsSources |
-| Team | Every table, by section |
+| Skills map | Families, Skills, Paths, LearningPaths |
+| Knowledge exchange | NewsSources, StudyMaterial |
+| Administration → Every table | Every table, by section (glossary, videos, ranks, course roles…) |
 
 - Columns that point to something else (course, lesson, video, topic, family, skill, level) are **drop-down lists** of what exists.
 - Fixed values (correct letter, kind, scope, severity, yes/no) are drop-down lists of those values.
@@ -178,16 +168,19 @@ and questions have the same ids).
 | `tools/` | `content.py` (export / check / import), `validate_pack.py`, `audit_videos.py`, `export_sharepoint.py` |
 
 ## People and roles (catalog/people.csv)
-`Person, Email, Role, Families, Active` — Role = owner | champion | sme | learner; Families = family ids separated by `;`.
-The sidebar offers these names in **Who are you?**: your role comes with your name (owners get the **Owner view** switch).
-Up to **6 global owners** and up to 6 owners per practice (ACADEMY_MAX_OWNERS changes it): **Team → 👑 Global owners** and
-**Team → 👑 Owners of …**, with the work e-mail each one signs in with; they are saved in People with role `owner`.
+`Person, Email, Role, Families, Active, Practice, CourseRole, Responsibilities` — Role = owner | champion | sme | learner;
+Families = family ids separated by `;` (a learner's first family is the one they learn); Responsibilities = demand; learning.
+The sidebar offers these names in **Who are you?**: your role comes with your name (managers get the **View** switch).
+Up to **6 global owners** and up to 6 owners per practice (ACADEMY_MAX_OWNERS changes it): **Administration → 👑 Global
+owners** and **👑 Owners of …**, with the work e-mail each one signs in with; they are saved in People with role `owner`.
 A champion listed here becomes the champion of those families in the catalog (reports and notices copy them). Also the
 People tab of the content workbook and ✏️ Edit mode (Team, Reports). Owners in `config/access.json` (with the optional PIN)
 keep working.
 
 ## Study material (catalog/study_material.csv)
-`Title, Url, Source, Category, Theme, Kind, Level, SkillId, Notes` — Kind = video | playlist | search | page.
+`Title, Url, Source, Category, Theme, Kind, Level, SkillId, Notes, Families` — Kind = video | playlist | search | page;
+Families = the role families whose learners see it (empty = the family of its SkillId, or the whole practice). News sources
+have the same `Families` column.
 Shown in **Knowledge exchange → 📚 Study material** (filters by category, theme and text; each item opens the author's site)
 and at the end of the **Video library** (videos play inside the app). It starts with John Savill's Technical Training
 (Microsoft): 6 exact videos, his Azure Master Class, certification study crams and the themes of the practice as searches

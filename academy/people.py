@@ -3,7 +3,7 @@ workbook (tab People) or in the app's edit mode:
 
     catalog/people.csv      (or the file named by ACADEMY_PEOPLE)
 
-    Person, Email, Role, Families, Active, Practice, CourseRole
+    Person, Email, Role, Families, Active, Practice, CourseRole, Responsibilities
 
 * Role = owner | champion (runs the role families listed in Families) | sme (answers in the forum as the expert of the
   families listed) | learner.
@@ -15,6 +15,10 @@ workbook (tab People) or in the app's edit mode:
   show that role's lessons. Empty = every lesson.
 * Families = family ids separated by ";" (for champions and SMEs).
 * Active = no keeps the person in the file without showing them in the list of names.
+* Responsibilities = what the person runs for the practice, separated by ";": demand (the Demand analysis and its
+  executive report) and learning (Upskilling & learning: the learning reports, the team, certifications and the
+  Knowledge exchange). Only they see those tools in the 🛠️ Management view. While nobody of a practice holds one of
+  them, the practice's owners do.
 
 While the academy has no real sign-in, the sidebar offers these names («Who are you?»), and the roles are matched by name
 or e-mail. Owners listed in config/access.json (with the optional PIN) and champions written in the skills catalog keep
@@ -32,10 +36,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PEOPLE_FILE = ROOT / "catalog" / "people.csv"
-COLUMNS = ["Person", "Email", "Role", "Families", "Active", "Practice", "CourseRole"]
-SHEET_COLUMNS = ["Person", "Email", "Role", "Families", "Active", "CourseRole"]  # a practice's workbook: the practice is its own
+COLUMNS = ["Person", "Email", "Role", "Families", "Active", "Practice", "CourseRole", "Responsibilities"]
+SHEET_COLUMNS = ["Person", "Email", "Role", "Families", "Active", "CourseRole", "Responsibilities"]  # a practice's workbook: the practice is its own
 OWNER, CHAMPION, SME, LEARNER = "owner", "champion", "sme", "learner"
 ROLES = [OWNER, CHAMPION, SME, LEARNER]
+DEMAND, LEARNING = "demand", "learning"
+RESPONSIBILITIES = {DEMAND: "Demand", LEARNING: "Upskilling & learning"}
 MAX_OWNERS = 6
 
 
@@ -55,12 +61,14 @@ class Person:
     active: bool = True
     practice: str = ""  # empty = the first practice (for an owner: every practice)
     course_role: str = ""  # what they learn (a course role of their practice), set by owners and champions
+    duties: tuple[str, ...] = ()  # Responsibilities: demand, learning
 
     def row(self) -> list[str]:
-        return [self.name, self.email, self.role, "; ".join(self.families), "yes" if self.active else "no", self.practice, self.course_role]
+        return [self.name, self.email, self.role, "; ".join(self.families), "yes" if self.active else "no", self.practice, self.course_role,
+                "; ".join(self.duties)]
 
     def sheet_row(self) -> list[str]:
-        return [self.name, self.email, self.role, "; ".join(self.families), "yes" if self.active else "no", self.course_role]
+        return [self.name, self.email, self.role, "; ".join(self.families), "yes" if self.active else "no", self.course_role, "; ".join(self.duties)]
 
     @property
     def global_owner(self) -> bool:
@@ -117,15 +125,30 @@ def parse(raw: bytes, family_ids: set[str] | dict[str, str] | None = None) -> tu
         if name.lower() in seen:
             problems.append(f"[people row {n}] '{name}' is repeated.")
             continue
+        duties, bad = _duties(r.get("Responsibilities") or "")
+        if bad:
+            problems.append(f"[people row {n}] unknown responsibility: {', '.join(bad)} (use {' or '.join(RESPONSIBILITIES)}).")
+            continue
         seen.add(name.lower())
         out.append(Person(name, email, role, fams, (r.get("Active") or "yes").strip().lower() not in ("no", "n", "false", "0"),
-                          (r.get("Practice") or "").strip(), (r.get("CourseRole") or r.get("Course role") or "").strip()))
+                          (r.get("Practice") or "").strip(), (r.get("CourseRole") or r.get("Course role") or "").strip(), duties))
     for scope in sorted({p.practice for p in out if p.role == OWNER}):
         active = [p.name for p in out if p.role == OWNER and p.active and p.practice == scope]
         if len(active) > max_owners():
             what = f"owners of the practice '{scope}'" if scope else "active owners"
             problems.append(f"[people] at most {max_owners()} {what}: {', '.join(active)}. Make the others champions or learners.")
     return out, problems
+
+
+def _duties(text: str) -> tuple[tuple[str, ...], list[str]]:
+    """«demand; learning» (names as shown in the app are accepted too) -> the ids, and what was not understood."""
+    names = {k: k for k in RESPONSIBILITIES} | {v.lower(): k for k, v in RESPONSIBILITIES.items()} | {"upskilling": LEARNING}
+    out, bad = [], []
+    for x in str(text).replace(",", ";").split(";"):
+        x = x.strip()
+        if x:
+            (out.append(names[x.lower()]) if x.lower() in names else bad.append(x))
+    return tuple(dict.fromkeys(out)), bad
 
 
 def to_csv(people: list[Person]) -> bytes:
@@ -219,6 +242,38 @@ def set_owners(people: list[Person], new: list[tuple[str, str]], practice: str =
             out.append(p)
     out += [Person(n, e, OWNER, practice=practice) for i, (n, e) in enumerate(new) if i not in used]
     return out, []
+
+
+def responsible(people: list[Person], duty: str, practice: str, first: str) -> list[Person]:
+    """The active people of a practice who hold a responsibility (global owners holding it count for every practice)."""
+    return [p for p in people if p.active and duty in p.duties and (p.global_owner or (p.practice or first) == practice)]
+
+
+def duties_of(people: list[Person], learner: str, email: str, practice: str, first: str, owner: bool) -> set[str]:
+    """The responsibilities a person exercises in a practice: the ones they hold and, while nobody of the practice holds
+    one, the practice's owners exercise it."""
+    out = set()
+    for duty in RESPONSIBILITIES:
+        holders = responsible(people, duty, practice, first)
+        if any(p.matches(learner, email) for p in holders) or (owner and not holders):
+            out.add(duty)
+    return out
+
+
+def set_responsible(people: list[Person], duty: str, names: list[str], practice: str, first: str) -> list[Person]:
+    """The directory with exactly ``names`` (people of the practice, or global owners) holding ``duty`` in that practice."""
+    from dataclasses import replace
+
+    wanted = {_norm(n) for n in names}
+    out = []
+    for p in people:
+        mine = (practice == first) if p.global_owner else (p.practice or first) == practice  # global owners: set in the first practice
+        if mine and _norm(p.name) in wanted and duty not in p.duties:
+            p = replace(p, duties=p.duties + (duty,))
+        elif mine and _norm(p.name) not in wanted and duty in p.duties:
+            p = replace(p, duties=tuple(d for d in p.duties if d != duty))
+        out.append(p)
+    return out
 
 
 def families_of(people: list[Person], learner: str, email: str = "", role: str = CHAMPION) -> set[str]:

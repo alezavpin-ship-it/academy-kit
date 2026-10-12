@@ -147,11 +147,15 @@ if email.strip() and "@" in email and notify.emails(conn).get(who) != email.stri
 email = email.strip() or notify.emails(conn).get(who, "")
 catalog = load_catalog()
 
-# Views: end user by default; owners, leaders and champions can switch on the owner view (see academy/access.py).
-owner, families = False, set()
+# Two views: 🎓 Learning (everyone) and 🛠️ Management (the tools each person is responsible for, see page.manage_access):
+# owners of the practice, champions (their role families) and the people holding a responsibility in People (Demand;
+# Upskilling & learning — while nobody holds one, the owners do).
 by_name = "" if me else who  # signed in with Entra ID: roles go by the account's e-mail only, never by a typed name
 is_owner = acc.is_owner(by_name, email) or people.is_owner(directory, by_name, email, practice=pid)
 mine = acc.champion_families(by_name, email, catalog) | people.families_of(directory, by_name, email)
+duties = people.duties_of(directory, by_name, email, pid, first, is_owner)
+can_manage = page.has_management(is_owner, mine, duties)
+view, unlocked = page.LEARNING_VIEW, True
 with st.sidebar:
     if not acc.configured and not any(x.role == people.OWNER for x in directory):
         st.divider()
@@ -160,25 +164,32 @@ with st.sidebar:
             acc.owners = [email or who]
             save_access(acc)
             st.rerun()
-    elif not (is_owner or mine):
+    elif not can_manage and me and not any(x.role == people.OWNER for x in directory) and not acc.owners:
         st.divider()
-        st.caption(f"Owner or champion? An owner adds your work e-mail ({email}) to People with your role, or the Azure admin "
-                   "lists it in the app setting ACADEMY_OWNERS." if me else
-                   "Owner or champion? Pick your name in «Who are you?» (or type the e-mail registered as owner) to get the owner view.")
-    if is_owner or mine:
+        st.caption(f"No owners yet: the Azure admin lists them in the app setting ACADEMY_OWNERS (your e-mail: {email}).")
+    if can_manage:
         st.divider()
-        on = st.toggle(T("view_owner" if is_owner else "view_champion"), value=True, key="ak_owner_view",
-                       help=T("view_owner_help" if is_owner else "view_champion_help"))
-        if on and acc.has_pin():
+        if st.session_state.get("ak_view") not in page.VIEWS:
+            st.session_state["ak_view"] = page.LEARNING_VIEW
+        view = st.segmented_control("View", list(page.VIEWS), key="ak_view", format_func=page.VIEWS.get, width="stretch",
+                                    help="🎓 Learning: the academy as every learner sees it. 🛠️ Management: the tools you are "
+                                         "responsible for (learning paths, team, reports, demand, rhythm, administration).") or page.LEARNING_VIEW
+        if acc.has_pin():
             pin = st.text_input(T("pin"), type="password", key="ak_owner_pin")
-            on = bool(pin) and acc.check_pin(pin)
-            if pin and not on:
+            unlocked = bool(pin) and acc.check_pin(pin)
+            if pin and not unlocked:
                 st.caption(T("pin_bad"))
-        owner, families = on and is_owner, (mine if on and not is_owner else set())
+            if view == page.MANAGE_VIEW and not unlocked:
+                st.caption("Type the PIN to open the Management view.")
+                view = page.LEARNING_VIEW
+        if view == page.MANAGE_VIEW:
+            st.caption("You manage: " + ", ".join(T(k) for k, v in page.manage_access(is_owner, mine, duties).items() if v))
 
+owner = is_owner and unlocked
 page.render(pack, conn, learner, "en", role, catalog=catalog, packs=[_pack(pid, n) for n in packs],
-            exams=[_exam(pid, n) for n in available_exams()], owner=owner, families=families, email=email,
-            global_owner=owner and (people.is_global_owner(directory, by_name, email) or acc.is_owner(by_name, email)))
+            exams=[_exam(pid, n) for n in available_exams()], owner=owner, families=mine if unlocked else set(), email=email,
+            global_owner=owner and (people.is_global_owner(directory, by_name, email) or acc.is_owner(by_name, email)),
+            view=view, duties=duties if unlocked else set())
 
 with st.sidebar:
     st.divider()

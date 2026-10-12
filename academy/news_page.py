@@ -74,16 +74,25 @@ def splash() -> None:
 
 
 # ---------------------------------------------------------------------------------------------- Knowledge exchange
-def knowledge_tab(lang: str = "en", catalog=None, leader: bool = False) -> None:
-    """Two sections: the latest news of the practice's sources, and the study material (training content by theme)."""
-    part = st.segmented_control("Knowledge exchange", ["📰 News", "📚 Study material"], default="📰 News", key="kx_part",
-                                label_visibility="collapsed") or "📰 News"
+def knowledge_tab(lang: str = "en", catalog=None, leader: bool = False, family: str | None = None, extra: dict | None = None) -> None:
+    """The latest news of the practice's sources and the study material (training content by theme), plus ``extra`` sections
+    ({label: draw}). ``family``: a learner sees what is tagged with their role family and what is for the whole practice."""
+    parts = ["📰 News", "📚 Study material", *(extra or {})]
+    if st.session_state.get("kx_part") not in parts:
+        st.session_state["kx_part"] = parts[0]
+    part = st.segmented_control("Knowledge exchange", parts, key="kx_part", label_visibility="collapsed") or "📰 News"
+    fam = next((f.name for f in catalog.families if f.id == family), "") if catalog and family else ""
+    if fam:
+        st.caption(f"Focused on your role family, **{fam}**, plus what is shared with the whole practice.")
+    if part in (extra or {}):
+        extra[part]()
+        return
     if part == "📚 Study material":
         from academy.study_page import study_bank
 
-        study_bank(catalog, leader, key="kx_sm")
+        study_bank(catalog, leader, key="kx_sm", player=True, family=family)
         return
-    sources = [s for s in news.load_sources() if s.enabled]
+    sources = [s for s in news.load_sources() if s.enabled and s.for_family(family)]
     st.markdown("#### Knowledge exchange")
     st.caption("A reading bank of security news from the sources this practice follows: Microsoft, cloud providers, security vendors, "
                "frameworks and standards. Open any item to read it on the publisher's site.")
