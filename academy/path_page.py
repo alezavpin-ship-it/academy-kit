@@ -378,10 +378,11 @@ def hero(catalog, conn, learner: str, pack, tracker) -> None:
                                        ("Points", f"{pts:,}", to_next),
                                        ("Rank", pack.ranks[cur].name, "")))
     fam_name = next((f.name for f in catalog.families if f.id == fam), "") if catalog and fam else ""
+    photo = ui.hero_photo_html()   # the practice's own photo; none -> tiles on the right, as before
     with st.container(key="ak_hero"):
         left, right = st.columns([3, 2], gap="large")
         with right:
-            st.markdown(f'<div class="ak-tiles">{tiles}</div>', unsafe_allow_html=True)
+            st.markdown(photo or f'<div class="ak-tiles">{tiles}</div>', unsafe_allow_html=True)
         with left:
             if route is None:
                 st.markdown(f'<div class="ak-eyebrow"><b class="ak-pill">Getting started</b></div>'
@@ -401,7 +402,11 @@ def hero(catalog, conn, learner: str, pack, tracker) -> None:
                             unsafe_allow_html=True)
                 if str(nxt.url).startswith("https://"):
                     st.link_button("Open the course ↗", nxt.url, type="primary")
-        pct = 100 * got / total if total else 0
-        st.markdown(ui.bar_html(pct, "Your learning path", f"· {got} of {total} courses completed",
-                                f"{total - got} courses left" if total - got else ("Path complete" if total else "")), unsafe_allow_html=True)
+            pct = 100 * got / total if total else 0
+            bar = ui.bar_html(pct, "Your learning path", f"· {got} of {total} courses completed",
+                              f"{total - got} courses left" if total - got else ("Path complete" if total else ""))
+            if photo:
+                st.markdown(f'<div class="ak-tiles ak-tiles-row">{tiles}</div>{bar}', unsafe_allow_html=True)
+        if not photo:
+            st.markdown(bar, unsafe_allow_html=True)
 

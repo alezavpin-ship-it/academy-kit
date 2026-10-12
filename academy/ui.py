@@ -31,6 +31,14 @@ div[data-testid="stTabs"] [role="tablist"]{gap:.35rem}
 .ak-tile b{font-size:clamp(1.7rem,2.3vw,2.6rem);line-height:1.1;font-weight:700;color:#FFFFFF}
 .ak-tile span{font-size:.9rem;color:#D6D2CC!important}
 .ak-tile small{font-size:.8rem;color:#FFB98F!important}
+/* hero with the practice photo: four tiles in one row under the text, the photo on the right */
+.ak-tiles-row{grid-template-columns:repeat(4,minmax(0,1fr));height:auto;margin:18px 0 4px}
+.ak-tiles-row .ak-tile{padding:14px 16px}
+.ak-tiles-row .ak-tile b{font-size:clamp(1.4rem,1.8vw,2.1rem)}
+.ak-hero-photo{height:clamp(300px,24vw,460px);border-radius:16px;overflow:hidden;background:#241E1A}
+.ak-hero-photo img{width:100%;height:100%;object-fit:cover;object-position:var(--focus,70% 35%);display:block}
+@media (max-width:1100px){.ak-tiles-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.ak-hero-photo{height:200px}}
 h1{letter-spacing:-.02em}h2,h3{letter-spacing:-.01em}
 button[data-testid="stBaseButton-primary"],button[data-testid="stBaseButton-primary"] p{color:#1C1C1E!important;font-weight:700}
 div[data-testid="stVerticalBlockBorderWrapper"]{border-radius:14px}
@@ -178,6 +186,33 @@ def next_lesson(pack: Pack, tr: Tracker, role: str | None = None) -> Lesson | No
     """The first lesson still open, in pack order, among the lessons of the chosen role (all lessons without a role)."""
     done = tr.completed_lessons()
     return next((x for x in pack.lessons_in_scope(role) if x.id not in done), None)
+
+
+PHOTO_EXTS = (".webp", ".jpg", ".jpeg", ".png")
+PHOTO_ALT = "People learning together"
+
+
+@st.cache_data(show_spinner=False, max_entries=8)
+def _data_uri(path: str, mtime: float) -> str:
+    import base64
+    import mimetypes
+    from pathlib import Path
+    mime = mimetypes.guess_type(path)[0] or "image/webp"
+    return f"data:{mime};base64," + base64.b64encode(Path(path).read_bytes()).decode()
+
+
+def hero_photo_html(pid: str | None = None) -> str:
+    """The photo of the practice's home card: <practice folder>/assets/hero.webp (.jpg/.png); its alt text in
+    assets/hero.txt. No photo -> "" and the card keeps its two-column layout, so a new practice never shows another's."""
+    from academy import workspace
+    folder = workspace.root(pid) / "assets"
+    img = next((folder / f"hero{e}" for e in PHOTO_EXTS if (folder / f"hero{e}").is_file()), None)
+    if img is None:
+        return ""
+    alt_file = folder / "hero.txt"
+    alt = alt_file.read_text(encoding="utf-8").strip() if alt_file.is_file() else PHOTO_ALT
+    return (f'<div class="ak-hero-photo"><img src="{_data_uri(str(img), img.stat().st_mtime)}" '
+            f'alt="{html.escape(alt)}"></div>')
 
 
 def bar_html(pct: float, title: str, right: str, foot: str = "", label: str | None = None) -> str:
