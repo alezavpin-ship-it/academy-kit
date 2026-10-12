@@ -882,20 +882,33 @@ def duties_section(email_of_me: str = "") -> None:
 
 
 # ---------------------------------------------------------------------------------------------- the two views
-LEARNING_VIEW, MANAGE_VIEW = "learning", "manage"
-VIEWS = {LEARNING_VIEW: "🎓 Learning", MANAGE_VIEW: "🛠️ Management"}
+LEARNING_VIEW, MANAGE_VIEW, DEMAND_VIEW = "learning", "manage", "demand"
+VIEWS = {LEARNING_VIEW: "🎓 Learning", MANAGE_VIEW: "🛠️ Management", DEMAND_VIEW: "🔍 Demand"}
 
 
 def manage_access(owner: bool, families: set[str], duties: set[str]) -> dict[str, bool]:
     """Which management sections a person gets (the same rules the page uses to draw them)."""
-    learning, demand = "learning" in duties, "demand" in duties
+    learning = "learning" in duties
     return {"tab_paths": owner or bool(families), "tab_team": learning or bool(families), "tab_reports": learning,
-            "tab_certs": owner or learning, "tab_demand": demand, "tab_skills": owner, "tab_rhythm": owner or learning or bool(families),
+            "tab_certs": owner or learning, "tab_rhythm": owner or learning or bool(families),
             "tab_kx": learning, "tab_admin": owner}
 
 
 def has_management(owner: bool, families: set[str], duties: set[str]) -> bool:
     return any(manage_access(owner, families, duties).values())
+
+
+def demand_access(owner: bool, families: set[str], duties: set[str]) -> dict[str, bool]:
+    """The sections of the 🔍 Demand view: the analysis (Demand team), the skills map (Demand team and owners) and the demand
+    results of each role family (Demand team and owners: every family; career path leads / champions: theirs)."""
+    demand = "demand" in duties
+    return {"tab_demand": demand, "tab_dresults": demand or owner or bool(families), "tab_skills": demand or owner}
+
+
+def views_for(owner: bool, families: set[str], duties: set[str]) -> list[str]:
+    """The views a person can open: Learning always; Management with something to manage; Demand with a demand section."""
+    return ([LEARNING_VIEW] + ([MANAGE_VIEW] if has_management(owner, families, duties) else [])
+            + ([DEMAND_VIEW] if any(demand_access(owner, families, duties).values()) else []))
 
 
 def paths_admin(catalog: Catalog | None, conn, learner: str, families: set[str]) -> None:
@@ -993,6 +1006,7 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
     """Two views, picked in the sidebar:
 
     * 🎓 Learning (everyone): Learning route · Progress · Forum · Study groups · Knowledge exchange (of the learner's family).
+    * 🔍 Demand (the Demand team): the demand analysis and its executive report, on its own page.
     * 🛠️ Management: the tools each person is responsible for (``manage_access``). ``owner`` = an owner of this practice;
       ``families`` = the role families the person leads as champion; ``duties`` = demand / learning (people.duties_of)."""
     families = set(families or set())
@@ -1004,7 +1018,21 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
     me = learner.strip() or "me"
     all_fams = {f.id for f in catalog.families} if catalog else set()
     led = all_fams if owner else families & all_fams  # the families whose learning paths the person runs
-    if view == MANAGE_VIEW and has_management(owner, families, duties):
+    if view == DEMAND_VIEW and any(demand_access(owner, families, duties).values()):
+        from academy.demand_page import family_results_tab
+
+        st.title(f"🔍 Demand · {pack.title}")
+        team = "demand" in duties
+        st.caption("What the role requests ask for, against the practice, the role families' skill trees and the courses."
+                   + ("" if team or owner else " You see the demand results of the families you lead."))
+        can = demand_access(owner, families, duties)
+        draw = {"tab_demand": _with_editor(lambda: demand_tab(catalog, packs, lang, True, conn), "tab_demand", pack),
+                "tab_dresults": lambda: family_results_tab(catalog, packs, lang, all_fams if (team or owner) else led, team),
+                "tab_skills": _with_editor(lambda: skills_tab(catalog, packs, lang, owner, None if owner else all_fams), "tab_skills", pack)
+                if owner else (lambda: skills_tab(catalog, packs, lang, False, all_fams))}
+        sections = [(k, draw[k]) for k, v in can.items() if v]
+        tabs_key = "ak_dtabs"
+    elif view == MANAGE_VIEW and has_management(owner, families, duties):
         st.title(f"🛠️ {pack.title}")
         can = manage_access(owner, families, duties)
         mine = [k for k, v in can.items() if v]
@@ -1018,8 +1046,6 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
             if learning else (lambda: team_admin(conn, pack, packs, exams, catalog, lang, learning, families)),
             "tab_reports": lambda: reports_tab(conn, packs, exams, catalog, lang, me, None),
             "tab_certs": lambda: certs_section(conn, catalog, exams, lang, me, all_fams),
-            "tab_demand": _with_editor(lambda: demand_tab(catalog, packs, lang, True, conn), "tab_demand", pack),
-            "tab_skills": _with_editor(lambda: skills_tab(catalog, packs, lang, True, None), "tab_skills", pack),
             "tab_rhythm": lambda: rhythm_page.rhythm_tab(conn, catalog, packs, exams, me, owner or learning, families),
             "tab_kx": lambda: knowledge_admin(pack, catalog, lang),
             "tab_admin": lambda: admin_section(pack, lang, learner, email, global_owner),
@@ -1051,19 +1077,20 @@ def render(pack: Pack, conn, learner: str, lang: str = "es", role: str | None = 
                     ("tab_study", lambda: rhythm_page.study_tab(conn, catalog, packs, exams, learner, fam)),
                     ("tab_news", lambda: news_page.knowledge_tab(lang, catalog, leader=False, family=fam, extra=extra))]
         tabs_key = "ak_tabs"
-    labels = [f"{n} · {T(key, lang)}" for n, (key, _) in enumerate(sections, start=1)]
-    goto = st.session_state.pop("ak_goto", None)  # set by a «start» button: open that tab
-    target = next((lb for lb, (key, _) in zip(labels, sections) if key == goto), None)
-    try:
-        if target:
-            st.session_state[tabs_key] = target
-        tabs = st.tabs(labels, key=tabs_key, on_change="rerun")
-    except Exception:  # older Streamlit: tabs cannot be opened from code
-        st.session_state.pop(tabs_key, None)
-        tabs = st.tabs(labels)
-    for tab, (_, draw_) in zip(tabs, sections):
-        with tab:
-            draw_()
+    if sections:
+        labels = [f"{n} · {T(key, lang)}" for n, (key, _) in enumerate(sections, start=1)]
+        goto = st.session_state.pop("ak_goto", None)  # set by a «start» button: open that tab
+        target = next((lb for lb, (key, _) in zip(labels, sections) if key == goto), None)
+        try:
+            if target:
+                st.session_state[tabs_key] = target
+            tabs = st.tabs(labels, key=tabs_key, on_change="rerun")
+        except Exception:  # older Streamlit: tabs cannot be opened from code
+            st.session_state.pop(tabs_key, None)
+            tabs = st.tabs(labels)
+        for tab, (_, draw_) in zip(tabs, sections):
+            with tab:
+                draw_()
     if pack.disclaimer:
         st.caption(pack.disclaimer)
     st.caption(f"{pack.title} · v{pack.version}")

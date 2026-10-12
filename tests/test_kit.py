@@ -189,7 +189,7 @@ def test_validator_catches_unknown_catalog_skill(tmp_path):
 
 
 def test_skills_tab_renders(tmp_path, monkeypatch):
-    at = _run(tmp_path, monkeypatch, ak_view="manage")
+    at = _run(tmp_path, monkeypatch, ak_view="demand")  # the skills map lives in the 🔍 Demand view
     assert not at.exception
     assert any("Microsoft 365 Security" in m.value for m in at.markdown)
     assert any("to be assigned" in m.value for m in at.markdown)
@@ -246,12 +246,12 @@ def test_pasted_table_and_manual_tables():
 
 
 def test_skills_tab_modes_render_and_save(tmp_path, monkeypatch):
-    at = _run(tmp_path, monkeypatch, ak_sk_mode="paste", ak_view="manage")
+    at = _run(tmp_path, monkeypatch, ak_sk_mode="paste", ak_view="demand")
     at.text_area(key="ak_sk_text").set_value("Skill Family\tMissing Skill\nRedes\tAzure Firewall").run()
     assert not at.exception and any("1 families" in s.value for s in at.success)
     at.button(key="ak_sk_save_paste").click().run()
     assert not at.exception and [s.name for s in load_catalog(tmp_path / "skills.json").skills] == ["Azure Firewall"]
-    assert not _run(tmp_path, monkeypatch, ak_sk_mode="import", ak_view="manage").exception
+    assert not _run(tmp_path, monkeypatch, ak_sk_mode="import", ak_view="demand").exception
 
 
 def test_sharepoint_export(tmp_path, pack):
@@ -408,8 +408,9 @@ def _tab_labels(at):
 
 
 LEARNING_TABS = ["1 · Learning route", "2 · Progress", "3 · Forum", "4 · Study groups", "5 · Knowledge exchange"]
-MANAGE_TABS = ["1 · Learning paths", "2 · Team", "3 · Reports", "4 · Certifications", "5 · Demand", "6 · Skills map", "7 · Rhythm",
-               "8 · Knowledge exchange", "9 · Administration"]
+MANAGE_TABS = ["1 · Learning paths", "2 · Team", "3 · Reports", "4 · Certifications", "5 · Rhythm", "6 · Knowledge exchange",
+               "7 · Administration"]
+DEMAND_TABS = ["1 · Demand analysis", "2 · Demand results", "3 · Skills map"]
 
 
 def test_end_user_does_not_see_team_measurements(tmp_path, monkeypatch):
@@ -429,8 +430,10 @@ def test_learning_and_management_views_are_separate(tmp_path, monkeypatch):
     assert not any("Manage the learning paths" in e.label for e in at.expander)  # the learner's route has no management panel
     at = _run(tmp_path, monkeypatch, ak_view="manage")  # owner without anyone holding Demand / Learning: every tool
     assert not at.exception and _tab_labels(at) == MANAGE_TABS
-    assert any(m.label == "Gap" for m in at.metric) and any("Notices to send" in m.value for m in at.markdown)
+    assert not any(m.label == "Gap" for m in at.metric) and any("Notices to send" in m.value for m in at.markdown)
     assert any("Manage the learning paths" in e.label for e in at.expander) and not any("Your learning path" in m.value for m in at.markdown)
+    at = _run(tmp_path, monkeypatch, ak_view="demand")  # 🔍 Demand: the analysis, each family's results and the skills map
+    assert not at.exception and _tab_labels(at) == DEMAND_TABS and any(m.label == "Gap" for m in at.metric)
 
 
 def test_responsibilities_decide_who_sees_demand_and_learning(tmp_path, monkeypatch):
@@ -454,10 +457,21 @@ def test_responsibilities_decide_who_sees_demand_and_learning(tmp_path, monkeypa
         at = _run(tmp_path, monkeypatch, owners=None, ak_person=who, ak_view="manage")
         assert not at.exception, who
         tabs[who] = [x.split(" · ", 1)[1] for x in _tab_labels(at)]
-    assert tabs["Ana"] == ["Learning paths", "Certifications", "Skills map", "Rhythm", "Administration"]
+    assert tabs["Ana"] == ["Learning paths", "Certifications", "Rhythm", "Administration"]
     assert tabs["Perla"] == ["Team", "Reports", "Certifications", "Rhythm", "Knowledge exchange"]
-    assert tabs["Sergio"] == ["Demand"]
+    assert tabs["Sergio"] == [x.split(" · ", 1)[1] for x in LEARNING_TABS]  # Demand only: no Management view…
     assert tabs["Cam"] == ["Learning paths", "Team", "Rhythm"]
+    views, dtabs = {}, {}
+    for who in ("Ana", "Perla", "Sergio", "Cam", "Lu"):
+        at = _run(tmp_path, monkeypatch, owners=None, ak_person=who, ak_view="demand")
+        assert not at.exception, who
+        views[who] = next((list(x.options) for x in at.segmented_control if x.key == "ak_view"), [])
+        dtabs[who] = [x.split(" · ", 1)[1] for x in _tab_labels(at)]
+    assert views == {"Ana": ["Learning", "Management", "Demand"], "Perla": ["Learning", "Management"], "Sergio": ["Learning", "Demand"],
+                     "Cam": ["Learning", "Management", "Demand"], "Lu": []}  # (the leading emoji is drawn as the option's icon)
+    assert dtabs["Sergio"] == ["Demand analysis", "Demand results", "Skills map"]  # …its own 🔍 Demand view
+    assert dtabs["Ana"] == ["Demand results", "Skills map"] and dtabs["Cam"] == ["Demand results"]  # owner; career path lead
+    assert dtabs["Perla"] == [x.split(" · ", 1)[1] for x in LEARNING_TABS]  # not in the Demand team: back to Learning
     assert tabs["Lu"] == [x.split(" · ", 1)[1] for x in LEARNING_TABS]  # a learner: the Learning view only
 
 
@@ -1041,7 +1055,7 @@ def test_certification_register_csv_and_report(tmp_path):
 def test_reports_tab_and_my_certifications_render(tmp_path, monkeypatch):
     at = _run(tmp_path, monkeypatch, ak_view="manage")
     assert not at.exception
-    assert any("Reports" in x for x in _tab_labels(at)) and any("Demand" in x for x in _tab_labels(at))
+    assert any("Reports" in x for x in _tab_labels(at)) and not any("Demand" in x for x in _tab_labels(at))  # Demand is its own view
     assert any("Career path by family and person" in m.value for m in at.markdown)
     user = _run(tmp_path, monkeypatch, ak_cert_view="mine")  # Learning view: my certifications live in Progress
     assert not user.exception and not any("Reports" in x or "Demand" in x for x in _tab_labels(user))
@@ -1103,7 +1117,7 @@ def test_demand_tab_renders_with_the_sample(tmp_path, monkeypatch):
     from academy import demand
 
     demand.save(demand.sample_rows(), tmp_path / "demand_roles.csv")
-    at = _run(tmp_path, monkeypatch, ak_view="manage")
+    at = _run(tmp_path, monkeypatch, ak_view="demand")
     assert not at.exception
     assert any(m.label == "Practice skills without a course" for m in at.metric)
 
@@ -1134,7 +1148,7 @@ def test_demand_executive_report_for_owners(tmp_path, monkeypatch):
         assert pdf.startswith(b"%PDF") and pdf.count(b"/Type /Page") - pdf.count(b"/Type /Pages") >= 2
     # in the app: owners get the executive report; a champion sees the Demand tab without it
     demand.save(demand.sample_rows(), tmp_path / "demand_roles.csv")
-    at = _run(tmp_path, monkeypatch, ak_view="manage")
+    at = _run(tmp_path, monkeypatch, ak_view="demand")
     assert not at.exception and any("Executive summary" in e.label for e in at.expander)
     if demand_exec.available():
         assert any(getattr(b, "label", "") == "Executive report (PDF)" for b in at.get("download_button"))
@@ -1251,7 +1265,7 @@ def test_edit_mode_lists_merge_and_save(tmp_path, monkeypatch):
 def test_edit_mode_shows_in_every_section_for_owners(tmp_path, monkeypatch):
     # Management view: each section's ✏️ Edit mode opens the editor of its own tables
     for section in ("tab_route", "tab_reports", "tab_demand", "tab_skills"):
-        at = _run(tmp_path, monkeypatch, ak_view="manage", **{f"ed_on_{section}": True})
+        at = _run(tmp_path, monkeypatch, ak_view="demand" if section in ("tab_demand", "tab_skills") else "manage", **{f"ed_on_{section}": True})
         assert not at.exception, (section, at.exception[0].stack_trace if at.exception else "")
         assert any(str(b.key) == f"ed_{section}_save" for b in at.button), section
     at = _run(tmp_path, monkeypatch, ak_view="manage", mg_admin_part="✏️ Every table")  # Administration → every table of the workbook
@@ -1526,7 +1540,7 @@ def test_demand_reads_the_organization_report_format(tmp_path, monkeypatch):
     assert gaps[("Cyber Defense & Security Operations", "Microsoft Sentinel")]["Roles where it is aligned"] == 1
     # in the app: an uploaded file is read for the session only; nothing is written
     monkeypatch.setenv("ACADEMY_DEMAND", str(tmp_path / "demand_roles.csv"))
-    at = _run(tmp_path, monkeypatch, dm_session={"name": "roles.csv", "rows": rows, "date": "2026-09-15"}, ak_view="manage")
+    at = _run(tmp_path, monkeypatch, dm_session={"name": "roles.csv", "rows": rows, "date": "2026-09-15"}, ak_view="demand")
     assert not at.exception and any("not saved" in w.value for w in at.warning)
     assert not (tmp_path / "demand_roles.csv").exists() and not (tmp_path / "demand_history").exists()
 
@@ -1806,3 +1820,42 @@ def test_learners_see_their_family_in_study_groups_and_knowledge_exchange(tmp_pa
     everyone = r.get(r.create(rh.STUDY, "AZ-500 group", cert="AZ-500", end="2099-01-01"))
     assert [s.title for s in (mine, other, everyone) if rhythm_page._family_ok(s, iam)] == ["SC-300 group", "AZ-500 group"]
     assert rhythm_page._can_manage(mine, "cam", False, {iam}) and not rhythm_page._can_manage(other, "cam", False, {iam})
+
+
+
+def test_demand_results_for_each_career_path_lead(tmp_path, monkeypatch):
+    from academy import demand, demand_family as dfam
+    from academy import paths as pathmod
+    from academy.catalog import load_materials
+    from academy.practice import load_practice
+
+    cat = load_catalog(ROOT / "catalog" / "skills.json")
+    mats = load_materials(ROOT / "catalog" / "materials.json")
+    a = demand.analyze(demand.sample_rows(), load_practice(ROOT / "catalog" / "practice.json"), cat, [load_pack("cloud-security")], mats, "en")
+    st_ = pathmod.default(cat, mats)
+    fam = max(cat.families, key=lambda f: sum(1 for r in a["skills"] if r["_entry"] is not None and r["_entry"].family == f.id))
+    res = dfam.results(a, cat, st_, mats, fam.id)
+    s = res["summary"]
+    assert s["Demanded skills of the family"] == len(res["demand"]) > 0 and s["Gap volume"] == (fam.gap_volume or 0)
+    assert s["Covered by your tree"] + s["In your tree without courses"] + s["Not in your tree"] == s["Demanded skills of the family"]
+    assert len(res["tree"]) == len(cat.in_family(fam.id)) == s["Skills in your tree"]  # the default tree holds every skill of the family
+    assert sum(r["Roles asking for it now"] for r in res["tree"]) > 0
+    off = pathmod.Structure(st_.vendors, st_.roles, [pathmod.replace(p, active=False) if p.family == fam.id else p for p in st_.paths], st_.skills)
+    assert dfam.results(a, cat, off, mats, fam.id)["summary"]["Covered by your tree"] == 0  # paths switched off: nothing covered
+    assert dfam.to_xlsx(res, "test")[:2] == b"PK" and fam.name in dfam.message(res)
+    # in the app: the Demand team picks any family and sends it; a champion sees only theirs
+    demand.save(demand.sample_rows(), tmp_path / "demand_roles.csv")
+    at = _run(tmp_path, monkeypatch, ak_view="demand", dr_family=fam.id)
+    assert not at.exception and any(m.label == "Demanded skills of the family" for m in at.metric)
+    assert any(getattr(b, "label", "") == "🗂 Every family's results (.zip)" for b in at.get("download_button"))
+    data = json.loads(catmod.CATALOG_PATH.read_text(encoding="utf-8"))
+    for f in data["families"]:
+        if f["id"] == fam.id:
+            f["champion"] = "me"
+    (tmp_path / "c").mkdir()
+    (tmp_path / "c" / "skills.json").write_text(json.dumps(data), encoding="utf-8")
+    demand.save(demand.sample_rows(), tmp_path / "c" / "demand_roles.csv")
+    lead = _run(tmp_path / "c", monkeypatch, owners=("jefa",), ak_view="demand")
+    assert not lead.exception and [x.split(" · ", 1)[1] for x in _tab_labels(lead)] == ["Demand results"]
+    assert lead.selectbox(key="dr_family").options == [next(o for o in lead.selectbox(key="dr_family").options)] and len(lead.selectbox(key="dr_family").options) == 1
+    assert not any(getattr(b, "label", "") == "🗂 Every family's results (.zip)" for b in lead.get("download_button"))

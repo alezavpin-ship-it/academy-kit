@@ -240,3 +240,91 @@ def demand_tab(catalog, packs: list, lang: str, owner: bool = False, conn=None) 
             st.dataframe(pd.DataFrame(a["matrix"]), hide_index=True, width="stretch")
         else:
             st.info("This file has no «Matrix cross-skills Practice» column (or it is empty).")
+
+
+# ---------------------------------------------------------------------------------------------- results by role family
+def family_results_tab(catalog, packs: list, lang: str, families: set[str], team: bool = False) -> None:
+    """🔍 Demand → Demand results: one role family's gaps, roles affected and demanded skills against its own skill tree.
+
+    ``families``: the families the person may open (a champion: theirs; the Demand team and owners: all). ``team``: the
+    Demand team, who send each family's results to its career path lead."""
+    import urllib.parse
+    import zipfile
+
+    from academy import demand_family as dfam
+    from academy import paths as pathmod
+
+    if not catalog or not catalog.families:
+        st.info("The role families are not loaded yet.")
+        return
+    path = demand.demand_path()
+    rows = _rows(str(path), path.stat().st_mtime_ns) if path.exists() else []
+    source = f"saved upload of {demand.snapshots()[-1][0]}" if demand.snapshots() else "saved roles file"
+    session = st.session_state.get("dm_session") if team else None
+    if session:  # the Demand team's file of this session (not saved) is what they are looking at
+        rows, source = session["rows"], f"«{session['name']}» ({session['date']}), this session only"
+    if not rows:
+        st.info("The Demand team has not published a demand analysis yet: the results appear here when they save a roles file.")
+        return
+    fams = [f for f in catalog.by_gap() if f.id in families]
+    if not fams:
+        st.info("You do not lead a role family yet.")
+        return
+    materials = load_materials()
+    a = demand.analyze(rows, load_practice(), catalog, packs, materials, lang)
+    structure = pathmod.load()
+    st.caption(f"What the roles we receive ask of a role family, against the family's own skill tree (its learning paths). Source: {source} · "
+               f"{len(rows)} roles.")
+    fid = st.selectbox("Role family", [f.id for f in fams], key="dr_family",
+                       format_func=lambda k: next(f.name + (f" · lead: {f.champion}" if f.champion else "") for f in fams if f.id == k))
+    res = dfam.results(a, catalog, structure, materials, fid)
+    s = res["summary"]
+    keys = list(s)
+    for row in (keys[:4], keys[4:]):
+        for col, k in zip(st.columns(4), row):
+            col.metric(k, s[k], border=True)
+    fam = res["family"]
+    stamp = datetime.now().strftime("%Y-%m-%d")
+    c = st.columns(3 if team else 1)
+    c[0].download_button("📊 Download the results (Excel)", dfam.to_xlsx(res, source), key="dr_xlsx", width="stretch", type="primary",
+                         file_name=f"demand_results_{fid}_{stamp}.xlsx",
+                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    if team:
+        to = fam.champion_email or ""
+        mail = "mailto:" + urllib.parse.quote(to) + "?" + urllib.parse.urlencode(
+            {"subject": f"Demand results · {fam.name} · {stamp}", "body": dfam.message(res)}, quote_via=urllib.parse.quote)
+        c[1].link_button(f"✉️ Send to {fam.champion or 'the lead'}", mail, width="stretch", disabled=not to,
+                         help="Opens Outlook with a summary for the family's lead; attach the Excel you just downloaded." if to
+                         else "This family has no lead e-mail yet (People → champion, or Families → ChampionEmail).")
+        buf = __import__("io").BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+            for f in fams:
+                z.writestr(f"demand_results_{f.id}_{stamp}.xlsx", dfam.to_xlsx(dfam.results(a, catalog, structure, materials, f.id), source))
+        c[2].download_button("🗂 Every family's results (.zip)", buf.getvalue(), key="dr_zip", width="stretch",
+                             file_name=f"demand_results_{stamp}.zip", mime="application/zip")
+    t = st.tabs(["Demand vs your skill tree", "Your skill tree", "Gaps and roles affected", "Gaps per role (matrix)"])
+    colors = {dfam.IN_TREE: "🟢", dfam.NO_COURSES: "🟡", dfam.SWITCHED_OFF: "🟡", dfam.NOT_IN_TREE: "🔴"}
+
+    def table(rows_: list[dict], empty: str) -> None:
+        if not rows_:
+            st.info(empty)
+            return
+        df = pd.DataFrame(dfam.visible(rows_))
+        if "Your skill tree" in df:
+            df["Your skill tree"] = [f"{colors.get(v, '')} {v}" for v in df["Your skill tree"]]
+        st.dataframe(df, hide_index=True, width="stretch")
+
+    with t[0]:
+        st.caption("🟢 in a learning path with required courses · 🟡 in your tree without courses (or switched off) · 🔴 requested and "
+                   "not in your tree: a candidate for a new skill or learning path.")
+        table(res["demand"], "No skill of this family appears in the current demand.")
+    with t[1]:
+        st.caption("Your family's skills in its active learning paths, most requested first. A skill nobody asks for now may still be "
+                   "foundational: check it before switching it off.")
+        table(res["tree"], "The family has no active learning path yet.")
+    with t[2]:
+        st.caption(f"From the skills catalog (the team's gap report): gap volume {fam.gap_volume or 0}, {fam.role_impact or 0} roles affected.")
+        table(res["gaps"], "No gap recorded for this family's skills.")
+    with t[3]:
+        st.caption("The skills the role requests list for this family in «Matrix cross-skills Practice».")
+        table(res["matrix"], "The requests do not name this family in their practice matrix.")

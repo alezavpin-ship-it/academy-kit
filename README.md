@@ -18,7 +18,7 @@ streamlit run app.py
 Progress is stored in `data\academy.db` (`set ACADEMY_DB=...` for another path). Tests: `pip install pytest` and `pytest`.
 If the PDF buttons are greyed out, close the app and run **`Install components.bat`** once.
 
-## Two views: 🎓 Learning and 🛠️ Management
+## Three views: 🎓 Learning, 🛠️ Management and 🔍 Demand
 The sidebar's **View** switch appears only to people with something to manage. Learners never see the management tools.
 
 **🎓 Learning** (everyone, including owners and champions when they learn):
@@ -41,18 +41,24 @@ When the app opens, a window shows the **latest Microsoft security news** once p
 | Team | Upskilling & learning (everyone), champions (their families' people) | Roster and job roles, progress, notices to send. |
 | Reports | Upskilling & learning | Status by family, who keeps up with the path, certifications, skills matrix; Excel and PDF. |
 | Certifications | Owners, Upskilling & learning | What each family and job role asks for, everyone's register, exam questions (AI drafts). |
-| Demand | Demand | The role requests against the practice and the courses, trend, executive PDF. |
-| Skills map | Owners | Families by gap and the catalog import. |
 | Rhythm | Owners, Upskilling & learning, champions | Monthly review, family syncs, study groups (by role family), meeting room. |
 | Knowledge exchange | Upskilling & learning | News sources and study material, and the families each one is for. |
 | Administration | Owners | Content workbook, every table, owners, responsibilities, practices, AI assistant. |
+
+**🔍 Demand** — what the market asks for:
+
+| Tab | Who | What |
+|---|---|---|
+| Demand analysis | Demand | The role requests against the practice and the courses, trend, executive PDF. |
+| Demand results | Demand and owners (every family), career path leads / champions (their families) | One role family's gap volume, roles affected, and the demanded skills against its own skill tree: 🟢 in a learning path with courses · 🟡 in the tree without courses · 🔴 requested and not in the tree. The tree's skills with the roles asking for them now, the catalog gaps and the practice matrix. Excel per family; the Demand team also sends it to the lead (✉️, Outlook) or downloads every family's results (.zip). |
+| Skills map | Demand and owners | Families by gap, their champion and coverage; owners also import the catalog. |
 
 **Responsibilities** are set in People (column `Responsibilities` = `demand` and / or `learning`) or in **Administration →
 👑 People and access → 🧭 Responsibilities**. While nobody of a practice holds one, the practice's owners do. An optional
 PIN (Administration → Access) is asked before the Management view opens.
 
 ## Edit mode (owners)
-In the 🛠️ Management view, Learning paths, Team, Demand and Skills map have a **✏️ Edit mode** switch; Knowledge exchange
+Learning paths and Team (🛠️ Management), Demand analysis and Skills map (🔍 Demand) have a **✏️ Edit mode** switch; Knowledge exchange
 edits its sources and material, and **Administration → ✏️ Every table** edits every table of the workbook (glossary, videos,
 ranks…). The tables of each part:
 
@@ -60,8 +66,8 @@ ranks…). The tables of each part:
 |---|---|
 | Learning paths | LearningPaths, Skills, Paths, JobRoles, Vendors, Families |
 | Team | Families, People |
-| Demand | PracticeSkills, PracticeRoles, Practice |
-| Skills map | Families, Skills, Paths, LearningPaths |
+| Demand analysis (🔍 Demand) | PracticeSkills, PracticeRoles, Practice |
+| Skills map (🔍 Demand) | Families, Skills, Paths, LearningPaths |
 | Knowledge exchange | NewsSources, StudyMaterial |
 | Administration → Every table | Every table, by section (glossary, videos, ranks, course roles…) |
 
